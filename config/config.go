@@ -4,6 +4,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
+// Config represents the configuration required for the dp-download-service
 type Config struct {
 	BindAddr           string `envconfig:"BIND_ADDR"`
 	EncryptionDisabled bool   `envconfig:"ENCRYPTION_DISABLED"`
@@ -15,6 +16,7 @@ type Config struct {
 
 var cfg *Config
 
+// Get retrieves the config from the environment for the dp-download-service
 func Get() (*Config, error) {
 	if cfg != nil {
 		return cfg, nil
