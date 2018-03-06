@@ -4,21 +4,23 @@
 
 (Disclaimer: You will need a fully runnable local environment)
 
-- Create an RSA Private Key file in your `$HOME` by running:
+- Ensure you have vault started locally:
 
-`openssl genrsa  -out private.pem 1024`
-
-- Set the environment variable:
-
-`export RSA_PRIVATE_KEY=$(cat $HOME/private.pem)`
+`brew install vault`
+`vault server -dev`
 
 - Run the dataset api on branch poc/download-service
+- Create and upload an encrypted file to s3:
+
+`cd scripts`
+`make debug`
+`cd ..`
+
 - Run the dp-download-service poc:
 
- `go run main.go`
+ `make debug`
 
-- Import and publish a new version of a dataset - see [dp-import](https://github.com/ONSdigital/dp-import). Please note that florence will need to be run with encryption disabled. (`export ENCRYPTION_DISABLED=true`)
-- Edit the csv download for the version in mongodb to include a new "public" field, which matches current url field, and update the url to point to the download service. E.g:
+- Ensure you have a `published` version available and set the following in mongodb for your version:
 
 ```json
  "csv" : {
@@ -32,9 +34,7 @@
 
 `curl -v localhost:28000/downloads/datasets/931a8a2a-0dc8-42b6-a884-7b6054ed3b68/editions/time-series/versions/1.csv`
 
-- To test the private link you must now switch florence encryption on (`export ENCRYPTION_DISABLED=false`) and restart florence.
-- Upload a file through the [florence UI](http://localhost:8081/florence/uploads/data). There is no need to click the `save and continue` button - just copy the filename from the s3 url on the screen once it has uploaded. An example file is available [here](https://github.com/ONSdigital/dp-web-tests/blob/cmd-develop/testdata/cpicoicoptest.csv)
-- Again, edit the mongo document, this time removing the public field and replacing it with a private field, with a value corresponding to the uploaded file:
+- To test the private link, replace your previous mongodb csv download field with this:
 
 ```json
  "csv" : {
