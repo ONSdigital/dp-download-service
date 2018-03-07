@@ -48,7 +48,7 @@ paths:
       - $ref: '#/parameters/edition'
       - $ref: '#/parameters/version'
       produces:
-      - "application/json"
+      - "text/csv"
       responses:
         200:
           $ref: '#/responses/StreamedResponse'
@@ -71,7 +71,7 @@ paths:
       - $ref: '#/parameters/edition'
       - $ref: '#/parameters/version'
       produces:
-      - "application/json"
+      - "application/vnd.ms-excel"
       responses:
         200:
           $ref: '#/responses/StreamedResponse'
