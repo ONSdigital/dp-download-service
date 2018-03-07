@@ -1,0 +1,98 @@
+swagger: "2.0"
+info:
+  description: "A service used to download files from private or public s3 buckets."
+  version: "1.0.0"
+  title: "Download service"
+  license:
+    name: "Open Government Licence v3.0"
+    url: "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+basePath: "/v1"
+tags:
+- name: "Public"
+schemes:
+- "http"
+parameters:
+  datasetID:
+    name: datasetID
+    description: "The unique identifier for a dataset."
+    in: path
+    required: true
+    type: string
+  edition:
+    name: edition
+    description: "An edition of a dataset"
+    in: path
+    required: true
+    type: string
+  version:
+    name: version
+    description: "A version of a dataset"
+    in: path
+    required: true
+    type: string
+securityDefinitions:
+  FlorenceAPIKey:
+    name: florence-token
+    description: "API key used to allow florence users to be able to access a full download for an unpublished version."
+    in: header
+    type: apiKey
+paths:
+  /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv:
+    get:
+      tags:
+      - "Public"
+      summary: "Download the full csv for a given datasetID, edition and version"
+      description: "Request a download for the full CSV for a given datasetID, edition and version."
+      parameters:
+      - $ref: '#/parameters/datasetID'
+      - $ref: '#/parameters/edition'
+      - $ref: '#/parameters/version'
+      produces:
+      - "application/json"
+      responses:
+        200:
+          $ref: '#/responses/StreamedResponse'
+        301:
+          $ref: '#/responses/RequestRedirect'
+        400:
+          $ref: '#/responses/InvalidRequestError'
+        404:
+          $ref: '#/responses/NotFoundError'
+        500:
+          $ref: '#/responses/InternalError'
+  /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xls:
+    get:
+      tags:
+      - "Public"
+      summary: "Download the full excel file for a given datasetID, edition and version"
+      description: "Request a download for the full Excel file for a given datasetID, edition and version."
+      parameters:
+      - $ref: '#/parameters/datasetID'
+      - $ref: '#/parameters/edition'
+      - $ref: '#/parameters/version'
+      produces:
+      - "application/json"
+      responses:
+        200:
+          $ref: '#/responses/StreamedResponse'
+        301:
+          $ref: '#/responses/RequestRedirect'
+        400:
+          $ref: '#/responses/InvalidRequestError'
+        404:
+          $ref: '#/responses/NotFoundError'
+        500:
+          $ref: '#/responses/InternalError'
+responses:
+  InvalidRequestError:
+    description: "Failed to process the request due to invalid request."
+  InternalError:
+    description: "Failed to process the request due to an internal error."
+  NotFoundError:
+    description: "Dimension or option not found."
+  RequestRedirect:
+    description: "A permanent redirect to where the file is hosted on S3"
+  StreamedResponse:
+    description: "A streamed response containing the requested download file"
+    schema:
+      type: file
