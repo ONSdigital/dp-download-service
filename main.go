@@ -4,6 +4,8 @@ import (
 	"os"
 
 	"github.com/ONSdigital/go-ns/vault"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
@@ -29,11 +31,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	region := "eu-west-1"
+	sess := session.New(&aws.Config{Region: &region})
+
 	svc := service.Create(
 		cfg.BindAddr,
 		cfg.SecretKey,
 		cfg.DatasetAuthToken,
+		cfg.VaultPath,
+		cfg.BucketName,
 		dc,
+		sess,
 		vc,
 		cfg.GracefulShutdownTimeout,
 		cfg.HealthCheckInterval,

@@ -1,3 +1,12 @@
+SHELL=bash
+MAIN=dp-download-service
+
+BUILD=build
+BUILD_ARCH=$(BUILD)/$(GOOS)-$(GOARCH)
+BIN_DIR?=.
+
+export GOOS?=$(shell go env GOOS)
+export GOARCH?=$(shell go env GOARCH)
 
 VAULT_ADDR?='http://127.0.0.1:8200'
 
@@ -8,12 +17,19 @@ VAULT_POLICY:="$(shell vault policy write -address=$(VAULT_ADDR) read-psk policy
 TOKEN_INFO:="$(shell vault token create -address=$(VAULT_ADDR) -policy=read-psk -period=50m -display-name=dp-download-service)"
 APP_TOKEN:="$(shell echo $(TOKEN_INFO) | awk '{print $$6}')"
 
-debug:
-	HUMAN_LOG=1 VAULT_TOKEN=$(APP_TOKEN) VAULT_ADDR=$(VAULT_ADDR) go run main.go
+build:
+	@mkdir -p $(BUILD_ARCH)/$(BIN_DIR)
+	go build -o $(BUILD_ARCH)/$(BIN_DIR)/$(MAIN)
+
+debug: build
+	HUMAN_LOG=1 VAULT_TOKEN=$(APP_TOKEN) VAULT_ADDR=$(VAULT_ADDR) go run -race main.go
+
+test:
+	go test -cover $(shell go list ./... | grep -v /vendor/)
 
 vault:
 	@echo "$(VAULT_POLICY)"
 	@echo "$(TOKEN_INFO)"
 	@echo "$(APP_TOKEN)"
 
-.PHONY: vault debug
+.PHONY: vault debug build test
