@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/hex"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path/filepath"
 
@@ -49,9 +49,7 @@ type Download struct {
 func setStatusCode(req *http.Request, w http.ResponseWriter, err error) {
 	status := http.StatusInternalServerError
 	if err, ok := err.(ClientError); ok {
-		if err.Code() == http.StatusNotFound {
-			status = err.Code()
-		}
+		status = err.Code()
 	}
 	log.ErrorR(req, err, log.Data{"setting-response-status": status})
 	w.WriteHeader(status)
@@ -102,7 +100,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 					Key:    &filename,
 				}
 
-				pskStr, err := d.VaultClient.ReadKey("secret/shared/psk", filename)
+				pskStr, err := d.VaultClient.ReadKey(d.VaultPath, filename)
 				if err != nil {
 					setStatusCode(req, w, err)
 					return
@@ -125,13 +123,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 					}
 				}()
 
-				b, err := ioutil.ReadAll(obj.Body)
-				if err != nil {
-					setStatusCode(req, w, err)
-					return
-				}
-
-				if _, err := w.Write(b); err != nil {
+				if _, err := io.Copy(w, obj.Body); err != nil {
 					setStatusCode(req, w, err)
 				}
 
