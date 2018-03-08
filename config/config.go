@@ -10,7 +10,6 @@ import (
 type Config struct {
 	BindAddr                string        `envconfig:"BIND_ADDR"`
 	BucketName              string        `envconfig:"BUCKET_NAME"`
-	EncryptionDisabled      bool          `envconfig:"ENCRYPTION_DISABLED"`
 	DatasetAPIURL           string        `envconfig:"DATASET_API_URL"`
 	DatasetAuthToken        string        `envconfig:"DATASET_AUTH_TOKEN"     json:"-"`
 	GracefulShutdownTimeout time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"`
@@ -30,14 +29,16 @@ func Get() (*Config, error) {
 	}
 
 	cfg = &Config{
-		BindAddr:                ":28000",
-		EncryptionDisabled:      true,
+		BindAddr:                ":23500",
+		BucketName:              "csv-exported",
 		DatasetAPIURL:           "http://localhost:22000",
-		DatasetAuthToken:        "FD0108EA-825D-411C-9B1D-41EF7727F46",
+		DatasetAuthToken:        "FD0108EA-825D-411C-9B1D-41EF7727F465",
 		GracefulShutdownTimeout: 5 * time.Second,
 		HealthCheckInterval:     1 * time.Minute,
-		SecretKey:               "AL0108EA-825D-411C-9B1D-41EF7727F46",
+		SecretKey:               "AL0108EA-825D-411C-9B1D-41EF7727F465",
 		VaultAddress:            "http://localhost:8200",
+		VaultToken:              "",
+		VaultPath:               "secret/shared/psk",
 	}
 
 	return cfg, envconfig.Process("", cfg)
