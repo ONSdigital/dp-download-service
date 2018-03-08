@@ -9,10 +9,10 @@
 			"revisionTime": "2018-03-06T12:31:59Z"
 		},
 		{
-			"checksumSHA1": "usVfh5CVMb5ng0gYeEatM09inh8=",
+			"checksumSHA1": "JwdbIn+II3gOcImLmoEjq0pHvYs=",
 			"path": "github.com/ONSdigital/go-ns/clients/dataset",
-			"revision": "7c3071347e750335c7b91a7e34fea8bbc6023c63",
-			"revisionTime": "2018-03-06T12:31:59Z"
+			"revision": "94c9a4f3cf3ac2a0085ce3d0e6e20ac6159b358e",
+			"revisionTime": "2018-03-07T12:57:59Z"
 		},
 		{
 			"checksumSHA1": "J9OiPnhPHFPhQ+R+dq6LFj+dTxE=",
@@ -21,10 +21,22 @@
 			"revisionTime": "2018-03-06T12:31:59Z"
 		},
 		{
+			"checksumSHA1": "jGCHzB5RgxWA+eb7MciHoYZGwg4=",
+			"path": "github.com/ONSdigital/go-ns/healthcheck",
+			"revision": "94c9a4f3cf3ac2a0085ce3d0e6e20ac6159b358e",
+			"revisionTime": "2018-03-07T12:57:59Z"
+		},
+		{
 			"checksumSHA1": "7DeVPN/PW8oj0H7q/00MqhBkZzo=",
 			"path": "github.com/ONSdigital/go-ns/log",
 			"revision": "7c3071347e750335c7b91a7e34fea8bbc6023c63",
 			"revisionTime": "2018-03-06T12:31:59Z"
+		},
+		{
+			"checksumSHA1": "eqT3lUe+1W+njYJOealHQ+LsXv0=",
+			"path": "github.com/ONSdigital/go-ns/rchttp",
+			"revision": "94c9a4f3cf3ac2a0085ce3d0e6e20ac6159b358e",
+			"revisionTime": "2018-03-07T12:57:59Z"
 		},
 		{
 			"checksumSHA1": "Ohl8JaJRUL+/Y+NTL8y97PZlFfs=",
@@ -39,10 +51,10 @@
 			"revisionTime": "2018-03-06T12:31:59Z"
 		},
 		{
-			"checksumSHA1": "1rWDai4CQFP9hlo36wK44y9K1uQ=",
+			"checksumSHA1": "w1sdmdfk217GHSl8fn4WKV9ZFsY=",
 			"path": "github.com/ONSdigital/go-ns/vault",
-			"revision": "7c3071347e750335c7b91a7e34fea8bbc6023c63",
-			"revisionTime": "2018-03-06T12:31:59Z"
+			"revision": "94c9a4f3cf3ac2a0085ce3d0e6e20ac6159b358e",
+			"revisionTime": "2018-03-07T12:57:59Z"
 		},
 		{
 			"checksumSHA1": "h60UGCr2ndeEOmUym8G74wbPp4Y=",
@@ -426,6 +438,20 @@
 			"path": "github.com/sethgrid/pester",
 			"revision": "7c3071347e750335c7b91a7e34fea8bbc6023c63",
 			"revisionTime": "2018-03-06T12:31:59Z"
+		},
+		{
+			"checksumSHA1": "GtamqiJoL7PGHsN454AoffBFMa8=",
+			"origin": "github.com/ONSdigital/go-ns/vendor/golang.org/x/net/context",
+			"path": "golang.org/x/net/context",
+			"revision": "94c9a4f3cf3ac2a0085ce3d0e6e20ac6159b358e",
+			"revisionTime": "2018-03-07T12:57:59Z"
+		},
+		{
+			"checksumSHA1": "WHc3uByvGaMcnSoI21fhzYgbOgg=",
+			"origin": "github.com/ONSdigital/go-ns/vendor/golang.org/x/net/context/ctxhttp",
+			"path": "golang.org/x/net/context/ctxhttp",
+			"revision": "94c9a4f3cf3ac2a0085ce3d0e6e20ac6159b358e",
+			"revisionTime": "2018-03-07T12:57:59Z"
 		},
 		{
 			"checksumSHA1": "uL4gYOb0zwNKV0/2r/Wt8r3mwvE=",
