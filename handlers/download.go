@@ -41,13 +41,14 @@ type S3Client interface {
 
 // Download represents the configuration for a download handler
 type Download struct {
-	DatasetClient    DatasetClient
-	VaultClient      VaultClient
-	S3Client         S3Client
-	DatasetAuthToken string
-	SecretKey        string
-	BucketName       string
-	VaultPath        string
+	DatasetClient             DatasetClient
+	VaultClient               VaultClient
+	S3Client                  S3Client
+	DatasetAuthToken          string
+	XDownloadServiceAuthToken string
+	SecretKey                 string
+	BucketName                string
+	VaultPath                 string
 }
 
 func setStatusCode(req *http.Request, w http.ResponseWriter, err error) {
@@ -82,8 +83,9 @@ func (d Download) Do(extension string) http.HandlerFunc {
 		})
 
 		reqConfig := dataset.Config{
-			InternalToken: d.DatasetAuthToken,
-			Ctx:           req.Context(),
+			InternalToken:         d.DatasetAuthToken,
+			XDownloadServiceToken: d.XDownloadServiceAuthToken,
+			Ctx: req.Context(),
 		}
 
 		v, err := d.DatasetClient.GetVersion(datasetID, edition, version, reqConfig)

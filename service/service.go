@@ -42,17 +42,18 @@ type VaultClient interface {
 }
 
 // Create should be called to create a new instance of the download service, with routes correctly initialised
-func Create(bindAddr, secretKey, datasetAuthToken, vaultPath, bucketName string, dc DatasetClient, s3sess *session.Session, vc VaultClient, shutdown, healthcheckInterval time.Duration) Download {
+func Create(bindAddr, secretKey, datasetAuthToken, xDownloadServiceAuthToken, vaultPath, bucketName string, dc DatasetClient, s3sess *session.Session, vc VaultClient, shutdown, healthcheckInterval time.Duration) Download {
 	router := mux.NewRouter()
 
 	d := handlers.Download{
-		DatasetClient:    dc,
-		VaultClient:      vc,
-		S3Client:         s3crypto.New(s3sess, &s3crypto.Config{HasUserDefinedPSK: true}),
-		DatasetAuthToken: datasetAuthToken,
-		SecretKey:        secretKey,
-		BucketName:       bucketName,
-		VaultPath:        vaultPath,
+		DatasetClient:             dc,
+		VaultClient:               vc,
+		S3Client:                  s3crypto.New(s3sess, &s3crypto.Config{HasUserDefinedPSK: true}),
+		DatasetAuthToken:          datasetAuthToken,
+		XDownloadServiceAuthToken: xDownloadServiceAuthToken,
+		SecretKey:                 secretKey,
+		BucketName:                bucketName,
+		VaultPath:                 vaultPath,
 	}
 
 	router.Path("/healthcheck").Methods("GET").HandlerFunc(healthcheck.Do)
