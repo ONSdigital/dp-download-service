@@ -1,53 +1,43 @@
-# dp-download-service (proof of concept)
+# dp-download-service
 
-## How to test the POC
+An ONS service used to either redirect requests to public-accessible links or stream decrypt non public-accessible links
 
-(Disclaimer: You will need a fully runnable local environment)
+### Installation
 
-- Ensure you have vault started locally:
+#### Vault
 
-`brew install vault`
-`vault server -dev`
+- Run `brew install vault`
+- Run `vault server -dev`
 
-- Run the dataset api on branch poc/download-service
-- Create and upload an encrypted file to s3:
+### Healthcheck
 
-`cd scripts`
-`make debug`
-`cd ..`
+The endpoint `/healthcheck` checks the health of vault and the dataset api and returns one of:
 
-- Run the dp-download-service poc:
+- success (200, JSON "status": "OK")
+- failure (500, JSON "status": "error").
 
- `make debug`
+### Configuration
 
-- Ensure you have a `published` version available and set the following in mongodb for your version:
+| Environment variable       | Default                              | Description
+| -------------------------- | -------------------------------------| -----------
+| BIND_ADDR                  | :23600                               | The host and port to bind to
+| BUCKET_NAME                | "csv-exported"                       | The s3 bucket to decrypt files from
+| DATASET_API_URL            | http://localhost:22000               | The dataset api url
+| DOWNLOAD_SERVICE_TOKEN     | QB0108EZ-825D-412C-9B1D-41EF7747F462 | The token to request public/private links from dataset api
+| SECRET_KEY                 | AL0108EA-825D-411C-9B1D-41EF7727F465 | A secret key used authentication
+| DATASET_AUTH_TOKEN         | FD0108EA-825D-411C-9B1D-41EF7727F465 | The host name for the CodeList API
+| GRACEFUL_SHUTDOWN_TIMEOUT  | 5s                                   | The graceful shutdown timeout in seconds
+| HEALTHCHECK_TIMEOUT        | 60s                                  | The timeout that the healthcheck allows for checked subsystems
+| VAULT_ADDR                 | http://localhost:8200                | The vault address
+| VAULT_TOKEN                | -                                    | Vault token required for the client to talk to vault. (Use `make debug` to create a vault token)
+| VAULT_PATH                 | secret/shared/psk                    | The path where the psks will be stored in for vault
 
-```json
- "csv" : {
-            "url" : "http://localhost:28000/downloads/datasets/931a8a2a-0dc8-42b6-a884-7b6054ed3b68/editions/time-series/versions/1.csv",
-            "size" : "2439056",
-            "public" : "https://csv-exported.s3.eu-west-1.amazonaws.com/0489f298-5324-4db7-9efc-6cc0beb4e7cf.csv"
-        }
-```
+### Contributing
 
-- Verify that when you request the csv download from the download service, then you are redirected to the public link. You can test this through curl and would expect a 302 status code with a location header to the public csv:
+See [CONTRIBUTING](CONTRIBUTING.md) for details.
 
-`curl -v localhost:28000/downloads/datasets/931a8a2a-0dc8-42b6-a884-7b6054ed3b68/editions/time-series/versions/1.csv`
+### License
 
-- To test the private link, replace your previous mongodb csv download field with this:
+Copyright © 2016-2018, Office for National Statistics (https://www.ons.gov.uk)
 
-```json
- "csv" : {
-            "url" : "http://localhost:28000/downloads/datasets/931a8a2a-0dc8-42b6-a884-7b6054ed3b68/editions/time-series/versions/1.csv",
-            "size" : "2439056",
-            "private" : "2470609-cpicoicoptestcsv"
-        }
-```
-
-- This time, instead of being redirected to a public url, you should see that the file is decrypted and streamed back in the http response body:
-
-`curl -v localhost:28000/downloads/datasets/931a8a2a-0dc8-42b6-a884-7b6054ed3b68/editions/time-series/versions/1.csv > version.csv`
-
-- Finally, change the state of your version in mongo to `associated`. Now when you attempt the above request, you should be returned a `Not found` http status, however when you authenticate your request, you should once again be able to download the file:
-
-`curl -v localhost:28000/downloads/datasets/931a8a2a-0dc8-42b6-a884-7b6054ed3b68/editions/time-series/versions/2.csv -H 'Internal-Token: AL0108EA-825D-411C-9B1D-41EF7727F46' > version.csv`
+Released under MIT license, see [LICENSE](LICENSE.md) for details
