@@ -24,6 +24,9 @@ build:
 debug: build
 	HUMAN_LOG=1 VAULT_TOKEN=$(APP_TOKEN) VAULT_ADDR=$(VAULT_ADDR) go run -race main.go
 
+acceptance:
+	HUMAN_LOG=1 VAULT_TOKEN=$(APP_TOKEN) VAULT_ADDR=$(VAULT_ADDR) go run main.go
+
 test:
 	go test -cover $(shell go list ./... | grep -v /vendor/)
 
