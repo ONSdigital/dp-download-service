@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	internalToken         = "internal-token"
+	internalToken         = "X-Download-Service-Token"
 	notFoundMessage       = "resource not found"
 	internalServerMessage = "internal server error"
 )

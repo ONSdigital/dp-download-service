@@ -14,7 +14,7 @@ VAULT_ADDR?='http://127.0.0.1:8200'
 # its difficult to move the token code in a Makefile action. Doing so makes the Makefile more difficult to
 # read and starts introduction if/else statements.
 VAULT_POLICY:="$(shell vault policy write -address=$(VAULT_ADDR) read-psk policy.hcl)"
-TOKEN_INFO:="$(shell vault token create -address=$(VAULT_ADDR) -policy=read-psk -period=50m -display-name=dp-download-service)"
+TOKEN_INFO:="$(shell vault token create -address=$(VAULT_ADDR) -policy=read-psk -period=24h -display-name=dp-download-service)"
 APP_TOKEN:="$(shell echo $(TOKEN_INFO) | awk '{print $$6}')"
 
 build:

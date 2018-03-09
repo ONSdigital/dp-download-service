@@ -37,7 +37,7 @@ func main() {
 	svc := service.Create(
 		cfg.BindAddr,
 		cfg.SecretKey,
-		cfg.DatasetAuthToken,
+		cfg.XDownloadServiceToken,
 		cfg.VaultPath,
 		cfg.BucketName,
 		dc,
