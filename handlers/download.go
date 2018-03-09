@@ -12,7 +12,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const internalToken = "internal-token"
+const (
+	internalToken         = "internal-token"
+	notFoundMessage       = "resource not found"
+	internalServerMessage = "internal server error"
+)
 
 // ClientError implements error interface with additional code method
 type ClientError interface {
@@ -48,11 +52,15 @@ type Download struct {
 
 func setStatusCode(req *http.Request, w http.ResponseWriter, err error) {
 	status := http.StatusInternalServerError
+	message := internalServerMessage
 	if err, ok := err.(ClientError); ok {
 		status = err.Code()
 	}
 	log.ErrorR(req, err, log.Data{"setting-response-status": status})
-	w.WriteHeader(status)
+	if status == http.StatusNotFound {
+		message = notFoundMessage
+	}
+	http.Error(w, message, status)
 }
 
 // Do handles the retrieval of a requested file, by first calling the datasetID to see if
@@ -85,7 +93,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 		}
 
 		if len(v.Downloads[extension].Public) > 0 && v.State == "published" {
-			http.Redirect(w, req, v.Downloads[extension].Public, http.StatusPermanentRedirect)
+			http.Redirect(w, req, v.Downloads[extension].Public, http.StatusMovedPermanently)
 			return
 		}
 
@@ -131,7 +139,6 @@ func (d Download) Do(extension string) http.HandlerFunc {
 			}
 		}
 
-		w.WriteHeader(http.StatusNotFound)
-
+		http.Error(w, notFoundMessage, http.StatusNotFound)
 	}
 }

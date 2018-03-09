@@ -92,7 +92,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
 		r.ServeHTTP(w, req)
 
-		So(w.Code, ShouldEqual, http.StatusPermanentRedirect)
+		So(w.Code, ShouldEqual, http.StatusMovedPermanently)
 		So(w.Header().Get("Location"), ShouldEqual, testPublicDownload)
 	})
 }
@@ -201,13 +201,13 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	Convey("Given the dataset client returns a status bad request then the download client returns this status back to the caller", t, func() {
+	Convey("Given the dataset client returns a status not found then the download client returns this status back to the caller", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
 		dc := mocks.NewMockDatasetClient(mockCtrl)
-		err := testClientError{http.StatusBadRequest}
+		err := testClientError{http.StatusNotFound}
 		dc.EXPECT().GetVersion("12345", "6789", "1", gomock.Any()).Return(dataset.Version{}, err)
 		d := Download{
 			DatasetClient: dc,
@@ -216,7 +216,8 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
 		r.ServeHTTP(w, req)
 
-		So(w.Code, ShouldEqual, http.StatusBadRequest)
+		So(w.Code, ShouldEqual, http.StatusNotFound)
+		So(w.Body.String(), ShouldEqual, notFoundMessage+"\n")
 	})
 
 	Convey("Given the vault client returns an error then the download status returns an internal server error", t, func() {
