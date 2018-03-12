@@ -1,0 +1,16 @@
+---
+
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: golang
+    tag: 1.10.0
+
+inputs:
+  - name: dp-download-service
+    path: go/src/github.com/ONSdigital/dp-download-service
+
+run:
+  path: go/src/github.com/ONSdigital/dp-download-service/ci/scripts/unit.sh
