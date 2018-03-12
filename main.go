@@ -38,7 +38,7 @@ func main() {
 		cfg.BindAddr,
 		cfg.SecretKey,
 		cfg.DatasetAuthToken,
-		cfg.XDownloadServiceToken,
+		cfg.DownloadServiceToken,
 		cfg.VaultPath,
 		cfg.BucketName,
 		dc,

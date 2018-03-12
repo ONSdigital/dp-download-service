@@ -89,7 +89,7 @@ responses:
   InternalError:
     description: "Failed to process the request due to an internal error."
   NotFoundError:
-    description: "Dimension or option not found."
+    description: "The download for the requested version was not found."
   RequestRedirect:
     description: "A permanent redirect to where the file is hosted on S3"
   StreamedResponse:
