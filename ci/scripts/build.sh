@@ -5,5 +5,5 @@ cwd=$(pwd)
 export GOPATH=$cwd/go
 
 pushd $GOPATH/src/github.com/ONSdigital/dp-download-service
-  make build && cp build/dp-download-service $cwd/build
+  make build && mv build/$(go env GOOS)-$(go env GOARCH)/* $cwd/build
 popd
