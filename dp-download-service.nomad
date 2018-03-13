@@ -56,7 +56,7 @@ job "dp-download-service" {
       }
 
       vault {
-        policies = ["dp-download-service", "read-psk"]
+        policies = ["dp-download-service"]
 
         change_mode   = "signal"
         change_signal = "SIGUSR1"
