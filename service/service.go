@@ -42,7 +42,7 @@ type VaultClient interface {
 }
 
 // Create should be called to create a new instance of the download service, with routes correctly initialised
-func Create(bindAddr, secretKey, datasetAuthToken, xDownloadServiceAuthToken, vaultPath, bucketName string, dc DatasetClient, s3sess *session.Session, vc VaultClient, shutdown, healthcheckInterval time.Duration) Download {
+func Create(bindAddr, secretKey, datasetAuthToken, xDownloadServiceAuthToken, vaultPath, bucketName, serviceToken string, dc DatasetClient, s3sess *session.Session, vc VaultClient, shutdown, healthcheckInterval time.Duration) Download {
 	router := mux.NewRouter()
 
 	d := handlers.Download{
@@ -53,6 +53,7 @@ func Create(bindAddr, secretKey, datasetAuthToken, xDownloadServiceAuthToken, va
 		XDownloadServiceAuthToken: xDownloadServiceAuthToken,
 		SecretKey:                 secretKey,
 		BucketName:                bucketName,
+		ServiceToken:              serviceToken,
 		VaultPath:                 vaultPath,
 	}
 
