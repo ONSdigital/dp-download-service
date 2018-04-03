@@ -14,6 +14,7 @@ import (
 
 const (
 	internalToken         = "internal-token"
+	serviceToken          = "authorization"
 	notFoundMessage       = "resource not found"
 	internalServerMessage = "internal server error"
 )
@@ -44,6 +45,7 @@ type Download struct {
 	DatasetClient             DatasetClient
 	VaultClient               VaultClient
 	S3Client                  S3Client
+	ServiceToken              string
 	DatasetAuthToken          string
 	XDownloadServiceAuthToken string
 	SecretKey                 string
@@ -84,6 +86,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 
 		reqConfig := dataset.Config{
 			InternalToken:         d.DatasetAuthToken,
+			AuthToken:             d.ServiceToken,
 			XDownloadServiceToken: d.XDownloadServiceAuthToken,
 			Ctx: req.Context(),
 		}
@@ -100,7 +103,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 		}
 
 		if len(v.Downloads[extension].Private) > 0 {
-			if v.State == "published" || req.Header.Get(internalToken) == d.SecretKey {
+			if v.State == "published" || req.Header.Get(internalToken) == d.SecretKey || req.Header.Get(serviceToken) == d.ServiceToken {
 
 				privateFile := v.Downloads[extension].Private
 				filename := filepath.Base(privateFile)

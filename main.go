@@ -41,6 +41,7 @@ func main() {
 		cfg.DownloadServiceToken,
 		cfg.VaultPath,
 		cfg.BucketName,
+		cfg.ServiceAuthToken,
 		dc,
 		sess,
 		vc,
