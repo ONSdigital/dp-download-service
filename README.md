@@ -31,7 +31,7 @@ The endpoint `/healthcheck` checks the health of vault and the dataset api and r
 | VAULT_ADDR                 | http://localhost:8200                       | The vault address
 | VAULT_TOKEN                | -                                           | Vault token required for the client to talk to vault. (Use `make debug` to create a vault token)
 | VAULT_PATH                 | secret/shared/psk                           | The path where the psks will be stored in for vault
-| SERVICE_AUTH_TOKEN         | bearer c60198e9-1864-4b68-ad0b-1e858e5b46a4 | The service auth token for the download service
+| SERVICE_AUTH_TOKEN         | c60198e9-1864-4b68-ad0b-1e858e5b46a4 | The service auth token for the download service
 | ZEBEDEE_URL                | http://localhost:8082                       | The URL for zebedee
 
 ### Contributing

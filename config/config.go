@@ -43,9 +43,11 @@ func Get() (*Config, error) {
 		VaultAddress:            "http://localhost:8200",
 		VaultToken:              "",
 		VaultPath:               "secret/shared/psk",
-		ServiceAuthToken:        "bearer c60198e9-1864-4b68-ad0b-1e858e5b46a4",
+		ServiceAuthToken:        "c60198e9-1864-4b68-ad0b-1e858e5b46a4",
 		ZebedeeURL:              "http://localhost:8082",
 	}
+
+	cfg.ServiceAuthToken = "Bearer " + cfg.ServiceAuthToken
 
 	return cfg, envconfig.Process("", cfg)
 }
