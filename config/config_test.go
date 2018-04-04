@@ -28,7 +28,7 @@ func TestSpec(t *testing.T) {
 				So(cfg.SecretKey, ShouldEqual, "AL0108EA-825D-411C-9B1D-41EF7727F465")
 				So(cfg.VaultToken, ShouldEqual, "")
 				So(cfg.VaultPath, ShouldEqual, "secret/shared/psk")
-				So(cfg.ServiceAuthToken, ShouldEqual, "c60198e9-1864-4b68-ad0b-1e858e5b46a4")
+				So(cfg.ServiceAuthToken, ShouldEqual, "bearer c60198e9-1864-4b68-ad0b-1e858e5b46a4")
 				So(cfg.ZebedeeURL, ShouldEqual, "http://localhost:8082")
 			})
 		})
