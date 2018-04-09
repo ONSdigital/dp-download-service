@@ -56,7 +56,7 @@ job "dp-download-service" {
       }
 
       vault {
-        policies = ["dp-download-service"]
+        policies = ["dp-download-service-web"]
 
         change_mode   = "signal"
         change_signal = "SIGUSR1"
@@ -117,7 +117,7 @@ job "dp-download-service" {
       }
 
       vault {
-        policies = ["dp-download-service", "read-psk"]
+        policies = ["dp-download-service-publishing"]
 
         change_mode   = "signal"
         change_signal = "SIGUSR1"
