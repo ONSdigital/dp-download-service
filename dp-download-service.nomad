@@ -11,7 +11,7 @@ job "dp-download-service" {
       value     = "web"
     }
 
-    task "dp-download-service" {
+    task "dp-download-service-web" {
       driver = "exec"
 
       artifact {
@@ -30,7 +30,7 @@ job "dp-download-service" {
       }
 
       service {
-        name = "dp-download-service"
+        name = "dp-download-service-web"
         port = "http"
         tags = ["web"]
         check {
@@ -72,7 +72,7 @@ job "dp-download-service" {
       value     = "publishing"
     }
 
-    task "dp-download-service" {
+    task "dp-download-service-publishing" {
       driver = "exec"
 
       artifact {
@@ -91,7 +91,7 @@ job "dp-download-service" {
       }
 
       service {
-        name = "dp-download-service"
+        name = "dp-download-service-publishing"
         port = "http"
         tags = ["publishing"]
         check {
