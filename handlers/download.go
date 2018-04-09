@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/ONSdigital/go-ns/clients/dataset"
+	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gorilla/mux"
@@ -51,15 +52,17 @@ type Download struct {
 	SecretKey                 string
 	BucketName                string
 	VaultPath                 string
+	IsPublishing              bool
 }
 
-func setStatusCode(req *http.Request, w http.ResponseWriter, err error) {
+func setStatusCode(req *http.Request, w http.ResponseWriter, err error, logData log.Data) {
 	status := http.StatusInternalServerError
 	message := internalServerMessage
 	if err, ok := err.(ClientError); ok {
 		status = err.Code()
 	}
-	log.ErrorR(req, err, log.Data{"setting-response-status": status})
+	logData["setting-response-status"] = status
+	log.ErrorR(req, err, logData)
 	if status == http.StatusNotFound {
 		message = notFoundMessage
 	}
@@ -77,12 +80,16 @@ func (d Download) Do(extension string) http.HandlerFunc {
 		edition := vars["edition"]
 		version := vars["version"]
 
-		log.InfoR(req, "attempting to get download", log.Data{
+		logData := log.Data{
 			"dataset_id": datasetID,
 			"edition":    edition,
 			"version":    version,
 			"type":       extension,
-		})
+		}
+
+		log.InfoR(req, "attempting to get download", logData)
+
+		authorised, logData := d.authenticate(req, logData)
 
 		reqConfig := dataset.Config{
 			InternalToken:         d.DatasetAuthToken,
@@ -93,7 +100,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 
 		v, err := d.DatasetClient.GetVersion(datasetID, edition, version, reqConfig)
 		if err != nil {
-			setStatusCode(req, w, err)
+			setStatusCode(req, w, err, logData)
 			return
 		}
 
@@ -103,7 +110,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 		}
 
 		if len(v.Downloads[extension].Private) > 0 {
-			if v.State == "published" || req.Header.Get(internalToken) == d.SecretKey || req.Header.Get(serviceToken) == d.ServiceToken {
+			if v.State == "published" || authorised {
 
 				privateFile := v.Downloads[extension].Private
 				filename := filepath.Base(privateFile)
@@ -115,18 +122,18 @@ func (d Download) Do(extension string) http.HandlerFunc {
 
 				pskStr, err := d.VaultClient.ReadKey(d.VaultPath, filename)
 				if err != nil {
-					setStatusCode(req, w, err)
+					setStatusCode(req, w, err, logData)
 					return
 				}
 				psk, err := hex.DecodeString(pskStr)
 				if err != nil {
-					setStatusCode(req, w, err)
+					setStatusCode(req, w, err, logData)
 					return
 				}
 
 				obj, err := d.S3Client.GetObjectWithPSK(input, psk)
 				if err != nil {
-					setStatusCode(req, w, err)
+					setStatusCode(req, w, err, logData)
 					return
 				}
 
@@ -137,7 +144,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 				}()
 
 				if _, err := io.Copy(w, obj.Body); err != nil {
-					setStatusCode(req, w, err)
+					setStatusCode(req, w, err, logData)
 				}
 
 				return
@@ -146,4 +153,33 @@ func (d Download) Do(extension string) http.HandlerFunc {
 
 		http.Error(w, notFoundMessage, http.StatusNotFound)
 	}
+}
+
+func (d Download) authenticate(r *http.Request, logData map[string]interface{}) (bool, map[string]interface{}) {
+	var authorised bool
+
+	if d.IsPublishing {
+		var hasCallerIdentity, hasUserIdentity bool
+
+		callerIdentity := identity.Caller(r.Context())
+		if callerIdentity != "" {
+			logData["caller_identity"] = callerIdentity
+			hasCallerIdentity = true
+		}
+
+		userIdentity := identity.User(r.Context())
+		if userIdentity != "" {
+			logData["user_identity"] = userIdentity
+			hasUserIdentity = true
+		}
+
+		if hasCallerIdentity || hasUserIdentity {
+			authorised = true
+		}
+		logData["authenticated"] = authorised
+
+		return authorised, logData
+	}
+
+	return authorised, logData
 }

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -8,13 +9,19 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ONSdigital/go-ns/identity"
+	"github.com/justinas/alice"
+
 	"github.com/ONSdigital/dp-download-service/handlers/mocks"
 	"github.com/ONSdigital/go-ns/clients/dataset"
+	"github.com/ONSdigital/go-ns/identity/identitytest"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+type testContextKey string
 
 const (
 	testPublicDownload  = "http://test-public-download.com"
@@ -25,6 +32,8 @@ const (
 	testVaultPath       = "/secrets/tests/psk"
 	testCsvContent      = "1,2,3,4"
 	testSecretKey       = "shhh it's a secret"
+	florenceTokenHeader = "X-Florence-Token"
+	testUserContext     = testContextKey("User-Identity")
 )
 
 var (
@@ -184,12 +193,24 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			BucketName:    testBucket,
 			VaultPath:     testVaultPath,
 			SecretKey:     testSecretKey,
+			IsPublishing:  true,
 		}
 
-		req.Header.Set(internalToken, testSecretKey)
+		httpClient := &identitytest.HTTPClientMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(strings.NewReader(`{"identifier": "me"}`)),
+				}, nil
+			},
+		}
+
+		chain := alice.New(identity.HandlerForHTTPClient(true, httpClient, "")).Then(r)
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
-		r.ServeHTTP(w, req)
+		req.Header.Set(florenceTokenHeader, "Florence")
+
+		chain.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusOK)
 		So(w.Body.String(), ShouldEqual, testCsvContent)

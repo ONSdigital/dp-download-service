@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/justinas/alice"
 
 	"github.com/ONSdigital/dp-download-service/handlers"
 	"github.com/ONSdigital/go-ns/clients/dataset"
 	"github.com/ONSdigital/go-ns/healthcheck"
+	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/s3crypto"
@@ -42,7 +44,7 @@ type VaultClient interface {
 }
 
 // Create should be called to create a new instance of the download service, with routes correctly initialised
-func Create(bindAddr, secretKey, datasetAuthToken, xDownloadServiceAuthToken, vaultPath, bucketName, serviceToken string, dc DatasetClient, s3sess *session.Session, vc VaultClient, shutdown, healthcheckInterval time.Duration) Download {
+func Create(bindAddr, secretKey, datasetAuthToken, xDownloadServiceAuthToken, vaultPath, bucketName, serviceToken, zebedeeURL string, dc DatasetClient, s3sess *session.Session, vc VaultClient, shutdown, healthcheckInterval time.Duration, isPublishing bool) Download {
 	router := mux.NewRouter()
 
 	d := handlers.Download{
@@ -55,16 +57,19 @@ func Create(bindAddr, secretKey, datasetAuthToken, xDownloadServiceAuthToken, va
 		BucketName:                bucketName,
 		ServiceToken:              serviceToken,
 		VaultPath:                 vaultPath,
+		IsPublishing:              isPublishing,
 	}
 
 	router.Path("/healthcheck").Methods("GET").HandlerFunc(healthcheck.Do)
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv"))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.Do("xls"))
 
+	chain := alice.New(identity.Handler(true, zebedeeURL)).Then(router)
+
 	return Download{
 		datasetClient:       dc,
 		router:              router,
-		server:              server.New(bindAddr, router),
+		server:              server.New(bindAddr, chain),
 		shutdown:            shutdown,
 		healthcheckInterval: healthcheckInterval,
 		errChan:             make(chan error, 1),

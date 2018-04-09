@@ -21,6 +21,7 @@ type Config struct {
 	VaultPath               string        `envconfig:"VAULT_PATH"`
 	ServiceAuthToken        string        `envconfig:"SERVICE_AUTH_TOKEN"         json:"-"`
 	ZebedeeURL              string        `envconfig:"ZEBEDEE_URL"`
+	IsPublishing            bool          `envconfig:"IS_PUBLISHING"`
 }
 
 var cfg *Config
@@ -45,6 +46,7 @@ func Get() (*Config, error) {
 		VaultPath:               "secret/shared/psk",
 		ServiceAuthToken:        "c60198e9-1864-4b68-ad0b-1e858e5b46a4",
 		ZebedeeURL:              "http://localhost:8082",
+		IsPublishing:            false,
 	}
 
 	if err := envconfig.Process("", cfg); err != nil {

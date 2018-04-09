@@ -42,11 +42,13 @@ func main() {
 		cfg.VaultPath,
 		cfg.BucketName,
 		cfg.ServiceAuthToken,
+		cfg.ZebedeeURL,
 		dc,
 		sess,
 		vc,
 		cfg.GracefulShutdownTimeout,
 		cfg.HealthCheckInterval,
+		cfg.IsPublishing,
 	)
 
 	svc.Start()
