@@ -159,27 +159,9 @@ func (d Download) authenticate(r *http.Request, logData map[string]interface{}) 
 	var authorised bool
 
 	if d.IsPublishing {
-		var hasCallerIdentity, hasUserIdentity bool
-
-		callerIdentity := identity.Caller(r.Context())
-		if callerIdentity != "" {
-			logData["caller_identity"] = callerIdentity
-			hasCallerIdentity = true
-		}
-
-		userIdentity := identity.User(r.Context())
-		if userIdentity != "" {
-			logData["user_identity"] = userIdentity
-			hasUserIdentity = true
-		}
-
-		if hasCallerIdentity || hasUserIdentity {
-			authorised = true
-		}
-		logData["authenticated"] = authorised
-
-		return authorised, logData
+		authorised = identity.IsPresent(r.Context())
 	}
 
+	logData["authenticated"] = authorised
 	return authorised, logData
 }
