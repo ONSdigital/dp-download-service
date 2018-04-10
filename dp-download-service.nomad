@@ -30,7 +30,7 @@ job "dp-download-service" {
       }
 
       service {
-        name = "dp-download-service-web"
+        name = "dp-download-service"
         port = "http"
         tags = ["web"]
         check {
@@ -91,7 +91,7 @@ job "dp-download-service" {
       }
 
       service {
-        name = "dp-download-service-publishing"
+        name = "dp-download-service"
         port = "http"
         tags = ["publishing"]
         check {
