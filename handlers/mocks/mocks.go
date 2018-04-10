@@ -5,9 +5,11 @@
 package mocks
 
 import (
+	"context"
 	reflect "reflect"
 
 	dataset "github.com/ONSdigital/go-ns/clients/dataset"
+	filter "github.com/ONSdigital/go-ns/clients/filter"
 	s3 "github.com/aws/aws-sdk-go/service/s3"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -123,4 +125,40 @@ func (m *MockS3Client) GetObjectWithPSK(arg0 *s3.GetObjectInput, arg1 []byte) (*
 // GetObjectWithPSK indicates an expected call of GetObjectWithPSK
 func (mr *MockS3ClientMockRecorder) GetObjectWithPSK(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectWithPSK", reflect.TypeOf((*MockS3Client)(nil).GetObjectWithPSK), arg0, arg1)
+}
+
+// MockFilterClient is a mock of FilterClient interface
+type MockFilterClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockFilterClientMockRecorder
+}
+
+// MockFilterClientMockRecorder is the mock recorder for MockFilterClient
+type MockFilterClientMockRecorder struct {
+	mock *MockFilterClient
+}
+
+// NewMockFilterClient creates a new mock instance
+func NewMockFilterClient(ctrl *gomock.Controller) *MockFilterClient {
+	mock := &MockFilterClient{ctrl: ctrl}
+	mock.recorder = &MockFilterClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockFilterClient) EXPECT() *MockFilterClientMockRecorder {
+	return m.recorder
+}
+
+// GetOutput mocks base method
+func (m *MockFilterClient) GetOutput(arg0 context.Context, arg1 string) (filter.Model, error) {
+	ret := m.ctrl.Call(m, "GetOutput", arg0, arg1)
+	ret0, _ := ret[0].(filter.Model)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOutput indicates an expected call of GetOutput
+func (mr *MockFilterClientMockRecorder) GetOutput(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOutput", reflect.TypeOf((*MockFilterClient)(nil).GetOutput), arg0, arg1)
 }

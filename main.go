@@ -10,6 +10,7 @@ import (
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/go-ns/clients/dataset"
+	"github.com/ONSdigital/go-ns/clients/filter"
 	"github.com/ONSdigital/go-ns/log"
 )
 
@@ -31,6 +32,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	fc := filter.New(cfg.FilterAPIURL)
+
 	region := "eu-west-1"
 	sess := session.New(&aws.Config{Region: &region})
 
@@ -44,6 +47,7 @@ func main() {
 		cfg.ServiceAuthToken,
 		cfg.ZebedeeURL,
 		dc,
+		fc,
 		sess,
 		vc,
 		cfg.GracefulShutdownTimeout,

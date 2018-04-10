@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"encoding/hex"
 	"io"
 	"net/http"
 	"path/filepath"
 
 	"github.com/ONSdigital/go-ns/clients/dataset"
+	"github.com/ONSdigital/go-ns/clients/filter"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -31,6 +33,11 @@ type DatasetClient interface {
 	GetVersion(id, edition, version string, cfg ...dataset.Config) (m dataset.Version, err error)
 }
 
+// FilterClient is an interface to represent methods called to action on the filter api
+type FilterClient interface {
+	GetOutput(ctx context.Context, filterOutputID string) (m filter.Model, err error)
+}
+
 // VaultClient is an interface to represent methods called to action upon vault
 type VaultClient interface {
 	ReadKey(path, key string) (string, error)
@@ -41,10 +48,20 @@ type S3Client interface {
 	GetObjectWithPSK(*s3.GetObjectInput, []byte) (*s3.GetObjectOutput, error)
 }
 
+type download struct {
+	URL     string `json:"url"`
+	Size    string `json:"size"`
+	Public  string `json:"public"`
+	Private string `json:"private"`
+}
+
+type downloads map[string]download
+
 // Download represents the configuration for a download handler
 type Download struct {
 	DatasetClient             DatasetClient
 	VaultClient               VaultClient
+	FilterClient              FilterClient
 	S3Client                  S3Client
 	ServiceToken              string
 	DatasetAuthToken          string
@@ -79,40 +96,71 @@ func (d Download) Do(extension string) http.HandlerFunc {
 		datasetID := vars["datasetID"]
 		edition := vars["edition"]
 		version := vars["version"]
+		filterOutputID := vars["filterOutputID"]
 
-		logData := log.Data{
-			"dataset_id": datasetID,
-			"edition":    edition,
-			"version":    version,
-			"type":       extension,
+		logData := log.Data{}
+		published := false
+		downloads := make(map[string]download)
+
+		if len(filterOutputID) > 0 {
+			logData = log.Data{
+				"filter_output_id": filterOutputID,
+				"type":             extension,
+			}
+
+			fo, err := d.FilterClient.GetOutput(req.Context(), filterOutputID)
+			if err != nil {
+				setStatusCode(req, w, err, logData)
+				return
+			}
+
+			published = fo.IsPublished
+
+			for k, v := range fo.Downloads {
+				downloads[k] = download(v)
+			}
+
+		} else {
+			logData = log.Data{
+				"dataset_id": datasetID,
+				"edition":    edition,
+				"version":    version,
+				"type":       extension,
+			}
+
+			reqConfig := dataset.Config{
+				InternalToken:         d.DatasetAuthToken,
+				AuthToken:             d.ServiceToken,
+				XDownloadServiceToken: d.XDownloadServiceAuthToken,
+				Ctx: req.Context(),
+			}
+
+			v, err := d.DatasetClient.GetVersion(datasetID, edition, version, reqConfig)
+			if err != nil {
+				setStatusCode(req, w, err, logData)
+				return
+			}
+
+			published = v.State == "published"
+
+			for k, v := range v.Downloads {
+				downloads[k] = download(v)
+			}
 		}
 
 		log.InfoR(req, "attempting to get download", logData)
 
 		authorised, logData := d.authenticate(req, logData)
 
-		reqConfig := dataset.Config{
-			InternalToken:         d.DatasetAuthToken,
-			AuthToken:             d.ServiceToken,
-			XDownloadServiceToken: d.XDownloadServiceAuthToken,
-			Ctx: req.Context(),
-		}
-
-		v, err := d.DatasetClient.GetVersion(datasetID, edition, version, reqConfig)
-		if err != nil {
-			setStatusCode(req, w, err, logData)
+		if len(downloads[extension].Public) > 0 && published {
+			http.Redirect(w, req, downloads[extension].Public, http.StatusMovedPermanently)
 			return
 		}
 
-		if len(v.Downloads[extension].Public) > 0 && v.State == "published" {
-			http.Redirect(w, req, v.Downloads[extension].Public, http.StatusMovedPermanently)
-			return
-		}
+		if len(downloads[extension].Private) > 0 {
+			if published || authorised {
 
-		if len(v.Downloads[extension].Private) > 0 {
-			if v.State == "published" || authorised {
-
-				privateFile := v.Downloads[extension].Private
+				privateFile := downloads[extension].Private
 				filename := filepath.Base(privateFile)
 
 				input := &s3.GetObjectInput{

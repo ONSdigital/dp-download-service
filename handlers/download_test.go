@@ -14,6 +14,7 @@ import (
 
 	"github.com/ONSdigital/dp-download-service/handlers/mocks"
 	"github.com/ONSdigital/go-ns/clients/dataset"
+	"github.com/ONSdigital/go-ns/clients/filter"
 	"github.com/ONSdigital/go-ns/identity/identitytest"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/golang/mock/gomock"
@@ -78,6 +79,32 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 	t.Parallel()
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+
+	Convey("Given a public link to the download exists on the filter api then return a status 301 to the download", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/filter-outputs/abcdefg.csv", nil)
+		w := httptest.NewRecorder()
+		r := mux.NewRouter()
+
+		fc := mocks.NewMockFilterClient(mockCtrl)
+		fo := filter.Model{
+			Downloads: map[string]filter.Download{
+				"csv": {
+					Public: testPublicDownload,
+				},
+			},
+			IsPublished: true,
+		}
+		fc.EXPECT().GetOutput(gomock.Any(), "abcdefg").Return(fo, nil)
+		d := Download{
+			FilterClient: fc,
+		}
+
+		r.HandleFunc("/downloads/filter-outputs/{filterOutputID}.csv", d.Do("csv"))
+		r.ServeHTTP(w, req)
+
+		So(w.Code, ShouldEqual, http.StatusMovedPermanently)
+		So(w.Header().Get("Location"), ShouldEqual, testPublicDownload)
+	})
 
 	Convey("Given a public link to the download exists on the dataset api then return a status 301 to the download", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
@@ -239,6 +266,25 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
 		So(w.Body.String(), ShouldEqual, notFoundMessage+"\n")
+	})
+
+	Convey("Given the filter client returns an error then the download client returns this back to the caller", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/filter-outputs/abcdefg.csv", nil)
+		w := httptest.NewRecorder()
+		r := mux.NewRouter()
+
+		fc := mocks.NewMockFilterClient(mockCtrl)
+		testErr := errors.New("filter client error")
+		fc.EXPECT().GetOutput(gomock.Any(), "abcdefg").Return(filter.Model{}, testErr)
+		d := Download{
+			FilterClient: fc,
+		}
+
+		r.HandleFunc("/downloads/filter-outputs/{filterOutputID}.csv", d.Do("csv"))
+		r.ServeHTTP(w, req)
+
+		So(w.Code, ShouldEqual, http.StatusInternalServerError)
+		So(w.Body.String(), ShouldEqual, internalServerMessage+"\n")
 	})
 
 	Convey("Given the vault client returns an error then the download status returns an internal server error", t, func() {
