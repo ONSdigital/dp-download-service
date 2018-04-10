@@ -66,6 +66,7 @@ func Create(bindAddr, secretKey, datasetAuthToken, xDownloadServiceAuthToken, va
 	d := handlers.Download{
 		DatasetClient:             dc,
 		VaultClient:               vc,
+		FilterClient:              FilterClientImpl{rchttp.DefaultClient},
 		S3Client:                  s3crypto.New(s3sess, &s3crypto.Config{HasUserDefinedPSK: true}),
 		DatasetAuthToken:          datasetAuthToken,
 		XDownloadServiceAuthToken: xDownloadServiceAuthToken,
@@ -145,7 +146,7 @@ func (d Download) close(ctx context.Context) error {
 // FilterClientImpl implements FilterClient
 // TODO: Switch this out for the updated go-ns client when it is available
 type FilterClientImpl struct {
-	client rchttp.Client
+	client *rchttp.Client
 }
 
 // GetOutput retrieves a filter output from the filter api
