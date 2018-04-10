@@ -13,7 +13,7 @@ type Config struct {
 	DatasetAPIURL           string        `envconfig:"DATASET_API_URL"`
 	DownloadServiceToken    string        `envconfig:"DOWNLOAD_SERVICE_TOKEN"     json:"-"`
 	DatasetAuthToken        string        `envconfig:"DATASET_AUTH_TOKEN"         json:"-"`
-	FilterAPIURL            string        `envconfig:"FILTER_API_URL"             json:"-"`
+	FilterAPIURL            string        `envconfig:"FILTER_API_URL"`
 	GracefulShutdownTimeout time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"  json:"-"`
 	HealthCheckInterval     time.Duration `envconfig:"HEALTHCHECK_INTERVAL"`
 	SecretKey               string        `envconfig:"SECRET_KEY"                 json:"-"`

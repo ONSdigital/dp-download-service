@@ -55,8 +55,6 @@ type download struct {
 	Private string `json:"private"`
 }
 
-type downloads map[string]download
-
 // Download represents the configuration for a download handler
 type Download struct {
 	DatasetClient             DatasetClient
