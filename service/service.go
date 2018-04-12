@@ -166,6 +166,8 @@ func (c FilterClientImpl) GetOutput(ctx context.Context, filterOutputID string) 
 		return
 	}
 
+	req.Header.Set("Authorization", cfg.ServiceAuthToken)
+
 	resp, err := c.client.Do(ctx, req)
 	if err != nil {
 		return
