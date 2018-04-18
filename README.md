@@ -26,6 +26,7 @@ The endpoint `/healthcheck` checks the health of vault and the dataset api and r
 | BUCKET_NAME                | "csv-exported"                              | The s3 bucket to decrypt files from
 | DATASET_API_URL            | http://localhost:22000                      | The dataset api url
 | DOWNLOAD_SERVICE_TOKEN     | QB0108EZ-825D-412C-9B1D-41EF7747F462        | The token to request public/private links from dataset api
+| FILTER_API_URL             | http://localhost:22100                      | The filter api url
 | SECRET_KEY                 | AL0108EA-825D-411C-9B1D-41EF7727F465        | A secret key used authentication
 | DATASET_AUTH_TOKEN         | FD0108EA-825D-411C-9B1D-41EF7727F465        | The host name for the CodeList API
 | GRACEFUL_SHUTDOWN_TIMEOUT  | 5s                                          | The graceful shutdown timeout in seconds
