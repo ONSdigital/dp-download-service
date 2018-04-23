@@ -80,7 +80,8 @@ func Create(bindAddr, secretKey, datasetAuthToken, xDownloadServiceAuthToken, va
 	router.Path("/healthcheck").Methods("GET").HandlerFunc(healthcheck.Do)
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv"))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.Do("xls"))
-	router.Path("/downloads/filter-outputs/{filterOuputID}.csv").HandlerFunc(d.Do("csv"))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.Do("csv"))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.Do("xlsx"))
 
 	chain := alice.New(identity.Handler(true, zebedeeURL)).Then(router)
 
