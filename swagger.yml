@@ -30,9 +30,15 @@ parameters:
     in: path
     required: true
     type: string
+  filterOutputID:
+    name: filterOutputID
+    description: "The unique identifier for a filter output job"
+    in: path
+    required: true
+    type: string
 securityDefinitions:
   FlorenceAPIKey:
-    name: florence-token
+    name: X-Florence-Token
     description: "API key used to allow florence users to be able to access a full download for an unpublished version."
     in: header
     type: apiKey
@@ -60,7 +66,7 @@ paths:
           $ref: '#/responses/NotFoundError'
         500:
           $ref: '#/responses/InternalError'
-  /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xls:
+  /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx:
     get:
       tags:
       - "Public"
@@ -83,6 +89,49 @@ paths:
           $ref: '#/responses/NotFoundError'
         500:
           $ref: '#/responses/InternalError'
+  /downloads/filter-outputs/{filterOutputID}.csv:
+    get:
+      tags:
+      - "Public"
+      summary: "Download a filtered csv file for a given filter output id"
+      description: "Request a download for a filtered csv file for a given filter ouput id which has selected dimension values"
+      parameters:
+      - $ref: '#/parameters/filterOutputID'
+      produces:
+      - "text/csv"
+      responses:
+        200:
+          $ref: '#/responses/StreamedResponse'
+        301:
+          $ref: '#/responses/RequestRedirect'
+        400:
+          $ref: '#/responses/InvalidRequestError'
+        404:
+          $ref: '#/responses/NotFoundError'
+        500:
+          $ref: '#/responses/InternalError'
+  /downloads/filter-outputs/{filterOutputID}.xlsx:
+    get:
+      tags:
+      - "Public"
+      summary: "Download a filtered excel file for a given filter output id"
+      description: "Request a download for a filtered excel file for a given filter ouput id which has selected dimension values"
+      parameters:
+      - $ref: '#/parameters/filterOutputID'
+      produces:
+      - "text/csv"
+      responses:
+        200:
+          $ref: '#/responses/StreamedResponse'
+        301:
+          $ref: '#/responses/RequestRedirect'
+        400:
+          $ref: '#/responses/InvalidRequestError'
+        404:
+          $ref: '#/responses/NotFoundError'
+        500:
+          $ref: '#/responses/InternalError'
+  
 responses:
   InvalidRequestError:
     description: "Failed to process the request due to invalid request."
