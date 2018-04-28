@@ -42,20 +42,17 @@ func Get() (*Config, error) {
 		DownloadServiceToken:    "QB0108EZ-825D-412C-9B1D-41EF7747F462",
 		GracefulShutdownTimeout: 5 * time.Second,
 		HealthCheckInterval:     1 * time.Minute,
-		SecretKey:               "AL0108EA-825D-411C-9B1D-41EF7727F465",
 		VaultAddress:            "http://localhost:8200",
 		VaultToken:              "",
 		VaultPath:               "secret/shared/psk",
 		ServiceAuthToken:        "c60198e9-1864-4b68-ad0b-1e858e5b46a4",
 		ZebedeeURL:              "http://localhost:8082",
-		IsPublishing:            false,
+		IsPublishing:            true,
 	}
 
 	if err := envconfig.Process("", cfg); err != nil {
 		return cfg, err
 	}
-
-	cfg.ServiceAuthToken = "Bearer " + cfg.ServiceAuthToken
 
 	return cfg, nil
 }

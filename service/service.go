@@ -43,7 +43,7 @@ type Download struct {
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
 type DatasetClient interface {
-	GetVersion(id, edition, version string, cfg ...dataset.Config) (m dataset.Version, err error)
+	GetVersion(ctx context.Context, id, edition, version string) (m dataset.Version, err error)
 	healthcheck.Client
 }
 
@@ -60,21 +60,18 @@ type VaultClient interface {
 }
 
 // Create should be called to create a new instance of the download service, with routes correctly initialised
-func Create(bindAddr, secretKey, datasetAuthToken, xDownloadServiceAuthToken, vaultPath, bucketName, serviceToken, zebedeeURL string, dc DatasetClient, fc FilterClient, s3sess *session.Session, vc VaultClient, shutdown, healthcheckInterval time.Duration, isPublishing bool) Download {
+func Create(bindAddr, vaultPath, bucketName, serviceToken, zebedeeURL string, dc DatasetClient, fc FilterClient, s3sess *session.Session, vc VaultClient, shutdown, healthcheckInterval time.Duration, isPublishing bool) Download {
 	router := mux.NewRouter()
 
 	d := handlers.Download{
-		DatasetClient:             dc,
-		VaultClient:               vc,
-		FilterClient:              FilterClientImpl{rchttp.DefaultClient},
-		S3Client:                  s3crypto.New(s3sess, &s3crypto.Config{HasUserDefinedPSK: true}),
-		DatasetAuthToken:          datasetAuthToken,
-		XDownloadServiceAuthToken: xDownloadServiceAuthToken,
-		SecretKey:                 secretKey,
-		BucketName:                bucketName,
-		ServiceToken:              serviceToken,
-		VaultPath:                 vaultPath,
-		IsPublishing:              isPublishing,
+		DatasetClient: dc,
+		VaultClient:   vc,
+		FilterClient:  FilterClientImpl{rchttp.DefaultClient},
+		S3Client:      s3crypto.New(s3sess, &s3crypto.Config{HasUserDefinedPSK: true}),
+		BucketName:    bucketName,
+		ServiceToken:  serviceToken,
+		VaultPath:     vaultPath,
+		IsPublishing:  isPublishing,
 	}
 
 	router.Path("/healthcheck").Methods("GET").HandlerFunc(healthcheck.Do)
@@ -83,13 +80,23 @@ func Create(bindAddr, secretKey, datasetAuthToken, xDownloadServiceAuthToken, va
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.Do("csv"))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.Do("xls"))
 
-	chain := alice.New(identity.Handler(true, zebedeeURL)).Then(router)
+	var httpServer *server.Server
+
+	if isPublishing {
+
+		identityHandler := identity.Handler(zebedeeURL)
+		alice := alice.New(identityHandler).Then(router)
+		httpServer = server.New(bindAddr, alice)
+	} else {
+
+		httpServer = server.New(bindAddr, router)
+	}
 
 	return Download{
 		filterClient:        fc,
 		datasetClient:       dc,
 		router:              router,
-		server:              server.New(bindAddr, chain),
+		server:              httpServer,
 		shutdown:            shutdown,
 		healthcheckInterval: healthcheckInterval,
 		errChan:             make(chan error, 1),

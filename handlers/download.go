@@ -9,15 +9,17 @@ import (
 
 	"github.com/ONSdigital/go-ns/clients/dataset"
 	"github.com/ONSdigital/go-ns/clients/filter"
-	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gorilla/mux"
+	"github.com/ONSdigital/go-ns/common"
 )
 
+// mockgen is prefixing the imports within the mock file with the vendor directory 'github.com/ONSdigital/dp-download-service/vendor/'
+// I just manually removed it, after spending a bit of time trying to find a clean solution
+//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/handlers DatasetClient,VaultClient,S3Client,FilterClient
+
 const (
-	internalToken         = "internal-token"
-	serviceToken          = "authorization"
 	notFoundMessage       = "resource not found"
 	internalServerMessage = "internal server error"
 )
@@ -30,7 +32,7 @@ type ClientError interface {
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
 type DatasetClient interface {
-	GetVersion(id, edition, version string, cfg ...dataset.Config) (m dataset.Version, err error)
+	GetVersion(ctx context.Context, id, edition, version string) (m dataset.Version, err error)
 }
 
 // FilterClient is an interface to represent methods called to action on the filter api
@@ -126,14 +128,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 				"type":       extension,
 			}
 
-			reqConfig := dataset.Config{
-				InternalToken:         d.DatasetAuthToken,
-				AuthToken:             d.ServiceToken,
-				XDownloadServiceToken: d.XDownloadServiceAuthToken,
-				Ctx: req.Context(),
-			}
-
-			v, err := d.DatasetClient.GetVersion(datasetID, edition, version, reqConfig)
+			v, err := d.DatasetClient.GetVersion(req.Context(), datasetID, edition, version)
 			if err != nil {
 				setStatusCode(req, w, err, logData)
 				return
@@ -205,7 +200,7 @@ func (d Download) authenticate(r *http.Request, logData map[string]interface{}) 
 	var authorised bool
 
 	if d.IsPublishing {
-		authorised = identity.IsPresent(r.Context())
+		authorised = common.IsCallerPresent(r.Context())
 	}
 
 	logData["authenticated"] = authorised
