@@ -48,7 +48,7 @@ func Get() (*Config, error) {
 		VaultPath:               "secret/shared/psk",
 		ServiceAuthToken:        "c60198e9-1864-4b68-ad0b-1e858e5b46a4",
 		ZebedeeURL:              "http://localhost:8082",
-		IsPublishing:            false,
+		IsPublishing:            true,
 	}
 
 	if err := envconfig.Process("", cfg); err != nil {
