@@ -29,15 +29,17 @@ const (
 	testHexEncodedPSK   = "68656C6C6F20776F726C64"
 	testBadEncodedPSK   = "this is not encoded"
 	testPSK             = "hello world"
-	testVaultPath       = "/secrets/tests/psk"
 	testCsvContent      = "1,2,3,4"
 	florenceTokenHeader = "X-Florence-Token"
 	zebedeeURL          = "http://localhost:8082"
+	vaultKey            = "key"
+	rootVaultPath       = "/secrets/tests/psk"
 )
 
 var (
-	testBucket   = "some-bucket"
-	testFilename = "my-file.csv"
+	testBucket    = "some-bucket"
+	testFilename  = "my-file.csv"
+	testVaultPath = rootVaultPath + "/" + testFilename
 )
 
 type testClientError struct {
@@ -153,7 +155,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
-		vc.EXPECT().ReadKey(testVaultPath, testFilename).Return(testHexEncodedPSK, nil)
+		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
 
 		input := &s3.GetObjectInput{
 			Bucket: &testBucket,
@@ -171,7 +173,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			VaultClient:   vc,
 			S3Client:      s3c,
 			BucketName:    testBucket,
-			VaultPath:     testVaultPath,
+			VaultPath:     rootVaultPath,
 		}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
@@ -198,7 +200,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
-		vc.EXPECT().ReadKey(testVaultPath, testFilename).Return(testHexEncodedPSK, nil)
+		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
 
 		input := &s3.GetObjectInput{
 			Bucket: &testBucket,
@@ -216,7 +218,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			VaultClient:   vc,
 			S3Client:      s3c,
 			BucketName:    testBucket,
-			VaultPath:     testVaultPath,
+			VaultPath:     rootVaultPath,
 			IsPublishing:  true,
 		}
 
@@ -306,12 +308,12 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
-		vc.EXPECT().ReadKey(testVaultPath, testFilename).Return("", errors.New("vault client error"))
+		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return("", errors.New("vault client error"))
 
 		d := Download{
 			DatasetClient: dc,
 			VaultClient:   vc,
-			VaultPath:     testVaultPath,
+			VaultPath:     rootVaultPath,
 		}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
@@ -337,12 +339,12 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
-		vc.EXPECT().ReadKey(testVaultPath, testFilename).Return(testBadEncodedPSK, nil)
+		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testBadEncodedPSK, nil)
 
 		d := Download{
 			DatasetClient: dc,
 			VaultClient:   vc,
-			VaultPath:     testVaultPath,
+			VaultPath:     rootVaultPath,
 		}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
@@ -368,7 +370,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
-		vc.EXPECT().ReadKey(testVaultPath, testFilename).Return(testHexEncodedPSK, nil)
+		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
 
 		input := &s3.GetObjectInput{
 			Bucket: &testBucket,
@@ -383,7 +385,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			VaultClient:   vc,
 			S3Client:      s3c,
 			BucketName:    testBucket,
-			VaultPath:     testVaultPath,
+			VaultPath:     rootVaultPath,
 		}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
@@ -409,7 +411,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
-		vc.EXPECT().ReadKey(testVaultPath, testFilename).Return(testHexEncodedPSK, nil)
+		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
 
 		input := &s3.GetObjectInput{
 			Bucket: &testBucket,
@@ -431,7 +433,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			VaultClient:   vc,
 			S3Client:      s3c,
 			BucketName:    testBucket,
-			VaultPath:     testVaultPath,
+			VaultPath:     rootVaultPath,
 		}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))

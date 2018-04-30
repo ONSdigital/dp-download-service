@@ -151,6 +151,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 		}
 
 		if len(downloads[extension].Private) > 0 {
+
 			if published || authorised {
 
 				privateFile := downloads[extension].Private
@@ -161,7 +162,9 @@ func (d Download) Do(extension string) http.HandlerFunc {
 					Key:    &filename,
 				}
 
-				pskStr, err := d.VaultClient.ReadKey(d.VaultPath, filename)
+				vaultPath := d.VaultPath + "/" + filename
+				vaultKey := "key"
+				pskStr, err := d.VaultClient.ReadKey(vaultPath, vaultKey)
 				if err != nil {
 					setStatusCode(req, w, err, logData)
 					return

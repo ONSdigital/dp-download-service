@@ -33,6 +33,5 @@ func TestSpec(t *testing.T) {
 				So(cfg.IsPublishing, ShouldBeTrue)
 			})
 		})
-
 	})
 }
