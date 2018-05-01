@@ -74,23 +74,23 @@ func Create(bindAddr, vaultPath, bucketName, serviceToken, zebedeeURL string, dc
 		IsPublishing:  isPublishing,
 	}
 
-	router.Path("/healthcheck").Methods("GET").HandlerFunc(healthcheck.Do)
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv"))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.Do("xls"))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.Do("csv"))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.Do("xls"))
 
-	var httpServer *server.Server
+	healthcheckHandler := healthcheck.NewMiddleware(healthcheck.Do)
+	middlewareChain := alice.New(healthcheckHandler)
 
 	if isPublishing {
 
+		log.Debug("private endpoints are enabled. using identity middleware", nil)
 		identityHandler := identity.Handler(zebedeeURL)
-		alice := alice.New(identityHandler).Then(router)
-		httpServer = server.New(bindAddr, alice)
-	} else {
-
-		httpServer = server.New(bindAddr, router)
+		middlewareChain = middlewareChain.Append(identityHandler)
 	}
+
+	alice := middlewareChain.Then(router)
+	httpServer := server.New(bindAddr, alice)
 
 	return Download{
 		filterClient:        fc,
