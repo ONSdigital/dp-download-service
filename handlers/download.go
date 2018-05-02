@@ -51,10 +51,10 @@ type S3Client interface {
 }
 
 type download struct {
-	URL     string `json:"url"`
+	URL     string `json:"href"`
 	Size    string `json:"size"`
-	Public  string `json:"public"`
-	Private string `json:"private"`
+	Public  string `json:"public,omitempty"`
+	Private string `json:"private,omitempty"`
 }
 
 // Download represents the configuration for a download handler
