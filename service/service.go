@@ -27,6 +27,7 @@ import (
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/s3crypto"
 	"github.com/gorilla/mux"
+	"github.com/ONSdigital/go-ns/common"
 )
 
 // Download represents the configuration to run the download service
@@ -61,15 +62,16 @@ type VaultClient interface {
 
 // Create should be called to create a new instance of the download service, with routes correctly initialised
 func Create(bindAddr, vaultPath, bucketName, serviceToken, zebedeeURL string, dc DatasetClient, fc FilterClient, s3sess *session.Session, vc VaultClient, shutdown, healthcheckInterval time.Duration, isPublishing bool) Download {
+
 	router := mux.NewRouter()
+	rchttpClient := rchttp.ClientWithServiceToken(rchttp.DefaultClient, serviceToken)
 
 	d := handlers.Download{
 		DatasetClient: dc,
 		VaultClient:   vc,
-		FilterClient:  FilterClientImpl{rchttp.DefaultClient},
+		FilterClient:  FilterClientImpl{rchttpClient},
 		S3Client:      s3crypto.New(s3sess, &s3crypto.Config{HasUserDefinedPSK: true}),
 		BucketName:    bucketName,
-		ServiceToken:  serviceToken,
 		VaultPath:     vaultPath,
 		IsPublishing:  isPublishing,
 	}
@@ -154,7 +156,7 @@ func (d Download) close(ctx context.Context) error {
 // FilterClientImpl implements FilterClient
 // TODO: Switch this out for the updated go-ns client when it is available
 type FilterClientImpl struct {
-	client *rchttp.Client
+	client common.RCHTTPClienter
 }
 
 // GetOutput retrieves a filter output from the filter api
@@ -173,8 +175,6 @@ func (c FilterClientImpl) GetOutput(ctx context.Context, filterOutputID string) 
 	if err != nil {
 		return
 	}
-
-	req.Header.Set("Authorization", cfg.ServiceAuthToken)
 
 	resp, err := c.client.Do(ctx, req)
 	if err != nil {

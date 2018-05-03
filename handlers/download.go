@@ -64,7 +64,6 @@ type Download struct {
 	FilterClient              FilterClient
 	S3Client                  S3Client
 	ServiceToken              string
-	DatasetAuthToken          string
 	XDownloadServiceAuthToken string
 	SecretKey                 string
 	BucketName                string
