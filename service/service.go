@@ -27,6 +27,7 @@ import (
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/s3crypto"
 	"github.com/gorilla/mux"
+	"github.com/ONSdigital/go-ns/common"
 )
 
 // Download represents the configuration to run the download service
@@ -43,7 +44,7 @@ type Download struct {
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
 type DatasetClient interface {
-	GetVersion(id, edition, version string, cfg ...dataset.Config) (m dataset.Version, err error)
+	GetVersion(ctx context.Context, id, edition, version string) (m dataset.Version, err error)
 	healthcheck.Client
 }
 
@@ -60,36 +61,44 @@ type VaultClient interface {
 }
 
 // Create should be called to create a new instance of the download service, with routes correctly initialised
-func Create(bindAddr, secretKey, datasetAuthToken, xDownloadServiceAuthToken, vaultPath, bucketName, serviceToken, zebedeeURL string, dc DatasetClient, fc FilterClient, s3sess *session.Session, vc VaultClient, shutdown, healthcheckInterval time.Duration, isPublishing bool) Download {
+func Create(bindAddr, vaultPath, bucketName, serviceToken, zebedeeURL string, dc DatasetClient, fc FilterClient, s3sess *session.Session, vc VaultClient, shutdown, healthcheckInterval time.Duration, isPublishing bool) Download {
+
 	router := mux.NewRouter()
+	rchttpClient := rchttp.ClientWithServiceToken(rchttp.DefaultClient, serviceToken)
 
 	d := handlers.Download{
-		DatasetClient:             dc,
-		VaultClient:               vc,
-		FilterClient:              FilterClientImpl{rchttp.DefaultClient},
-		S3Client:                  s3crypto.New(s3sess, &s3crypto.Config{HasUserDefinedPSK: true}),
-		DatasetAuthToken:          datasetAuthToken,
-		XDownloadServiceAuthToken: xDownloadServiceAuthToken,
-		SecretKey:                 secretKey,
-		BucketName:                bucketName,
-		ServiceToken:              serviceToken,
-		VaultPath:                 vaultPath,
-		IsPublishing:              isPublishing,
+		DatasetClient: dc,
+		VaultClient:   vc,
+		FilterClient:  FilterClientImpl{rchttpClient},
+		S3Client:      s3crypto.New(s3sess, &s3crypto.Config{HasUserDefinedPSK: true}),
+		BucketName:    bucketName,
+		VaultPath:     vaultPath,
+		IsPublishing:  isPublishing,
 	}
 
-	router.Path("/healthcheck").Methods("GET").HandlerFunc(healthcheck.Do)
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv"))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.Do("xls"))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.Do("csv"))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.Do("xls"))
 
-	chain := alice.New(identity.Handler(true, zebedeeURL)).Then(router)
+	healthcheckHandler := healthcheck.NewMiddleware(healthcheck.Do)
+	middlewareChain := alice.New(healthcheckHandler)
+
+	if isPublishing {
+
+		log.Debug("private endpoints are enabled. using identity middleware", nil)
+		identityHandler := identity.Handler(zebedeeURL)
+		middlewareChain = middlewareChain.Append(identityHandler)
+	}
+
+	alice := middlewareChain.Then(router)
+	httpServer := server.New(bindAddr, alice)
 
 	return Download{
 		filterClient:        fc,
 		datasetClient:       dc,
 		router:              router,
-		server:              server.New(bindAddr, chain),
+		server:              httpServer,
 		shutdown:            shutdown,
 		healthcheckInterval: healthcheckInterval,
 		errChan:             make(chan error, 1),
@@ -147,7 +156,7 @@ func (d Download) close(ctx context.Context) error {
 // FilterClientImpl implements FilterClient
 // TODO: Switch this out for the updated go-ns client when it is available
 type FilterClientImpl struct {
-	client *rchttp.Client
+	client common.RCHTTPClienter
 }
 
 // GetOutput retrieves a filter output from the filter api
@@ -166,8 +175,6 @@ func (c FilterClientImpl) GetOutput(ctx context.Context, filterOutputID string) 
 	if err != nil {
 		return
 	}
-
-	req.Header.Set("Authorization", cfg.ServiceAuthToken)
 
 	resp, err := c.client.Do(ctx, req)
 	if err != nil {

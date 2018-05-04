@@ -25,7 +25,7 @@ func main() {
 
 	log.Info("config on startup", log.Data{"config": cfg})
 
-	dc := dataset.New(cfg.DatasetAPIURL)
+	dc := dataset.NewAPIClient(cfg.DatasetAPIURL, cfg.ServiceAuthToken, cfg.DownloadServiceToken)
 	vc, err := vault.CreateVaultClient(cfg.VaultToken, cfg.VaultAddress, 3)
 	if err != nil {
 		log.ErrorC("could not create a vault client", err, nil)
@@ -39,9 +39,6 @@ func main() {
 
 	svc := service.Create(
 		cfg.BindAddr,
-		cfg.SecretKey,
-		cfg.DatasetAuthToken,
-		cfg.DownloadServiceToken,
 		cfg.VaultPath,
 		cfg.BucketName,
 		cfg.ServiceAuthToken,
