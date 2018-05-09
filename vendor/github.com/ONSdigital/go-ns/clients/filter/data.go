@@ -63,10 +63,10 @@ type ModelDimension struct {
 
 // Download represents a download within a filter from api response
 type Download struct {
-	URL     string `json:"url"`
+	URL     string `json:"href"`
 	Size    string `json:"size"`
-	Public  string `json:"public"`
-	Private string `json:"private"`
+	Public  string `json:"public,omitempty"`
+	Private string `json:"private,omitempty"`
 }
 
 // Event represents an event from a filter api response

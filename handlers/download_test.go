@@ -12,14 +12,15 @@ import (
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/justinas/alice"
 
+	clientsidentity "github.com/ONSdigital/go-ns/clients/identity"
 	"github.com/ONSdigital/dp-download-service/handlers/mocks"
 	"github.com/ONSdigital/go-ns/clients/dataset"
 	"github.com/ONSdigital/go-ns/clients/filter"
-	"github.com/ONSdigital/go-ns/identity/identitytest"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/ONSdigital/go-ns/common/commontest"
 )
 
 const (
@@ -29,8 +30,8 @@ const (
 	testBadEncodedPSK   = "this is not encoded"
 	testPSK             = "hello world"
 	testCsvContent      = "1,2,3,4"
-	testSecretKey       = "shhh it's a secret"
 	florenceTokenHeader = "X-Florence-Token"
+	zebedeeURL          = "http://localhost:8082"
 	vaultKey            = "key"
 	rootVaultPath       = "/secrets/tests/psk"
 )
@@ -119,7 +120,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion("12345", "6789", "1", gomock.Any()).Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 		d := Download{
 			DatasetClient: dc,
 		}
@@ -151,7 +152,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion("12345", "6789", "1", gomock.Any()).Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -196,7 +197,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			},
 			State: "associated",
 		}
-		dc.EXPECT().GetVersion("12345", "6789", "1", gomock.Any()).Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -218,20 +219,24 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			S3Client:      s3c,
 			BucketName:    testBucket,
 			VaultPath:     rootVaultPath,
-			SecretKey:     testSecretKey,
 			IsPublishing:  true,
 		}
 
-		httpClient := &identitytest.HTTPClientMock{
+		httpClient := &commontest.RCHTTPClienterMock{
+			SetAuthTokenFunc: func(string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+
+				readCloser := ioutil.NopCloser(strings.NewReader(`{"identifier": "me"}`))
+
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(strings.NewReader(`{"identifier": "me"}`)),
+					Body:       readCloser,
 				}, nil
 			},
 		}
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
-		chain := alice.New(identity.HandlerForHTTPClient(true, httpClient, "")).Then(r)
+		chain := alice.New(identity.HandlerForHTTPClient(idClient)).Then(r)
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
 		req.Header.Set(florenceTokenHeader, "Florence")
@@ -255,7 +260,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 
 		dc := mocks.NewMockDatasetClient(mockCtrl)
 		err := testClientError{http.StatusNotFound}
-		dc.EXPECT().GetVersion("12345", "6789", "1", gomock.Any()).Return(dataset.Version{}, err)
+		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(dataset.Version{}, err)
 		d := Download{
 			DatasetClient: dc,
 		}
@@ -300,7 +305,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion("12345", "6789", "1", gomock.Any()).Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return("", errors.New("vault client error"))
@@ -331,7 +336,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion("12345", "6789", "1", gomock.Any()).Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testBadEncodedPSK, nil)
@@ -362,7 +367,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion("12345", "6789", "1", gomock.Any()).Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -403,7 +408,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion("12345", "6789", "1", gomock.Any()).Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -443,7 +448,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		r := mux.NewRouter()
 
 		dc := mocks.NewMockDatasetClient(mockCtrl)
-		dc.EXPECT().GetVersion("12345", "6789", "1", gomock.Any()).Return(dataset.Version{}, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), "12345", "6789", "1").Return(dataset.Version{}, nil)
 		d := Download{
 			DatasetClient: dc,
 		}

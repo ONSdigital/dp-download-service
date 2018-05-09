@@ -9,11 +9,15 @@ import (
 
 	"github.com/ONSdigital/go-ns/clients/dataset"
 	"github.com/ONSdigital/go-ns/clients/filter"
-	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gorilla/mux"
+	"github.com/ONSdigital/go-ns/common"
 )
+
+// mockgen is prefixing the imports within the mock file with the vendor directory 'github.com/ONSdigital/dp-download-service/vendor/'
+//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/handlers DatasetClient,VaultClient,S3Client,FilterClient
+//go:generate sed -i "" -e s!\([[:space:]]\"\)github.com/ONSdigital/dp-download-service/vendor/!\1! mocks/mocks.go
 
 const (
 	notFoundMessage       = "resource not found"
@@ -28,7 +32,7 @@ type ClientError interface {
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
 type DatasetClient interface {
-	GetVersion(id, edition, version string, cfg ...dataset.Config) (m dataset.Version, err error)
+	GetVersion(ctx context.Context, id, edition, version string) (m dataset.Version, err error)
 }
 
 // FilterClient is an interface to represent methods called to action on the filter api
@@ -47,10 +51,10 @@ type S3Client interface {
 }
 
 type download struct {
-	URL     string `json:"url"`
+	URL     string `json:"href"`
 	Size    string `json:"size"`
-	Public  string `json:"public"`
-	Private string `json:"private"`
+	Public  string `json:"public,omitempty"`
+	Private string `json:"private,omitempty"`
 }
 
 // Download represents the configuration for a download handler
@@ -60,7 +64,6 @@ type Download struct {
 	FilterClient              FilterClient
 	S3Client                  S3Client
 	ServiceToken              string
-	DatasetAuthToken          string
 	XDownloadServiceAuthToken string
 	SecretKey                 string
 	BucketName                string
@@ -124,14 +127,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 				"type":       extension,
 			}
 
-			reqConfig := dataset.Config{
-				InternalToken:         d.DatasetAuthToken,
-				AuthToken:             d.ServiceToken,
-				XDownloadServiceToken: d.XDownloadServiceAuthToken,
-				Ctx: req.Context(),
-			}
-
-			v, err := d.DatasetClient.GetVersion(datasetID, edition, version, reqConfig)
+			v, err := d.DatasetClient.GetVersion(req.Context(), datasetID, edition, version)
 			if err != nil {
 				setStatusCode(req, w, err, logData)
 				return
@@ -206,7 +202,7 @@ func (d Download) authenticate(r *http.Request, logData map[string]interface{}) 
 	var authorised bool
 
 	if d.IsPublishing {
-		authorised = identity.IsPresent(r.Context())
+		authorised = common.IsCallerPresent(r.Context())
 	}
 
 	logData["authenticated"] = authorised
