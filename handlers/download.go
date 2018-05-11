@@ -140,9 +140,11 @@ func (d Download) Do(extension string) http.HandlerFunc {
 			}
 		}
 
+		logData["published"] = published
 		log.InfoR(req, "attempting to get download", logData)
 
 		authorised, logData := d.authenticate(req, logData)
+		logData["authorised"] = authorised
 
 		if len(downloads[extension].Public) > 0 && published {
 			http.Redirect(w, req, downloads[extension].Public, http.StatusMovedPermanently)
@@ -151,10 +153,14 @@ func (d Download) Do(extension string) http.HandlerFunc {
 
 		if len(downloads[extension].Private) > 0 {
 
+			logData["private_link"] = downloads[extension].Private
+			log.InfoR(req, "using private link", logData)
+
 			if published || authorised {
 
 				privateFile := downloads[extension].Private
 				filename := filepath.Base(privateFile)
+				logData["filename"] = filename
 
 				input := &s3.GetObjectInput{
 					Bucket: &d.BucketName,
@@ -163,6 +169,9 @@ func (d Download) Do(extension string) http.HandlerFunc {
 
 				vaultPath := d.VaultPath + "/" + filename
 				vaultKey := "key"
+				logData["vaultPath"] = vaultPath
+
+				log.DebugR(req, "getting download key from vault", logData)
 				pskStr, err := d.VaultClient.ReadKey(vaultPath, vaultKey)
 				if err != nil {
 					setStatusCode(req, w, err, logData)
@@ -174,6 +183,8 @@ func (d Download) Do(extension string) http.HandlerFunc {
 					return
 				}
 
+
+				log.DebugR(req, "getting file from s3", logData)
 				obj, err := d.S3Client.GetObjectWithPSK(input, psk)
 				if err != nil {
 					setStatusCode(req, w, err, logData)
@@ -194,6 +205,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 			}
 		}
 
+		log.DebugR(req, "no public or private link found", logData)
 		http.Error(w, notFoundMessage, http.StatusNotFound)
 	}
 }
