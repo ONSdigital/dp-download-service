@@ -42,6 +42,7 @@ func main() {
 		cfg.VaultPath,
 		cfg.BucketName,
 		cfg.ServiceAuthToken,
+		cfg.DownloadServiceToken,
 		cfg.ZebedeeURL,
 		dc,
 		fc,

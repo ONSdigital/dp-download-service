@@ -61,15 +61,24 @@ type VaultClient interface {
 }
 
 // Create should be called to create a new instance of the download service, with routes correctly initialised
-func Create(bindAddr, vaultPath, bucketName, serviceToken, zebedeeURL string, dc DatasetClient, fc FilterClient, s3sess *session.Session, vc VaultClient, shutdown, healthcheckInterval time.Duration, isPublishing bool) Download {
+func Create(bindAddr, vaultPath, bucketName, serviceToken, downloadServiceToken, zebedeeURL string,
+	dc DatasetClient,
+	fc FilterClient,
+	s3sess *session.Session,
+	vc VaultClient,
+	shutdown, healthcheckInterval time.Duration,
+	isPublishing bool) Download {
 
 	router := mux.NewRouter()
+
 	rchttpClient := rchttp.ClientWithServiceToken(rchttp.DefaultClient, serviceToken)
+	rchttpClient.SetDownloadServiceToken(downloadServiceToken)
+	filterClient := FilterClientImpl{rchttpClient}
 
 	d := handlers.Download{
 		DatasetClient: dc,
 		VaultClient:   vc,
-		FilterClient:  FilterClientImpl{rchttpClient},
+		FilterClient:  filterClient,
 		S3Client:      s3crypto.New(s3sess, &s3crypto.Config{HasUserDefinedPSK: true}),
 		BucketName:    bucketName,
 		VaultPath:     vaultPath,
