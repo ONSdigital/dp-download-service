@@ -2,11 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,9 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/justinas/alice"
 
-	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/handlers"
-	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/clients/dataset"
 	"github.com/ONSdigital/go-ns/clients/filter"
 	"github.com/ONSdigital/go-ns/healthcheck"
@@ -27,7 +20,6 @@ import (
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/s3crypto"
 	"github.com/gorilla/mux"
-	"github.com/ONSdigital/go-ns/common"
 )
 
 // Download represents the configuration to run the download service
@@ -50,7 +42,7 @@ type DatasetClient interface {
 
 // FilterClient is an interface to represent methods called to action on the filter api
 type FilterClient interface {
-	GetOutput(filterOutputID string, cfg ...filter.Config) (filter.Model, error)
+	GetOutput(ctx context.Context, filterOutputID string) (filter.Model, error)
 	healthcheck.Client
 }
 
@@ -73,12 +65,11 @@ func Create(bindAddr, vaultPath, bucketName, serviceToken, downloadServiceToken,
 
 	rchttpClient := rchttp.ClientWithServiceToken(rchttp.DefaultClient, serviceToken)
 	rchttpClient.SetDownloadServiceToken(downloadServiceToken)
-	filterClient := FilterClientImpl{rchttpClient}
 
 	d := handlers.Download{
 		DatasetClient: dc,
 		VaultClient:   vc,
-		FilterClient:  filterClient,
+		FilterClient:  fc,
 		S3Client:      s3crypto.New(s3sess, &s3crypto.Config{HasUserDefinedPSK: true}),
 		BucketName:    bucketName,
 		VaultPath:     vaultPath,
@@ -160,47 +151,4 @@ func (d Download) close(ctx context.Context) error {
 	}
 	log.Info("graceful shutdown of http server complete", nil)
 	return nil
-}
-
-// FilterClientImpl implements FilterClient
-// TODO: Switch this out for the updated go-ns client when it is available
-type FilterClientImpl struct {
-	client common.RCHTTPClienter
-}
-
-// GetOutput retrieves a filter output from the filter api
-// TODO: Switch this out for the updated go-ns client when it is available
-func (c FilterClientImpl) GetOutput(ctx context.Context, filterOutputID string) (m filter.Model, err error) {
-	cfg, err := config.Get()
-	if err != nil {
-		return
-	}
-
-	uri := fmt.Sprintf("%s/filter-outputs/%s", cfg.FilterAPIURL, filterOutputID)
-
-	clientlog.Do("retrieving filter output", "filter-api", uri)
-
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return
-	}
-
-	resp, err := c.client.Do(ctx, req)
-	if err != nil {
-		return
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		err = errors.New("unexpected filter api request")
-		return
-	}
-
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	err = json.Unmarshal(b, &m)
-	return
 }
