@@ -32,7 +32,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fc := filter.New(cfg.FilterAPIURL)
+	fc := filter.New(cfg.FilterAPIURL, cfg.ServiceAuthToken, cfg.DownloadServiceToken)
 
 	region := "eu-west-1"
 	sess := session.New(&aws.Config{Region: &region})
