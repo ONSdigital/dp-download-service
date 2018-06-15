@@ -11,6 +11,10 @@ Service is authenticated against zebedee, one can run [dp-auth-api-stub](https:/
 - Run `brew install vault`
 - Run `vault server -dev`
 
+#### AWS credentials
+
+The app uses the default provider chain. When running locally this typically means they are provided by the `~/.aws/credentials` file.  Alternatively you can inject the credentials via environment variables as described in the configuration section
+
 ### Healthcheck
 
 The endpoint `/healthcheck` checks the health of vault and the dataset api and returns one of:
@@ -36,6 +40,8 @@ The endpoint `/healthcheck` checks the health of vault and the dataset api and r
 | VAULT_PATH                 | secret/shared/psk                           | The path where the psks will be stored in for vault
 | SERVICE_AUTH_TOKEN         | c60198e9-1864-4b68-ad0b-1e858e5b46a4        | The service auth token for the download service
 | ZEBEDEE_URL                | http://localhost:8082                       | The URL for zebedee
+| AWS_ACCESS_KEY_ID          | -                                           | The AWS access key credential
+| AWS_SECRET_ACCESS_KEY      | -                                           | The AWS secret key credential
 
 ### Contributing
 
