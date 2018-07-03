@@ -3,16 +3,16 @@ package handlers
 import (
 	"context"
 	"encoding/hex"
-	"io"
-	"net/http"
-	"path/filepath"
-
 	"github.com/ONSdigital/go-ns/clients/dataset"
 	"github.com/ONSdigital/go-ns/clients/filter"
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gorilla/mux"
-	"github.com/ONSdigital/go-ns/common"
+	"io"
+	"net/http"
+	"net/url"
+	"path/filepath"
 )
 
 // mockgen is prefixing the imports within the mock file with the vendor directory 'github.com/ONSdigital/dp-download-service/vendor/'
@@ -159,7 +159,14 @@ func (d Download) Do(extension string) http.HandlerFunc {
 			if published || authorised {
 
 				privateFile := downloads[extension].Private
-				filename := filepath.Base(privateFile)
+
+				privateURL, err := url.Parse(privateFile)
+				if err != nil {
+					setStatusCode(req, w, err, logData)
+					return
+				}
+
+				filename := privateURL.Path
 				logData["filename"] = filename
 
 				input := &s3.GetObjectInput{
@@ -167,7 +174,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 					Key:    &filename,
 				}
 
-				vaultPath := d.VaultPath + "/" + filename
+				vaultPath := d.VaultPath + "/" + filepath.Base(filename)
 				vaultKey := "key"
 				logData["vaultPath"] = vaultPath
 
@@ -182,7 +189,6 @@ func (d Download) Do(extension string) http.HandlerFunc {
 					setStatusCode(req, w, err, logData)
 					return
 				}
-
 
 				log.DebugR(req, "getting file from s3", logData)
 				obj, err := d.S3Client.GetObjectWithPSK(input, psk)

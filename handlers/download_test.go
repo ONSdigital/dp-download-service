@@ -12,20 +12,20 @@ import (
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/justinas/alice"
 
-	clientsidentity "github.com/ONSdigital/go-ns/clients/identity"
 	"github.com/ONSdigital/dp-download-service/handlers/mocks"
 	"github.com/ONSdigital/go-ns/clients/dataset"
 	"github.com/ONSdigital/go-ns/clients/filter"
+	clientsidentity "github.com/ONSdigital/go-ns/clients/identity"
+	"github.com/ONSdigital/go-ns/common/commontest"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/ONSdigital/go-ns/common/commontest"
 )
 
 const (
 	testPublicDownload  = "http://test-public-download.com"
-	testPrivateDownload = "s3://some-bucket/my-file.csv"
+	testPrivateDownload = "s3://some-bucket/datasets/my-file.csv"
 	testHexEncodedPSK   = "68656C6C6F20776F726C64"
 	testBadEncodedPSK   = "this is not encoded"
 	testPSK             = "hello world"
@@ -40,6 +40,7 @@ var (
 	testBucket    = "some-bucket"
 	testFilename  = "my-file.csv"
 	testVaultPath = rootVaultPath + "/" + testFilename
+	expectedS3Key = "/datasets/" + testFilename
 )
 
 type testClientError struct {
@@ -159,7 +160,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 		input := &s3.GetObjectInput{
 			Bucket: &testBucket,
-			Key:    &testFilename,
+			Key:    &expectedS3Key,
 		}
 
 		output := &s3.GetObjectOutput{
@@ -204,7 +205,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 		input := &s3.GetObjectInput{
 			Bucket: &testBucket,
-			Key:    &testFilename,
+			Key:    &expectedS3Key,
 		}
 
 		output := &s3.GetObjectOutput{
@@ -374,7 +375,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 
 		input := &s3.GetObjectInput{
 			Bucket: &testBucket,
-			Key:    &testFilename,
+			Key:    &expectedS3Key,
 		}
 
 		s3c := mocks.NewMockS3Client(mockCtrl)
@@ -415,7 +416,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 
 		input := &s3.GetObjectInput{
 			Bucket: &testBucket,
-			Key:    &testFilename,
+			Key:    &expectedS3Key,
 		}
 
 		er, ew := errors.New("readError"), errors.New("writeError")
