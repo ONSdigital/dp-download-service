@@ -3,16 +3,17 @@ package handlers
 import (
 	"context"
 	"encoding/hex"
+	"io"
+	"net/http"
+	"net/url"
+	"path/filepath"
+
 	"github.com/ONSdigital/go-ns/clients/dataset"
 	"github.com/ONSdigital/go-ns/clients/filter"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gorilla/mux"
-	"io"
-	"net/http"
-	"net/url"
-	"path/filepath"
 )
 
 // mockgen is prefixing the imports within the mock file with the vendor directory 'github.com/ONSdigital/dp-download-service/vendor/'
