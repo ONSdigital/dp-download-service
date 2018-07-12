@@ -11,6 +11,13 @@ job "dp-download-service" {
       value     = "web"
     }
 
+    restart {
+      attempts = 3
+      delay    = "15s"
+      interval = "1m"
+      mode     = "delay"
+    }
+
     task "dp-download-service-web" {
       driver = "exec"
 
@@ -70,6 +77,13 @@ job "dp-download-service" {
     constraint {
       attribute = "${node.class}"
       value     = "publishing"
+    }
+
+    restart {
+      attempts = 3
+      delay    = "15s"
+      interval = "1m"
+      mode     = "delay"
     }
 
     task "dp-download-service-publishing" {
