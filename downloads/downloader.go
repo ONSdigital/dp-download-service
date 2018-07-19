@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
+	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
@@ -43,6 +44,12 @@ type FilterClient interface {
 type ImageClient interface {
 	GetDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (m image.ImageDownload, err error)
 	Checker(ctx context.Context, check *healthcheck.CheckState) error
+}
+
+// FilesClient is interface to the files api
+type FilesClient interface {
+	GetFile(ctx context.Context, path string, authToken string) (files.FileMetaData, error)
+	Checker(ctx context.Context, state *healthcheck.CheckState) error
 }
 
 // FileType - iota enum of possible file types that can be download

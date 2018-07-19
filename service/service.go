@@ -80,6 +80,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		filesClient:   deps.FilesClient(cfg.FilesAPIURL),
 		filterClient:  deps.FilterClient(cfg.FilterAPIURL),
 		imageClient:   deps.ImageClient(cfg.ImageAPIURL),
+		filesClient:   deps.FilesClient(cfg),
 		shutdown:      cfg.GracefulShutdownTimeout,
 	}
 

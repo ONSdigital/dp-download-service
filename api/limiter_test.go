@@ -94,6 +94,8 @@ func HeavyHandler(requestNumber, limit int, counter chan<- int) http.Handler {
 func ConcurrencyTest(t *testing.T, hc HandlerConstructor, requestNumber, limit int) ConcurrencyTestResult {
 	var oopsCount uint64
 
+	var oopsCount uint64
+
 	counter := make(chan int)
 	codes := make(chan int)
 

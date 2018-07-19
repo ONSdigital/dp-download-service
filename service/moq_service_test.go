@@ -5,14 +5,15 @@ package service_test
 
 import (
 	"context"
+	"net/http"
+	"sync"
+
 	"github.com/ONSdigital/dp-authorisation/v2/authorisation"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	"net/http"
-	"sync"
 )
 
 // Ensure, that DependenciesMock does implement service.Dependencies.
