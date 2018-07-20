@@ -20,6 +20,8 @@ import (
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/s3crypto"
 	"github.com/gorilla/mux"
+
+	gorillahandlers "github.com/gorilla/handlers"
 )
 
 // Download represents the configuration to run the download service
@@ -89,6 +91,10 @@ func Create(bindAddr, vaultPath, bucketName, serviceToken, downloadServiceToken,
 		log.Debug("private endpoints are enabled. using identity middleware", nil)
 		identityHandler := identity.Handler(zebedeeURL)
 		middlewareChain = middlewareChain.Append(identityHandler)
+	} else {
+
+		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))
+		middlewareChain = middlewareChain.Append(corsHandler)
 	}
 
 	alice := middlewareChain.Then(router)
