@@ -81,10 +81,10 @@
 			"revisionTime": "2018-05-02T15:15:30Z"
 		},
 		{
-			"checksumSHA1": "71xgXVQ5SyGszJmnt9cLnm2Uvlo=",
+			"checksumSHA1": "xKm7QULUZK4EhJghA5k2l2LIT08=",
 			"path": "github.com/ONSdigital/s3crypto",
-			"revision": "e360b5d0d9010760866d460267937ae8022c838f",
-			"revisionTime": "2018-06-26T09:21:39Z"
+			"revision": "e5bbfbe7f55c24babefd663fb02a9974810576fb",
+			"revisionTime": "2018-07-24T13:05:17Z"
 		},
 		{
 			"checksumSHA1": "rdZaVLLiVPGv+3UFysPb7bhrMqg=",
