@@ -21,7 +21,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
-const encryptionKeyHeader = "Pskencrypted"
+const (
+	encryptionKeyHeader = "Pskencrypted"
+
+	maxChunkSize = 5 * 1024 * 1024
+)
 
 // ErrNoPrivateKey is returned when an attempt is made to access a method that requires a private key when it has not been provided
 var ErrNoPrivateKey = errors.New("you have not provided a private key and therefore do not have permission to complete this action")
@@ -50,6 +54,54 @@ type CryptoClient struct {
 	chunkSize         int
 }
 
+type cryptoReader struct {
+	s3Reader io.ReadCloser
+
+	psk       []byte
+	chunkSize int
+
+	currChunk []byte
+}
+
+func (r *cryptoReader) Read(b []byte) (int, error) {
+	if r.chunkSize == 0 {
+		r.chunkSize = maxChunkSize
+	}
+
+	if len(r.currChunk) == 0 {
+		p := make([]byte, r.chunkSize)
+
+		n, err := io.ReadFull(r.s3Reader, p)
+		if err != nil && err != io.ErrUnexpectedEOF {
+			return n, err
+		}
+
+		unencryptedChunk, err := decryptObjectContent(r.psk, ioutil.NopCloser(bytes.NewReader(p[:n])))
+		if err != nil {
+			return 0, err
+		}
+
+		r.currChunk = unencryptedChunk
+	}
+
+	var n int
+	if len(r.currChunk) >= len(b) {
+		copy(b, r.currChunk[:len(b)])
+		n = len(b)
+		r.currChunk = r.currChunk[len(b):]
+	} else {
+		copy(b, r.currChunk)
+		n = len(r.currChunk)
+		r.currChunk = nil
+	}
+
+	return n, nil
+}
+
+func (r *cryptoReader) Close() error {
+	return r.s3Reader.Close()
+}
+
 // Uploader provides a wrapper to the aws-sdk-go s3manager uploader
 // for encryption
 type Uploader struct {
@@ -61,6 +113,9 @@ type Uploader struct {
 // New supports the creation of an Encryption supported client
 // with a given aws session and rsa Private Key.
 func New(sess *session.Session, cfg *Config) *CryptoClient {
+	if cfg.MultipartChunkSize == 0 {
+		cfg.MultipartChunkSize = maxChunkSize
+	}
 	cc := &CryptoClient{s3.New(sess), cfg.PrivateKey, cfg.PublicKey, cfg.HasUserDefinedPSK, cfg.MultipartChunkSize}
 
 	if cc.privKey != nil {
@@ -285,18 +340,18 @@ func (c *CryptoClient) GetObjectRequest(input *s3.GetObjectInput) (req *request.
 		return
 	}
 
-	var content []byte
+	var content io.Reader
 	if c.chunkSize > 0 {
 		content, err = decryptObjectContentChunks(c.chunkSize, psk, out.Body)
 	} else {
-		content, err = decryptObjectContent(psk, out.Body)
+		content, err = decryptObjectContentChunks(maxChunkSize, psk, out.Body)
 	}
 	if err != nil {
 		req.Error = err
 		return
 	}
 
-	out.Body = ioutil.NopCloser(bytes.NewReader(content))
+	out.Body = ioutil.NopCloser(content)
 
 	return
 }
@@ -311,18 +366,11 @@ func (c *CryptoClient) GetObjectRequestWithPSK(input *s3.GetObjectInput, psk []b
 		return
 	}
 
-	var content []byte
-	if c.chunkSize > 0 {
-		content, err = decryptObjectContentChunks(c.chunkSize, psk, out.Body)
-	} else {
-		content, err = decryptObjectContent(psk, out.Body)
+	out.Body = &cryptoReader{
+		s3Reader:  out.Body,
+		psk:       psk,
+		chunkSize: c.chunkSize,
 	}
-	if err != nil {
-		req.Error = err
-		return
-	}
-
-	out.Body = ioutil.NopCloser(bytes.NewReader(content))
 
 	return
 }
@@ -480,12 +528,31 @@ func (u *Uploader) Upload(input *s3manager.UploadInput) (output *s3manager.Uploa
 
 // UploadWithPSK allows you to encrypt the file with a given psk
 func (u *Uploader) UploadWithPSK(input *s3manager.UploadInput, psk []byte) (output *s3manager.UploadOutput, err error) {
-	encryptedContent, err := encryptObjectContent(psk, input.Body)
-	if err != nil {
-		return
+
+	p := make([]byte, maxChunkSize)
+	buf := &bytes.Buffer{}
+
+	for {
+		n, err := io.ReadFull(input.Body, p)
+		if err != nil && err != io.ErrUnexpectedEOF {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+
+		encryptedContent, err := encryptObjectContent(psk, bytes.NewReader(p[:n]))
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = buf.Write(encryptedContent)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	input.Body = bytes.NewReader(encryptedContent)
+	input.Body = buf
 
 	return u.s3uploader.Upload(input)
 }
@@ -510,21 +577,21 @@ func encryptObjectContent(psk []byte, b io.Reader) ([]byte, error) {
 	return encryptedBytes, nil
 }
 
-func decryptObjectContentChunks(size int, psk []byte, r io.ReadCloser) ([]byte, error) {
+func decryptObjectContentChunks(size int, psk []byte, r io.ReadCloser) (io.Reader, error) {
 
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
+	p := make([]byte, size)
 
-	var buf bytes.Buffer
-	for chunkOffset := 0; chunkOffset < len(b); chunkOffset += size {
-		chunkEnd := chunkOffset + size
-		if chunkEnd > len(b) {
-			chunkEnd = len(b)
+	buf := &bytes.Buffer{}
+	for {
+		n, err := io.ReadFull(r, p)
+		if err != nil && err != io.ErrUnexpectedEOF {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
 		}
 
-		unencryptedChunk, err := decryptObjectContent(psk, ioutil.NopCloser(bytes.NewReader(b[chunkOffset:chunkEnd])))
+		unencryptedChunk, err := decryptObjectContent(psk, ioutil.NopCloser(bytes.NewReader(p[:n])))
 		if err != nil {
 			return nil, err
 		}
@@ -535,7 +602,7 @@ func decryptObjectContentChunks(size int, psk []byte, r io.ReadCloser) ([]byte, 
 		}
 	}
 
-	return buf.Bytes(), nil
+	return buf, nil
 }
 
 func decryptObjectContent(psk []byte, b io.ReadCloser) ([]byte, error) {
