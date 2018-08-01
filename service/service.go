@@ -20,6 +20,8 @@ import (
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/s3crypto"
 	"github.com/gorilla/mux"
+
+	gorillahandlers "github.com/gorilla/handlers"
 )
 
 // Download represents the configuration to run the download service
@@ -77,6 +79,7 @@ func Create(bindAddr, vaultPath, bucketName, serviceToken, downloadServiceToken,
 	}
 
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv"))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.Do("csvw"))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.Do("xls"))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.Do("csv"))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.Do("xls"))
@@ -89,6 +92,10 @@ func Create(bindAddr, vaultPath, bucketName, serviceToken, downloadServiceToken,
 		log.Debug("private endpoints are enabled. using identity middleware", nil)
 		identityHandler := identity.Handler(zebedeeURL)
 		middlewareChain = middlewareChain.Append(identityHandler)
+	} else {
+
+		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))
+		middlewareChain = middlewareChain.Append(corsHandler)
 	}
 
 	alice := middlewareChain.Then(router)

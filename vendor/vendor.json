@@ -9,10 +9,10 @@
 			"revisionTime": "2018-06-07T13:26:14Z"
 		},
 		{
-			"checksumSHA1": "KA3u5cF0LtNR3eI6KhXmZcAeP5k=",
+			"checksumSHA1": "6IIvZfPt8XWggzU4n/YK56ooAGY=",
 			"path": "github.com/ONSdigital/go-ns/clients/dataset",
-			"revision": "491470a66fbb2471ff3fd02f8159b7158d9281ab",
-			"revisionTime": "2018-06-07T13:26:14Z"
+			"revision": "314051615561cc850037d17ded11edf2fae8853b",
+			"revisionTime": "2018-07-19T09:17:54Z"
 		},
 		{
 			"checksumSHA1": "zcGFJ7e53wqtfodnorq4kRWKg3k=",
@@ -81,10 +81,10 @@
 			"revisionTime": "2018-05-02T15:15:30Z"
 		},
 		{
-			"checksumSHA1": "71xgXVQ5SyGszJmnt9cLnm2Uvlo=",
+			"checksumSHA1": "xKm7QULUZK4EhJghA5k2l2LIT08=",
 			"path": "github.com/ONSdigital/s3crypto",
-			"revision": "e360b5d0d9010760866d460267937ae8022c838f",
-			"revisionTime": "2018-06-26T09:21:39Z"
+			"revision": "e5bbfbe7f55c24babefd663fb02a9974810576fb",
+			"revisionTime": "2018-07-24T13:05:17Z"
 		},
 		{
 			"checksumSHA1": "rdZaVLLiVPGv+3UFysPb7bhrMqg=",
@@ -316,6 +316,12 @@
 			"path": "github.com/gorilla/context",
 			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
 			"revisionTime": "2016-08-17T18:46:32Z"
+		},
+		{
+			"checksumSHA1": "g2vlK3BKoHhvkbK22D/KiMr5tJg=",
+			"path": "github.com/gorilla/handlers",
+			"revision": "6257a585e449b97a6b520bbd86575c4aa9f7c596",
+			"revisionTime": "2018-07-17T23:33:20Z"
 		},
 		{
 			"checksumSHA1": "F0N5V10ap7J7/rAVRGa7QdmKqlU=",
