@@ -36,12 +36,12 @@ job "dp-download-service" {
       config {
         command = "${NOMAD_TASK_DIR}/start-task"
 
-        args = [“./dp-download-service”]
+        args = ["./dp-download-service"]
 
-        image = “{{ECR_URL}}:concourse-{{REVISION}}”
+        image = "{{ECR_URL}}:concourse-{{REVISION}}"
 
         port_map {
-          http = “${NOMAD_PORT_http}”
+          http = "${NOMAD_PORT_http}"
         }
       }
 
@@ -105,12 +105,12 @@ job "dp-download-service" {
       config {
         command = "${NOMAD_TASK_DIR}/start-task"
 
-        args = [“./dp-download-service”]
+        args = ["./dp-download-service"]
 
-        image = “{{ECR_URL}}:concourse-{{REVISION}}”
+        image = "{{ECR_URL}}:concourse-{{REVISION}}"
 
         port_map {
-          http = “${NOMAD_PORT_http}”
+          http = "${NOMAD_PORT_http}"
         }
       }
 
