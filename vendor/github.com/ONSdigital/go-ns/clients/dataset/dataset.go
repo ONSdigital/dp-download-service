@@ -85,6 +85,8 @@ func (c *Client) Get(ctx context.Context, id string) (m Model, err error) {
 		return
 	}
 
+	req = setCollectionID(ctx, req)
+
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return
@@ -109,7 +111,7 @@ func (c *Client) Get(ctx context.Context, id string) (m Model, err error) {
 	// TODO: Authentication will sort this problem out for us. Currently
 	// the shape of the response body is different if you are authenticated
 	// so return the "next" item only
-	if next, ok := body["next"]; ok && common.IsCallerPresent(ctx) {
+	if next, ok := body["next"]; ok && (common.IsCallerPresent(ctx) || common.IsFlorenceIdentityPresent(ctx)) {
 		b, err = json.Marshal(next)
 		if err != nil {
 			return
@@ -130,6 +132,8 @@ func (c *Client) GetDatasets(ctx context.Context) (m ModelCollection, err error)
 	if err != nil {
 		return
 	}
+
+	req = setCollectionID(ctx, req)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -165,6 +169,8 @@ func (c *Client) GetEdition(ctx context.Context, datasetID, edition string) (m E
 	if err != nil {
 		return
 	}
+
+	req = setCollectionID(ctx, req)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -208,6 +214,8 @@ func (c *Client) GetEditions(ctx context.Context, id string) (m []Edition, err e
 	if err != nil {
 		return
 	}
+
+	req = setCollectionID(ctx, req)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -262,6 +270,8 @@ func (c *Client) GetVersions(ctx context.Context, id, edition string) (m []Versi
 		return
 	}
 
+	req = setCollectionID(ctx, req)
+
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return
@@ -298,6 +308,8 @@ func (c *Client) GetVersion(ctx context.Context, id, edition, version string) (m
 		return
 	}
 
+	req = setCollectionID(ctx, req)
+
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return
@@ -328,6 +340,8 @@ func (c *Client) GetInstance(ctx context.Context, instanceID string) (m Instance
 	if err != nil {
 		return
 	}
+
+	req = setCollectionID(ctx, req)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -364,6 +378,8 @@ func (c *Client) PutVersion(ctx context.Context, datasetID, edition, version str
 		return errors.Wrap(err, "error while attempting to create http request")
 	}
 
+	req = setCollectionID(ctx, req)
+
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return errors.Wrap(err, "http client returned error while attempting to make request")
@@ -392,6 +408,8 @@ func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version st
 	if err != nil {
 		return
 	}
+
+	req = setCollectionID(ctx, req)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -423,6 +441,8 @@ func (c *Client) GetDimensions(ctx context.Context, id, edition, version string)
 	if err != nil {
 		return
 	}
+
+	req = setCollectionID(ctx, req)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -460,6 +480,8 @@ func (c *Client) GetOptions(ctx context.Context, id, edition, version, dimension
 		return
 	}
 
+	req = setCollectionID(ctx, req)
+
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return
@@ -496,4 +518,16 @@ func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatase
 		e.body = string(b)
 	}
 	return
+}
+
+func setCollectionID(ctx context.Context, req *http.Request) *http.Request {
+
+	rawKeyValue := ctx.Value(common.CollectionIDHeaderKey)
+
+	if rawKeyValue != nil {  // avoid stringifying an empty interface
+		collectionID := rawKeyValue.(string)
+		req.Header.Set(common.CollectionIDHeaderKey, collectionID)
+	}
+
+	return req
 }
