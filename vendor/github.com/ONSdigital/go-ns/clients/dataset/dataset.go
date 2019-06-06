@@ -132,7 +132,7 @@ func (c *Client) GetDatasets(ctx context.Context) (m ModelCollection, err error)
 	if err != nil {
 		return
 	}
-
+	
 	req = setCollectionID(ctx, req)
 
 	resp, err := c.cli.Do(ctx, req)

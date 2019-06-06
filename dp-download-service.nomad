@@ -94,6 +94,12 @@ job "dp-download-service" {
       interval = "1m"
       mode     = "delay"
     }
+<<<<<<< HEAD
+=======
+
+    task "dp-download-service-publishing" {
+      driver = "exec"
+>>>>>>> master
 
     task "dp-download-service-publishing" {
       driver = "docker"
