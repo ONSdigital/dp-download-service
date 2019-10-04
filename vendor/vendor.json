@@ -3,6 +3,18 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "zU9Pguj/FFmev60uzWMXVrXrNqU=",
+			"path": "github.com/ONSdigital/dp-api-clients-go",
+			"revision": "720fb8f0004459856fe10aff0dade02c078d3911",
+			"revisionTime": "2019-10-04T13:02:00Z"
+		},
+		{
+			"checksumSHA1": "jaImJmCMOAR6xG3nWvyfQZQjqyU=",
+			"path": "github.com/ONSdigital/dp-api-clients-go/clientlog",
+			"revision": "720fb8f0004459856fe10aff0dade02c078d3911",
+			"revisionTime": "2019-10-04T13:02:00Z"
+		},
+		{
 			"checksumSHA1": "sTplfTmlRRkvhyi6VUcuMDJSMPk=",
 			"path": "github.com/ONSdigital/dp-api-clients-go/dataset",
 			"revision": "533f62f276db8fae16271d4ab9849a4adacf89dd",
@@ -15,10 +27,34 @@
 			"revisionTime": "2019-10-04T08:20:17Z"
 		},
 		{
+			"checksumSHA1": "kfYXQkrhtHmrFemAKJphLIjAFf0=",
+			"path": "github.com/ONSdigital/dp-api-clients-go/headers",
+			"revision": "720fb8f0004459856fe10aff0dade02c078d3911",
+			"revisionTime": "2019-10-04T13:02:00Z"
+		},
+		{
 			"checksumSHA1": "KaUDA6IMAlw8qvfTqjZBIY3a+c0=",
 			"path": "github.com/ONSdigital/dp-api-clients-go/identity",
 			"revision": "533f62f276db8fae16271d4ab9849a4adacf89dd",
 			"revisionTime": "2019-09-20T14:47:44Z"
+		},
+		{
+			"checksumSHA1": "8xu5NNiSDqiklwPxw545JpBX9g8=",
+			"path": "github.com/ONSdigital/dp-rchttp",
+			"revision": "a0a2529a81d239799f959205695b68160a99d6cb",
+			"revisionTime": "2019-08-30T11:25:54Z"
+		},
+		{
+			"checksumSHA1": "8qaOlIKc60HArH/nKi5y9DC2PHM=",
+			"path": "github.com/ONSdigital/go-ns/audit",
+			"revision": "30bf55ba5a05f1d425fba4607f1af7d0e8a89cae",
+			"revisionTime": "2019-09-19T16:09:22Z"
+		},
+		{
+			"checksumSHA1": "vyzH2Rju6G4A/uK4zqWIidfk3dA=",
+			"path": "github.com/ONSdigital/go-ns/avro",
+			"revision": "30bf55ba5a05f1d425fba4607f1af7d0e8a89cae",
+			"revisionTime": "2019-09-19T16:09:22Z"
 		},
 		{
 			"checksumSHA1": "+rsjNtumZUdoJ5k3D6TI8+RkkTU=",
@@ -79,10 +115,22 @@
 			"revisionTime": "2019-09-19T16:09:22Z"
 		},
 		{
+			"checksumSHA1": "g9flYl+PBs6cYflFY3EpG6IcJGM=",
+			"path": "github.com/ONSdigital/go-ns/log",
+			"revision": "30bf55ba5a05f1d425fba4607f1af7d0e8a89cae",
+			"revisionTime": "2019-09-19T16:09:22Z"
+		},
+		{
 			"checksumSHA1": "DCXeIpFKcAMDgRMCQlrQ3qwM4Hg=",
 			"path": "github.com/ONSdigital/go-ns/rchttp",
 			"revision": "34bee71207dafcff895cb4d2fa3b262ee9d4ff1e",
 			"revisionTime": "2018-06-01T12:37:03Z"
+		},
+		{
+			"checksumSHA1": "fRvn/yfzF56k6mIJxg6kAvA+PE0=",
+			"path": "github.com/ONSdigital/go-ns/request",
+			"revision": "30bf55ba5a05f1d425fba4607f1af7d0e8a89cae",
+			"revisionTime": "2019-09-19T16:09:22Z"
 		},
 		{
 			"checksumSHA1": "GQdzMpAMb42KQQ/GsJFSRU5dj1Y=",
@@ -95,6 +143,12 @@
 			"path": "github.com/ONSdigital/go-ns/vault",
 			"revision": "220f7619ded01c2575c1e2d49d11a6d5e661536d",
 			"revisionTime": "2018-05-02T15:15:30Z"
+		},
+		{
+			"checksumSHA1": "r2PdGOPVGXt0WTdGQXN5aHfp0RM=",
+			"path": "github.com/ONSdigital/log.go/log",
+			"revision": "93cc21caa3b378645874496cca0d8204bdf0f891",
+			"revisionTime": "2019-02-14T09:59:51Z"
 		},
 		{
 			"checksumSHA1": "xKm7QULUZK4EhJghA5k2l2LIT08=",
@@ -295,6 +349,12 @@
 			"revisionTime": "2018-06-29T22:51:36Z"
 		},
 		{
+			"checksumSHA1": "BxH9xJUqczhpL57gfKZe2/VlBHY=",
+			"path": "github.com/fatih/color",
+			"revision": "3f9d52f7176a6927daacff70a3e8d1dc2025c53e",
+			"revisionTime": "2018-10-10T23:13:11Z"
+		},
+		{
 			"checksumSHA1": "5BP5xofo0GoFi6FtgqFFbmHyUKI=",
 			"origin": "github.com/ONSdigital/go-ns/vendor/github.com/fatih/structs",
 			"path": "github.com/fatih/structs",
@@ -317,6 +377,12 @@
 		{
 			"checksumSHA1": "eafZeimF8qi7F25HvMCvdKfCZuc=",
 			"path": "github.com/golang/mock/mockgen",
+			"revision": "cbd2e353ab04dfb7bd2e19ab7aa041c3440ad2c5",
+			"revisionTime": "2019-07-09T22:53:26Z"
+		},
+		{
+			"checksumSHA1": "i254zT/wUxHtZMmOOXTRuscMfhE=",
+			"path": "github.com/golang/mock/mockgen/model",
 			"revision": "cbd2e353ab04dfb7bd2e19ab7aa041c3440ad2c5",
 			"revisionTime": "2019-07-09T22:53:26Z"
 		},
@@ -476,6 +542,12 @@
 			"path": "github.com/hashicorp/vault/helper/strutil",
 			"revision": "7c3071347e750335c7b91a7e34fea8bbc6023c63",
 			"revisionTime": "2018-03-06T12:31:59Z"
+		},
+		{
+			"checksumSHA1": "+HUsIuEnSLik8Jrrw9MDdxmhT5c=",
+			"path": "github.com/hokaccha/go-prettyjson",
+			"revision": "f579f869bbfea48a61fbea09207cadd1aaeceb83",
+			"revisionTime": "2018-09-20T04:03:06Z"
 		},
 		{
 			"checksumSHA1": "0ZrwvB6KoGPj2PoDNSEJwxQ6Mog=",
@@ -650,6 +722,48 @@
 			"path": "golang.org/x/text/unicode/norm",
 			"revision": "7c3071347e750335c7b91a7e34fea8bbc6023c63",
 			"revisionTime": "2018-03-06T12:31:59Z"
+		},
+		{
+			"checksumSHA1": "PHHLaKUlRnuGDhvOJZAXt25Smk0=",
+			"path": "golang.org/x/tools/go/gcexportdata",
+			"revision": "e7abfedfabcfcc6a3220ae994ab001754cf1a76a",
+			"revisionTime": "2019-09-23T14:59:13Z"
+		},
+		{
+			"checksumSHA1": "U1mlGGM9Irs++8c/g0GVkiIOI/M=",
+			"path": "golang.org/x/tools/go/internal/gcimporter",
+			"revision": "e7abfedfabcfcc6a3220ae994ab001754cf1a76a",
+			"revisionTime": "2019-09-23T14:59:13Z"
+		},
+		{
+			"checksumSHA1": "qIa2Ow6uCdXhD+aELo9ZxgOz7tU=",
+			"path": "golang.org/x/tools/go/internal/packagesdriver",
+			"revision": "e7abfedfabcfcc6a3220ae994ab001754cf1a76a",
+			"revisionTime": "2019-09-23T14:59:13Z"
+		},
+		{
+			"checksumSHA1": "arfyDLkWkpxy/O/DzyasJEy65L0=",
+			"path": "golang.org/x/tools/go/packages",
+			"revision": "e7abfedfabcfcc6a3220ae994ab001754cf1a76a",
+			"revisionTime": "2019-09-23T14:59:13Z"
+		},
+		{
+			"checksumSHA1": "dC7MpahR/U0T8CRcTypgrwO1Lg0=",
+			"path": "golang.org/x/tools/internal/fastwalk",
+			"revision": "e7abfedfabcfcc6a3220ae994ab001754cf1a76a",
+			"revisionTime": "2019-09-23T14:59:13Z"
+		},
+		{
+			"checksumSHA1": "3XJu0CybZAY48wsVDOI43Ah9MQ4=",
+			"path": "golang.org/x/tools/internal/gopathwalk",
+			"revision": "e7abfedfabcfcc6a3220ae994ab001754cf1a76a",
+			"revisionTime": "2019-09-23T14:59:13Z"
+		},
+		{
+			"checksumSHA1": "Lcm5y2VtSqdVuOjhBFEeAHNI+ug=",
+			"path": "golang.org/x/tools/internal/semver",
+			"revision": "e7abfedfabcfcc6a3220ae994ab001754cf1a76a",
+			"revisionTime": "2019-09-23T14:59:13Z"
 		}
 	],
 	"rootPath": "github.com/ONSdigital/dp-download-service"
