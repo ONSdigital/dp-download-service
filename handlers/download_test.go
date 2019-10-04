@@ -9,13 +9,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/identity"
+	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/justinas/alice"
 
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/dp-download-service/handlers/mocks"
 	"github.com/ONSdigital/go-ns/common/commontest"
+	"github.com/ONSdigital/go-ns/identity"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
@@ -242,7 +243,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 				}, nil
 			},
 		}
-		idClient := identity.NewAPIClient(httpClient, zebedeeURL)
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		chain := alice.New(identity.HandlerForHTTPClient(idClient)).Then(r)
 

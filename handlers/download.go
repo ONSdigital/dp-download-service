@@ -41,6 +41,11 @@ type FilterClient interface {
 	GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID string) (m filter.Model, err error)
 }
 
+// IdentityClient is an interface to represent methods called to action on the identity api
+type IdentityClient interface {
+	CheckRequest(*http.Request, string, string)
+}
+
 // VaultClient is an interface to represent methods called to action upon vault
 type VaultClient interface {
 	ReadKey(path, key string) (string, error)
