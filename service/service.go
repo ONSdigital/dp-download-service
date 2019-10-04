@@ -10,13 +10,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/justinas/alice"
 
-	"github.com/ONSdigital/dp-download-service/handlers"
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
+	"github.com/ONSdigital/dp-download-service/handlers"
 	"github.com/ONSdigital/go-ns/healthcheck"
-	"github.com/ONSdigital/dp-api-clients-go/identity"
+	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/s3crypto"
 	"github.com/gorilla/mux"
@@ -44,7 +43,7 @@ type DatasetClient interface {
 
 // FilterClient is an interface to represent methods called to action on the filter api
 type FilterClient interface {
-	GetOutput(ctx context.Context, filterOutputID string) (filter.Model, error)
+	GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, filterOutputID string) (filter.Model, error)
 	healthcheck.Client
 }
 
@@ -64,9 +63,6 @@ func Create(bindAddr, vaultPath, bucketName, ServiceAuthToken, downloadServiceTo
 	isPublishing bool) Download {
 
 	router := mux.NewRouter()
-
-	rchttpClient := rchttp.ClientWithServiceToken(rchttp.DefaultClient, ServiceAuthToken)
-	rchttpClient.SetDownloadServiceToken(downloadServiceToken)
 
 	d := handlers.Download{
 		DatasetClient: dc,
