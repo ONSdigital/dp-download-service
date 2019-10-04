@@ -6,8 +6,8 @@ package mocks
 
 import (
 	context "context"
-	dataset "github.com/ONSdigital/go-ns/clients/dataset"
-	filter "github.com/ONSdigital/go-ns/clients/filter"
+	dataset "github.com/ONSdigital/dp-api-clients-go/dataset"
+	filter "github.com/ONSdigital/dp-api-clients-go/filter"
 	s3 "github.com/aws/aws-sdk-go/service/s3"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
@@ -37,16 +37,18 @@ func (m *MockDatasetClient) EXPECT() *MockDatasetClientMockRecorder {
 }
 
 // GetVersion mocks base method
-func (m *MockDatasetClient) GetVersion(arg0 context.Context, arg1, arg2, arg3 string) (dataset.Version, error) {
-	ret := m.ctrl.Call(m, "GetVersion", arg0, arg1, arg2, arg3)
+func (m *MockDatasetClient) GetVersion(arg0 context.Context, arg1, arg2, arg3, arg4, arg5, arg6, arg7 string) (dataset.Version, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVersion", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	ret0, _ := ret[0].(dataset.Version)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetVersion indicates an expected call of GetVersion
-func (mr *MockDatasetClientMockRecorder) GetVersion(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVersion", reflect.TypeOf((*MockDatasetClient)(nil).GetVersion), arg0, arg1, arg2, arg3)
+func (mr *MockDatasetClientMockRecorder) GetVersion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVersion", reflect.TypeOf((*MockDatasetClient)(nil).GetVersion), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 }
 
 // MockVaultClient is a mock of VaultClient interface
@@ -74,6 +76,7 @@ func (m *MockVaultClient) EXPECT() *MockVaultClientMockRecorder {
 
 // ReadKey mocks base method
 func (m *MockVaultClient) ReadKey(arg0, arg1 string) (string, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReadKey", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
@@ -82,6 +85,7 @@ func (m *MockVaultClient) ReadKey(arg0, arg1 string) (string, error) {
 
 // ReadKey indicates an expected call of ReadKey
 func (mr *MockVaultClientMockRecorder) ReadKey(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadKey", reflect.TypeOf((*MockVaultClient)(nil).ReadKey), arg0, arg1)
 }
 
@@ -110,6 +114,7 @@ func (m *MockS3Client) EXPECT() *MockS3ClientMockRecorder {
 
 // GetObjectWithPSK mocks base method
 func (m *MockS3Client) GetObjectWithPSK(arg0 *s3.GetObjectInput, arg1 []byte) (*s3.GetObjectOutput, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectWithPSK", arg0, arg1)
 	ret0, _ := ret[0].(*s3.GetObjectOutput)
 	ret1, _ := ret[1].(error)
@@ -118,6 +123,7 @@ func (m *MockS3Client) GetObjectWithPSK(arg0 *s3.GetObjectInput, arg1 []byte) (*
 
 // GetObjectWithPSK indicates an expected call of GetObjectWithPSK
 func (mr *MockS3ClientMockRecorder) GetObjectWithPSK(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectWithPSK", reflect.TypeOf((*MockS3Client)(nil).GetObjectWithPSK), arg0, arg1)
 }
 
@@ -145,14 +151,16 @@ func (m *MockFilterClient) EXPECT() *MockFilterClientMockRecorder {
 }
 
 // GetOutput mocks base method
-func (m *MockFilterClient) GetOutput(arg0 context.Context, arg1 string) (filter.Model, error) {
-	ret := m.ctrl.Call(m, "GetOutput", arg0, arg1)
+func (m *MockFilterClient) GetOutput(arg0 context.Context, arg1, arg2, arg3, arg4, arg5 string) (filter.Model, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOutput", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(filter.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetOutput indicates an expected call of GetOutput
-func (mr *MockFilterClientMockRecorder) GetOutput(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOutput", reflect.TypeOf((*MockFilterClient)(nil).GetOutput), arg0, arg1)
+func (mr *MockFilterClientMockRecorder) GetOutput(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOutput", reflect.TypeOf((*MockFilterClient)(nil).GetOutput), arg0, arg1, arg2, arg3, arg4, arg5)
 }

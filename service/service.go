@@ -11,12 +11,12 @@ import (
 	"github.com/justinas/alice"
 
 	"github.com/ONSdigital/dp-download-service/handlers"
-	"github.com/ONSdigital/go-ns/clients/dataset"
-	"github.com/ONSdigital/go-ns/clients/filter"
+	"github.com/ONSdigital/dp-api-clients-go/dataset"
+	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/go-ns/healthcheck"
-	"github.com/ONSdigital/go-ns/identity"
+	"github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/ONSdigital/go-ns/rchttp"
+	"github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/s3crypto"
 	"github.com/gorilla/mux"
@@ -38,7 +38,7 @@ type Download struct {
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
 type DatasetClient interface {
-	GetVersion(ctx context.Context, id, edition, version string) (m dataset.Version, err error)
+	GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (m dataset.Version, err error)
 	healthcheck.Client
 }
 
@@ -55,7 +55,7 @@ type VaultClient interface {
 }
 
 // Create should be called to create a new instance of the download service, with routes correctly initialised
-func Create(bindAddr, vaultPath, bucketName, serviceToken, downloadServiceToken, zebedeeURL string,
+func Create(bindAddr, vaultPath, bucketName, ServiceAuthToken, downloadServiceToken, zebedeeURL string,
 	dc DatasetClient,
 	fc FilterClient,
 	s3sess *session.Session,
@@ -65,7 +65,7 @@ func Create(bindAddr, vaultPath, bucketName, serviceToken, downloadServiceToken,
 
 	router := mux.NewRouter()
 
-	rchttpClient := rchttp.ClientWithServiceToken(rchttp.DefaultClient, serviceToken)
+	rchttpClient := rchttp.ClientWithServiceToken(rchttp.DefaultClient, ServiceAuthToken)
 	rchttpClient.SetDownloadServiceToken(downloadServiceToken)
 
 	d := handlers.Download{

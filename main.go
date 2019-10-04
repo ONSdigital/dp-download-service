@@ -9,8 +9,8 @@ import (
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
-	"github.com/ONSdigital/go-ns/clients/dataset"
-	"github.com/ONSdigital/go-ns/clients/filter"
+	"github.com/ONSdigital/dp-api-clients-go/dataset"
+	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/go-ns/log"
 )
 
