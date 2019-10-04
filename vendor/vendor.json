@@ -362,6 +362,12 @@
 			"revisionTime": "2018-03-06T12:31:59Z"
 		},
 		{
+			"checksumSHA1": "bmfodlfB53b/p4GGAyV5Li6eVYA=",
+			"path": "github.com/go-avro/avro",
+			"revision": "444163702c11c47ac6bc8f02320ac76b71141688",
+			"revisionTime": "2017-12-19T23:29:20Z"
+		},
+		{
 			"checksumSHA1": "VvZKmbuBN1QAG699KduTdmSPwA4=",
 			"origin": "github.com/aws/aws-sdk-go/vendor/github.com/go-ini/ini",
 			"path": "github.com/go-ini/ini",
@@ -574,6 +580,18 @@
 			"path": "github.com/kelseyhightower/envconfig",
 			"revision": "462fda1f11d8cad3660e52737b8beefd27acfb3f",
 			"revisionTime": "2017-09-18T16:15:10Z"
+		},
+		{
+			"checksumSHA1": "XCrIQIhBqX1Ierm/Uz9lLjizT8c=",
+			"path": "github.com/mattn/go-colorable",
+			"revision": "98ec13f34aabf44cc914c65a1cfb7b9bc815aef1",
+			"revisionTime": "2019-09-30T17:34:38Z"
+		},
+		{
+			"checksumSHA1": "nj9rbH76zpC2GJcnxb6cdSRYNRQ=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "62f712808a2a54a0f220e557074b33f99af9440b",
+			"revisionTime": "2019-10-03T00:19:46Z"
 		},
 		{
 			"checksumSHA1": "hBgLmZ/4mCxmnH88mqFKBkpJFUY=",
