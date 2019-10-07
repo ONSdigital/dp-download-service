@@ -714,6 +714,12 @@
 			"revisionTime": "2018-03-06T12:31:59Z"
 		},
 		{
+			"checksumSHA1": "eQpQD1D5YeI1niWftHZgBni3Hkk=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "aed5e4c7ecf9f069775e08834fb724544628d38d",
+			"revisionTime": "2019-10-05T07:28:58Z"
+		},
+		{
 			"checksumSHA1": "tltivJ/uj/lqLk05IqGfCv2F/E8=",
 			"origin": "github.com/ONSdigital/go-ns/vendor/golang.org/x/text/secure/bidirule",
 			"path": "golang.org/x/text/secure/bidirule",
