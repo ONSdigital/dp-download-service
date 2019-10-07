@@ -32,7 +32,8 @@ type Download struct {
 	server              *server.Server
 	errChan             chan error
 	shutdown            time.Duration
-	healthcheckInterval time.Duration
+	healthCheckInterval time.Duration
+	healthCheckRecovery time.Duration
 }
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
@@ -59,7 +60,7 @@ func Create(bindAddr, vaultPath, bucketName, ServiceAuthToken, downloadServiceTo
 	fc FilterClient,
 	s3sess *session.Session,
 	vc VaultClient,
-	shutdown, healthcheckInterval time.Duration,
+	shutdown, healthCheckInterval, healthCheckRecovery time.Duration,
 	isPublishing bool) Download {
 
 	router := mux.NewRouter()
@@ -103,14 +104,15 @@ func Create(bindAddr, vaultPath, bucketName, ServiceAuthToken, downloadServiceTo
 		router:              router,
 		server:              httpServer,
 		shutdown:            shutdown,
-		healthcheckInterval: healthcheckInterval,
+		healthCheckInterval: healthCheckInterval,
+		healthCheckRecovery: healthCheckRecovery,
 		errChan:             make(chan error, 1),
 	}
 }
 
 // Start should be called to manage the running of the download service
 func (d Download) Start() {
-	healthTicker := healthcheck.NewTicker(d.healthcheckInterval, d.datasetClient, d.filterClient)
+	healthTicker := healthcheck.NewTicker(d.healthCheckInterval, d.healthCheckRecovery,d.datasetClient, d.filterClient)
 	d.server.HandleOSSignals = false
 
 	d.run()

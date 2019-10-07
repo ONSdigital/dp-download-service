@@ -63,28 +63,10 @@
 			"revisionTime": "2018-06-07T13:26:14Z"
 		},
 		{
-			"checksumSHA1": "OUfm7rDmp3qg4NkVD9UELXvO9Xk=",
-			"path": "github.com/ONSdigital/go-ns/clients/dataset",
-			"revision": "68aed3815467567f5bcbcceeffd5792151d83a1a",
-			"revisionTime": "2019-05-15T12:18:17Z"
-		},
-		{
-			"checksumSHA1": "zcGFJ7e53wqtfodnorq4kRWKg3k=",
-			"path": "github.com/ONSdigital/go-ns/clients/filter",
-			"revision": "491470a66fbb2471ff3fd02f8159b7158d9281ab",
-			"revisionTime": "2018-06-07T13:26:14Z"
-		},
-		{
-			"checksumSHA1": "69YldJlpMZgzWrnUEEFQeuFF5Ro=",
-			"path": "github.com/ONSdigital/go-ns/clients/identity",
-			"revision": "3eb10a09659f3aaed38e8ff5b6aa41b80a94f88e",
-			"revisionTime": "2018-05-10T07:07:55Z"
-		},
-		{
 			"checksumSHA1": "IV6CmyPxZnOlkVCcXXYVuBwUz+I=",
 			"path": "github.com/ONSdigital/go-ns/common",
-			"revision": "f2c71bd127a5817b4708f0613a034f3d90e89766",
-			"revisionTime": "2019-09-16T10:14:16Z"
+			"revision": "30bf55ba5a05f1d425fba4607f1af7d0e8a89cae",
+			"revisionTime": "2019-09-19T16:09:22Z"
 		},
 		{
 			"path": "github.com/ONSdigital/go-ns/common/collection",
@@ -103,10 +85,10 @@
 			"revisionTime": "2018-05-02T15:15:30Z"
 		},
 		{
-			"checksumSHA1": "p1fQ6Gqk1X/bTmhSqOnLDPOSD10=",
+			"checksumSHA1": "TNDLPtZgP8tqlEZnzQr9bLJewIU=",
 			"path": "github.com/ONSdigital/go-ns/healthcheck",
-			"revision": "220f7619ded01c2575c1e2d49d11a6d5e661536d",
-			"revisionTime": "2018-05-02T15:15:30Z"
+			"revision": "30bf55ba5a05f1d425fba4607f1af7d0e8a89cae",
+			"revisionTime": "2019-09-19T16:09:22Z"
 		},
 		{
 			"checksumSHA1": "Xawvi/K1BDYEsTxvEj5V15K1eEY=",
@@ -119,12 +101,6 @@
 			"path": "github.com/ONSdigital/go-ns/log",
 			"revision": "30bf55ba5a05f1d425fba4607f1af7d0e8a89cae",
 			"revisionTime": "2019-09-19T16:09:22Z"
-		},
-		{
-			"checksumSHA1": "DCXeIpFKcAMDgRMCQlrQ3qwM4Hg=",
-			"path": "github.com/ONSdigital/go-ns/rchttp",
-			"revision": "34bee71207dafcff895cb4d2fa3b262ee9d4ff1e",
-			"revisionTime": "2018-06-01T12:37:03Z"
 		},
 		{
 			"checksumSHA1": "fRvn/yfzF56k6mIJxg6kAvA+PE0=",

@@ -16,6 +16,7 @@ type Config struct {
 	FilterAPIURL            string        `envconfig:"FILTER_API_URL"`
 	GracefulShutdownTimeout time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"  json:"-"`
 	HealthCheckInterval     time.Duration `envconfig:"HEALTHCHECK_INTERVAL"`
+	HealthCheckRecovery     time.Duration `envconfig:"HEALTHCHECK_RECOVERY_INTERVAL"`
 	SecretKey               string        `envconfig:"SECRET_KEY"                 json:"-"`
 	VaultToken              string        `envconfig:"VAULT_TOKEN"                json:"-"`
 	VaultAddress            string        `envconfig:"VAULT_ADDR"`
@@ -42,6 +43,7 @@ func Get() (*Config, error) {
 		DownloadServiceToken:    "QB0108EZ-825D-412C-9B1D-41EF7747F462",
 		GracefulShutdownTimeout: 5 * time.Second,
 		HealthCheckInterval:     1 * time.Minute,
+		HealthCheckRecovery:     5 * time.Second,
 		VaultAddress:            "http://localhost:8200",
 		VaultToken:              "",
 		VaultPath:               "secret/shared/psk",
