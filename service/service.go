@@ -10,13 +10,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/justinas/alice"
 
+	"github.com/ONSdigital/dp-api-clients-go/dataset"
+	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/dp-download-service/handlers"
-	"github.com/ONSdigital/go-ns/clients/dataset"
-	"github.com/ONSdigital/go-ns/clients/filter"
 	"github.com/ONSdigital/go-ns/healthcheck"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/ONSdigital/go-ns/rchttp"
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/s3crypto"
 	"github.com/gorilla/mux"
@@ -33,18 +32,19 @@ type Download struct {
 	server              *server.Server
 	errChan             chan error
 	shutdown            time.Duration
-	healthcheckInterval time.Duration
+	healthCheckInterval time.Duration
+	healthCheckRecovery time.Duration
 }
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
 type DatasetClient interface {
-	GetVersion(ctx context.Context, id, edition, version string) (m dataset.Version, err error)
+	GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (m dataset.Version, err error)
 	healthcheck.Client
 }
 
 // FilterClient is an interface to represent methods called to action on the filter api
 type FilterClient interface {
-	GetOutput(ctx context.Context, filterOutputID string) (filter.Model, error)
+	GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, filterOutputID string) (filter.Model, error)
 	healthcheck.Client
 }
 
@@ -55,18 +55,15 @@ type VaultClient interface {
 }
 
 // Create should be called to create a new instance of the download service, with routes correctly initialised
-func Create(bindAddr, vaultPath, bucketName, serviceToken, downloadServiceToken, zebedeeURL string,
+func Create(bindAddr, vaultPath, bucketName, ServiceAuthToken, downloadServiceToken, zebedeeURL string,
 	dc DatasetClient,
 	fc FilterClient,
 	s3sess *session.Session,
 	vc VaultClient,
-	shutdown, healthcheckInterval time.Duration,
+	shutdown, healthCheckInterval, healthCheckRecovery time.Duration,
 	isPublishing bool) Download {
 
 	router := mux.NewRouter()
-
-	rchttpClient := rchttp.ClientWithServiceToken(rchttp.DefaultClient, serviceToken)
-	rchttpClient.SetDownloadServiceToken(downloadServiceToken)
 
 	d := handlers.Download{
 		DatasetClient: dc,
@@ -107,14 +104,15 @@ func Create(bindAddr, vaultPath, bucketName, serviceToken, downloadServiceToken,
 		router:              router,
 		server:              httpServer,
 		shutdown:            shutdown,
-		healthcheckInterval: healthcheckInterval,
+		healthCheckInterval: healthCheckInterval,
+		healthCheckRecovery: healthCheckRecovery,
 		errChan:             make(chan error, 1),
 	}
 }
 
 // Start should be called to manage the running of the download service
 func (d Download) Start() {
-	healthTicker := healthcheck.NewTicker(d.healthcheckInterval, d.datasetClient, d.filterClient)
+	healthTicker := healthcheck.NewTicker(d.healthCheckInterval, d.healthCheckRecovery,d.datasetClient, d.filterClient)
 	d.server.HandleOSSignals = false
 
 	d.run()

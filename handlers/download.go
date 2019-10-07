@@ -3,17 +3,17 @@ package handlers
 import (
 	"context"
 	"encoding/hex"
-	"io"
-	"net/http"
-	"net/url"
-	"path/filepath"
-
-	"github.com/ONSdigital/go-ns/clients/dataset"
-	"github.com/ONSdigital/go-ns/clients/filter"
+	"errors"
+	"github.com/ONSdigital/dp-api-clients-go/dataset"
+	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gorilla/mux"
+	"io"
+	"net/http"
+	"net/url"
+	"path/filepath"
 )
 
 // mockgen is prefixing the imports within the mock file with the vendor directory 'github.com/ONSdigital/dp-download-service/vendor/'
@@ -33,12 +33,17 @@ type ClientError interface {
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
 type DatasetClient interface {
-	GetVersion(ctx context.Context, id, edition, version string) (m dataset.Version, err error)
+	GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string) (m dataset.Version, err error)
 }
 
 // FilterClient is an interface to represent methods called to action on the filter api
 type FilterClient interface {
-	GetOutput(ctx context.Context, filterOutputID string) (m filter.Model, err error)
+	GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID string) (m filter.Model, err error)
+}
+
+// IdentityClient is an interface to represent methods called to action on the identity api
+type IdentityClient interface {
+	CheckRequest(*http.Request, string, string)
 }
 
 // VaultClient is an interface to represent methods called to action upon vault
@@ -56,20 +61,21 @@ type download struct {
 	Size    string `json:"size"`
 	Public  string `json:"public,omitempty"`
 	Private string `json:"private,omitempty"`
+	Skipped bool   `json:"skipped,omitempty"`
 }
 
 // Download represents the configuration for a download handler
 type Download struct {
-	DatasetClient             DatasetClient
-	VaultClient               VaultClient
-	FilterClient              FilterClient
-	S3Client                  S3Client
-	ServiceToken              string
-	XDownloadServiceAuthToken string
-	SecretKey                 string
-	BucketName                string
-	VaultPath                 string
-	IsPublishing              bool
+	DatasetClient        DatasetClient
+	VaultClient          VaultClient
+	FilterClient         FilterClient
+	S3Client             S3Client
+	ServiceAuthToken     string
+	DownloadServiceToken string
+	SecretKey            string
+	BucketName           string
+	VaultPath            string
+	IsPublishing         bool
 }
 
 func setStatusCode(req *http.Request, w http.ResponseWriter, err error, logData log.Data) {
@@ -101,6 +107,8 @@ func (d Download) Do(extension string) http.HandlerFunc {
 		logData := log.Data{}
 		published := false
 		downloads := make(map[string]download)
+		userAuthToken := getUserAccessTokenFromContext(req.Context())
+		collectionID := getCollectionIDFromContext(req.Context())
 
 		if len(filterOutputID) > 0 {
 			logData = log.Data{
@@ -108,7 +116,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 				"type":             extension,
 			}
 
-			fo, err := d.FilterClient.GetOutput(req.Context(), filterOutputID)
+			fo, err := d.FilterClient.GetOutput(req.Context(), userAuthToken, d.ServiceAuthToken, d.DownloadServiceToken, collectionID, filterOutputID)
 			if err != nil {
 				setStatusCode(req, w, err, logData)
 				return
@@ -128,7 +136,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 				"type":       extension,
 			}
 
-			v, err := d.DatasetClient.GetVersion(req.Context(), datasetID, edition, version)
+			v, err := d.DatasetClient.GetVersion(req.Context(), userAuthToken, d.ServiceAuthToken, d.DownloadServiceToken, collectionID, datasetID, edition, version)
 			if err != nil {
 				setStatusCode(req, w, err, logData)
 				return
@@ -137,7 +145,14 @@ func (d Download) Do(extension string) http.HandlerFunc {
 			published = v.State == "published"
 
 			for k, v := range v.Downloads {
-				downloads[k] = download(v)
+				datasetDownloadWithSkipped := download {
+					URL : v.URL,
+					Size : v.Size,
+					Public : v.Public,
+					Private : v.Private,
+					Skipped : false,
+				}
+				downloads[k] = datasetDownloadWithSkipped
 			}
 		}
 
@@ -226,4 +241,26 @@ func (d Download) authenticate(r *http.Request, logData map[string]interface{}) 
 
 	logData["authenticated"] = authorised
 	return authorised, logData
+}
+
+func getUserAccessTokenFromContext(ctx context.Context) string {
+	if ctx.Value(common.FlorenceIdentityKey) != nil {
+		accessToken, ok := ctx.Value(common.FlorenceIdentityKey).(string)
+		if !ok {
+			log.ErrorCtx(ctx, errors.New("error casting access token context value to string"), nil)
+		}
+		return accessToken
+	}
+	return ""
+}
+
+func getCollectionIDFromContext(ctx context.Context) string {
+	if ctx.Value(common.CollectionIDHeaderKey) != nil {
+		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
+		if !ok {
+			log.ErrorCtx(ctx, errors.New("error casting collection ID context value to string"), nil)
+		}
+		return collectionID
+	}
+	return ""
 }
