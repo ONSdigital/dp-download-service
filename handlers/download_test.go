@@ -90,7 +90,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		fc := mocks.NewMockFilterClient(mockCtrl) //f := NewFilter(mockRenderer, mockFilterClient, mockDatasetClient, nil, nil, nil, "", "","")
+		fc := mocks.NewMockFilterClient(mockCtrl)
 		fo := filter.Model{
 			Downloads: map[string]filter.Download{
 				"csv": {
