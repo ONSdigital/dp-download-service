@@ -55,7 +55,7 @@ type VaultClient interface {
 }
 
 // Create should be called to create a new instance of the download service, with routes correctly initialised
-func Create(bindAddr, vaultPath, bucketName, ServiceAuthToken, downloadServiceToken, zebedeeURL string,
+func Create(bindAddr, vaultPath, bucketName, serviceAuthToken, downloadServiceToken, zebedeeURL string,
 	dc DatasetClient,
 	fc FilterClient,
 	s3sess *session.Session,
@@ -75,11 +75,11 @@ func Create(bindAddr, vaultPath, bucketName, ServiceAuthToken, downloadServiceTo
 		IsPublishing:  isPublishing,
 	}
 
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv"))
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.Do("csvw"))
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.Do("xls"))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.Do("csv"))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.Do("xls"))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv", serviceAuthToken, downloadServiceToken))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.Do("csvw", serviceAuthToken, downloadServiceToken))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.Do("xls", serviceAuthToken, downloadServiceToken))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.Do("csv", serviceAuthToken, downloadServiceToken))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.Do("xls", serviceAuthToken, downloadServiceToken))
 
 	healthcheckHandler := healthcheck.NewMiddleware(healthcheck.Do)
 	middlewareChain := alice.New(healthcheckHandler)

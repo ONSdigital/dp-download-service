@@ -96,7 +96,7 @@ func setStatusCode(req *http.Request, w http.ResponseWriter, err error, logData 
 // the version has a public link available and redirecting if so, otherwise it decrypts the private
 // file on the fly (if it is published). Authenticated requests will always allow access to the private,
 // whether or not the version is published.
-func (d Download) Do(extension string) http.HandlerFunc {
+func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		datasetID := vars["datasetID"]
@@ -116,7 +116,7 @@ func (d Download) Do(extension string) http.HandlerFunc {
 				"type":             extension,
 			}
 
-			fo, err := d.FilterClient.GetOutput(req.Context(), userAuthToken, d.ServiceAuthToken, d.DownloadServiceToken, collectionID, filterOutputID)
+			fo, err := d.FilterClient.GetOutput(req.Context(), userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID)
 			if err != nil {
 				setStatusCode(req, w, err, logData)
 				return
