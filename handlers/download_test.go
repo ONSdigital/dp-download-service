@@ -99,12 +99,12 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 			},
 			IsPublished: true,
 		}
-		fc.EXPECT().GetOutput(gomock.Any(), mockUserAuthToken,mockServiceAuthToken, mockDownloadToken, mockCollectionID, "abcdefg").Return(fo, nil)
+		fc.EXPECT().GetOutput(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "abcdefg").Return(fo, nil)
 		d := Download{
 			FilterClient: fc,
 		}
 
-		r.HandleFunc("/downloads/filter-outputs/{filterOutputID}.csv", d.Do("csv"))
+		r.HandleFunc("/downloads/filter-outputs/{filterOutputID}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusMovedPermanently)
@@ -130,7 +130,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 			DatasetClient: dc,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusMovedPermanently)
@@ -161,7 +161,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken,mockServiceAuthToken, mockDownloadToken, mockCollectionID,"12345", "6789", "1").Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID,"12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -185,7 +185,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			VaultPath:     rootVaultPath,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusOK)
@@ -206,7 +206,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			},
 			State: "associated",
 		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken,mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -247,7 +247,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 		chain := alice.New(identity.HandlerForHTTPClient(idClient)).Then(r)
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		req.Header.Set(florenceTokenHeader, "Florence")
 
 		chain.ServeHTTP(w, req)
@@ -273,12 +273,12 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 
 		dc := mocks.NewMockDatasetClient(mockCtrl)
 		err := testClientError{http.StatusNotFound}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken,mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(dataset.Version{}, err)
+		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(dataset.Version{}, err)
 		d := Download{
 			DatasetClient: dc,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
@@ -292,12 +292,12 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 
 		fc := mocks.NewMockFilterClient(mockCtrl)
 		testErr := errors.New("filter client error")
-		fc.EXPECT().GetOutput(gomock.Any(), mockUserAuthToken,mockServiceAuthToken, mockDownloadToken, mockCollectionID, "abcdefg").Return(filter.Model{}, testErr)
+		fc.EXPECT().GetOutput(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "abcdefg").Return(filter.Model{}, testErr)
 		d := Download{
 			FilterClient: fc,
 		}
 
-		r.HandleFunc("/downloads/filter-outputs/{filterOutputID}.csv", d.Do("csv"))
+		r.HandleFunc("/downloads/filter-outputs/{filterOutputID}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
@@ -329,7 +329,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			VaultPath:     rootVaultPath,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
@@ -349,7 +349,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken,mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testBadEncodedPSK, nil)
@@ -360,7 +360,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			VaultPath:     rootVaultPath,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
@@ -380,7 +380,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken,mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -401,7 +401,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			VaultPath:     rootVaultPath,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
@@ -421,7 +421,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken,mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -449,7 +449,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			VaultPath:     rootVaultPath,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(wtr, req)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
@@ -461,12 +461,12 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		r := mux.NewRouter()
 
 		dc := mocks.NewMockDatasetClient(mockCtrl)
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken,mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(dataset.Version{}, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(dataset.Version{}, nil)
 		d := Download{
 			DatasetClient: dc,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv"))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
