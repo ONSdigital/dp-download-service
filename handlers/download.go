@@ -136,7 +136,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 				"type":       extension,
 			}
 
-			v, err := d.DatasetClient.GetVersion(req.Context(), userAuthToken, d.ServiceAuthToken, d.DownloadServiceToken, collectionID, datasetID, edition, version)
+			v, err := d.DatasetClient.GetVersion(req.Context(), userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version)
 			if err != nil {
 				setStatusCode(req, w, err, logData)
 				return
