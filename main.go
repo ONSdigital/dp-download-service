@@ -7,10 +7,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 
+	"github.com/ONSdigital/dp-api-clients-go/dataset"
+	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
-	"github.com/ONSdigital/go-ns/clients/dataset"
-	"github.com/ONSdigital/go-ns/clients/filter"
 	"github.com/ONSdigital/go-ns/log"
 )
 
@@ -25,14 +25,14 @@ func main() {
 
 	log.Info("config on startup", log.Data{"config": cfg})
 
-	dc := dataset.NewAPIClient(cfg.DatasetAPIURL, cfg.ServiceAuthToken, cfg.DownloadServiceToken)
+	dc := dataset.NewAPIClient(cfg.DatasetAPIURL)
 	vc, err := vault.CreateVaultClient(cfg.VaultToken, cfg.VaultAddress, 3)
 	if err != nil {
 		log.ErrorC("could not create a vault client", err, nil)
 		os.Exit(1)
 	}
 
-	fc := filter.New(cfg.FilterAPIURL, cfg.ServiceAuthToken, cfg.DownloadServiceToken)
+	fc := filter.New(cfg.FilterAPIURL)
 
 	region := "eu-west-1"
 	sess := session.New(&aws.Config{Region: &region})
@@ -50,6 +50,7 @@ func main() {
 		vc,
 		cfg.GracefulShutdownTimeout,
 		cfg.HealthCheckInterval,
+		cfg.HealthCheckRecovery,
 		cfg.IsPublishing,
 	)
 
