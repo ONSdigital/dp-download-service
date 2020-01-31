@@ -39,19 +39,19 @@ type Download struct {
 // DatasetClient is an interface to represent methods called to action on the dataset api
 type DatasetClient interface {
 	GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (m dataset.Version, err error)
-	healthcheck.Client
+	// healthcheck.Client
 }
 
 // FilterClient is an interface to represent methods called to action on the filter api
 type FilterClient interface {
 	GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, filterOutputID string) (filter.Model, error)
-	healthcheck.Client
+	// healthcheck.Client
 }
 
 // VaultClient is an interface to represent methods called to action upon vault
 type VaultClient interface {
 	ReadKey(path, key string) (string, error)
-	healthcheck.Client
+	// healthcheck.Client
 }
 
 // Create should be called to create a new instance of the download service, with routes correctly initialised
@@ -112,7 +112,7 @@ func Create(bindAddr, vaultPath, bucketName, serviceAuthToken, downloadServiceTo
 
 // Start should be called to manage the running of the download service
 func (d Download) Start() {
-	healthTicker := healthcheck.NewTicker(d.healthCheckInterval, d.healthCheckRecovery,d.datasetClient, d.filterClient)
+	// healthTicker := healthcheck.NewTicker(d.healthCheckInterval, d.healthCheckRecovery, d.datasetClient, d.filterClient)
 	d.server.HandleOSSignals = false
 
 	d.run()
@@ -133,7 +133,7 @@ func (d Download) Start() {
 
 	start := time.Now()
 	d.close(ctx)
-	healthTicker.Close()
+	// healthTicker.Close()
 
 	log.Info("shutdown complete", log.Data{"duration": time.Since(start)})
 	cancel()
