@@ -15,6 +15,8 @@ import (
 	"github.com/ONSdigital/log.go/log"
 )
 
+var BuildTime, GitCommit, Version string
+
 func main() {
 	log.Namespace = "dp-download-service"
 
@@ -55,6 +57,9 @@ func main() {
 		cfg.HealthCheckInterval,
 		cfg.HealthCheckRecovery,
 		cfg.IsPublishing,
+		BuildTime,
+		GitCommit,
+		Version,
 	)
 
 	svc.Start()

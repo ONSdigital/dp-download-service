@@ -13,7 +13,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/dp-download-service/handlers"
-	"github.com/ONSdigital/go-ns/healthcheck"
+	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/log.go/log"
@@ -34,6 +34,7 @@ type Download struct {
 	shutdown            time.Duration
 	healthCheckInterval time.Duration
 	healthCheckRecovery time.Duration
+	healthCheck         *healthcheck.HealthCheck
 }
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
@@ -61,8 +62,10 @@ func Create(bindAddr, vaultPath, bucketName, serviceAuthToken, downloadServiceTo
 	s3sess *session.Session,
 	vc VaultClient,
 	shutdown, healthCheckInterval, healthCheckRecovery time.Duration,
-	isPublishing bool) Download {
+	isPublishing bool,
+	buildTime, gitCommit, version string) Download {
 
+	ctx := context.Background()
 	router := mux.NewRouter()
 
 	d := handlers.Download{
@@ -75,21 +78,27 @@ func Create(bindAddr, vaultPath, bucketName, serviceAuthToken, downloadServiceTo
 		IsPublishing:  isPublishing,
 	}
 
+	// Create healthcheck object with versionInfo
+	versionInfo, err := healthcheck.NewVersionInfo(buildTime, gitCommit, version)
+	if err != nil {
+		log.Event(ctx, "initialising healthcheck without versionInfo", log.Error(err))
+	}
+	hc := healthcheck.New(versionInfo, healthCheckRecovery, healthCheckInterval)
+
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv", serviceAuthToken, downloadServiceToken))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.Do("csvw", serviceAuthToken, downloadServiceToken))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.Do("xls", serviceAuthToken, downloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.Do("csv", serviceAuthToken, downloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.Do("xls", serviceAuthToken, downloadServiceToken))
+	router.HandleFunc("/health", hc.Handler)
 
-	healthcheckHandler := healthcheck.NewMiddleware(healthcheck.Do)
-	middlewareChain := alice.New(healthcheckHandler)
+	middlewareChain := alice.New()
 
 	if isPublishing {
-		log.Event(context.Background(), "private endpoints are enabled. using identity middleware")
+		log.Event(ctx, "private endpoints are enabled. using identity middleware")
 		identityHandler := identity.Handler(zebedeeURL)
 		middlewareChain = middlewareChain.Append(identityHandler)
 	} else {
-
 		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))
 		middlewareChain = middlewareChain.Append(corsHandler)
 	}
@@ -106,20 +115,22 @@ func Create(bindAddr, vaultPath, bucketName, serviceAuthToken, downloadServiceTo
 		healthCheckInterval: healthCheckInterval,
 		healthCheckRecovery: healthCheckRecovery,
 		errChan:             make(chan error, 1),
+		healthCheck:         &hc,
 	}
 }
 
 // Start should be called to manage the running of the download service
 func (d Download) Start() {
-	// healthTicker := healthcheck.NewTicker(d.healthCheckInterval, d.healthCheckRecovery, d.datasetClient, d.filterClient)
-	d.server.HandleOSSignals = false
-
-	d.run()
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
+	d.server.HandleOSSignals = false
 	ctx, cancel := context.WithTimeout(context.Background(), d.shutdown)
+
+	// Start Healthcheck and server
+	d.healthCheck.Start(ctx)
+	d.run()
 
 	select {
 	case err := <-d.errChan:
@@ -131,11 +142,11 @@ func (d Download) Start() {
 	// Gracefully shutdown the application closing any open resources.
 	log.Event(ctx, "shutdown with timeout", log.Data{"timeout": d.shutdown})
 
-	start := time.Now()
+	shutdownStart := time.Now()
 	d.close(ctx)
-	// healthTicker.Close()
+	d.healthCheck.Stop()
 
-	log.Event(ctx, "shutdown complete", log.Data{"duration": time.Since(start)})
+	log.Event(ctx, "shutdown complete", log.Data{"duration": time.Since(shutdownStart)})
 	cancel()
 	os.Exit(1)
 }
