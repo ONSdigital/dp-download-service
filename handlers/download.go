@@ -7,7 +7,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gorilla/mux"
 	"io"
@@ -85,7 +85,7 @@ func setStatusCode(req *http.Request, w http.ResponseWriter, err error, logData 
 		status = err.Code()
 	}
 	logData["setting_response_status"] = status
-	log.ErrorR(req, err, logData)
+	log.Event(req.Context(), "error setStatusCode", logData, log.Error(err))
 	if status == http.StatusNotFound {
 		message = notFoundMessage
 	}
@@ -145,19 +145,19 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 			published = v.State == "published"
 
 			for k, v := range v.Downloads {
-				datasetDownloadWithSkipped := download {
-					URL : v.URL,
-					Size : v.Size,
-					Public : v.Public,
-					Private : v.Private,
-					Skipped : false,
+				datasetDownloadWithSkipped := download{
+					URL:     v.URL,
+					Size:    v.Size,
+					Public:  v.Public,
+					Private: v.Private,
+					Skipped: false,
 				}
 				downloads[k] = datasetDownloadWithSkipped
 			}
 		}
 
 		logData["published"] = published
-		log.InfoR(req, "attempting to get download", logData)
+		log.Event(req.Context(), "attempting to get download", logData)
 
 		authorised, logData := d.authenticate(req, logData)
 		logData["authorised"] = authorised
@@ -170,7 +170,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 		if len(downloads[extension].Private) > 0 {
 
 			logData["private_link"] = downloads[extension].Private
-			log.InfoR(req, "using private link", logData)
+			log.Event(req.Context(), "using private link", logData)
 
 			if published || authorised {
 
@@ -194,7 +194,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 				vaultKey := "key"
 				logData["vaultPath"] = vaultPath
 
-				log.DebugR(req, "getting download key from vault", logData)
+				log.Event(req.Context(), "getting download key from vault", logData)
 				pskStr, err := d.VaultClient.ReadKey(vaultPath, vaultKey)
 				if err != nil {
 					setStatusCode(req, w, err, logData)
@@ -206,7 +206,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 					return
 				}
 
-				log.DebugR(req, "getting file from s3", logData)
+				log.Event(req.Context(), "getting file from s3", logData)
 				obj, err := d.S3Client.GetObjectWithPSK(input, psk)
 				if err != nil {
 					setStatusCode(req, w, err, logData)
@@ -215,7 +215,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 
 				defer func() {
 					if err := obj.Body.Close(); err != nil {
-						log.ErrorR(req, err, nil)
+						log.Event(req.Context(), "error closing Body", log.Error(err))
 					}
 				}()
 
@@ -227,7 +227,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 			}
 		}
 
-		log.DebugR(req, "no public or private link found", logData)
+		log.Event(req.Context(), "no public or private link found", logData)
 		http.Error(w, notFoundMessage, http.StatusNotFound)
 	}
 }
@@ -247,7 +247,7 @@ func getUserAccessTokenFromContext(ctx context.Context) string {
 	if ctx.Value(common.FlorenceIdentityKey) != nil {
 		accessToken, ok := ctx.Value(common.FlorenceIdentityKey).(string)
 		if !ok {
-			log.ErrorCtx(ctx, errors.New("error casting access token context value to string"), nil)
+			log.Event(ctx, "access token error", log.Error(errors.New("error casting access token context value to string")))
 		}
 		return accessToken
 	}
@@ -258,7 +258,7 @@ func getCollectionIDFromContext(ctx context.Context) string {
 	if ctx.Value(common.CollectionIDHeaderKey) != nil {
 		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
 		if !ok {
-			log.ErrorCtx(ctx, errors.New("error casting collection ID context value to string"), nil)
+			log.Event(ctx, "collection id error", log.Error(errors.New("error casting collection ID context value to string")))
 		}
 		return collectionID
 	}

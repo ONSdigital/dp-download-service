@@ -2,13 +2,14 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"io/ioutil"
 	"os"
 
-	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/vault"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/ONSdigital/s3crypto"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -24,11 +25,12 @@ func main() {
 
 	client, err := vault.CreateVaultClient(token, vaultAddress, 3)
 
+	ctx := context.Background()
 	logData := log.Data{"address": vaultAddress}
-	log.Debug("Created vault client", logData)
+	log.Event(ctx, "Created vault client", logData)
 
 	if err != nil {
-		log.ErrorC("failed to connect to vault", err, logData)
+		log.Event(ctx, "failed to connect to vault", log.Error(err), logData)
 		return
 	}
 
@@ -36,13 +38,13 @@ func main() {
 	pskStr := hex.EncodeToString(psk)
 
 	if err := client.WriteKey("secret/shared/psk", filename, pskStr); err != nil {
-		log.Error(err, nil)
+		log.Event(ctx, "error writting key", log.Error(err))
 		return
 	}
 
 	b, err := ioutil.ReadFile("cpicoicoptest.csv")
 	if err != nil {
-		log.ErrorC("failed to connect to vault", err, logData)
+		log.Event(ctx, "failed to connect to vault", log.Error(err), logData)
 		return
 	}
 	rs := bytes.NewReader(b)
@@ -57,18 +59,18 @@ func main() {
 
 	sess, err := session.NewSession(&aws.Config{Region: &region})
 	if err != nil {
-		log.Error(err, nil)
+		log.Event(ctx, "error creating new session", log.Error(err))
 		return
 	}
 	s3cli := s3crypto.New(sess, &s3crypto.Config{HasUserDefinedPSK: true})
 
 	_, err = s3cli.PutObjectWithPSK(input, psk)
 	if err != nil {
-		log.Error(err, nil)
+		log.Event(ctx, "error putting object with PSK", log.Error(err))
 		return
 	}
 
-	log.Info("file encrypted and uploaded to s3", log.Data{"file": filename})
+	log.Event(ctx, "file encrypted and uploaded to s3", log.Data{"file": filename})
 
 }
 

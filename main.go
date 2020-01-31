@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/ONSdigital/go-ns/vault"
@@ -11,24 +12,26 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 )
 
 func main() {
 	log.Namespace = "dp-download-service"
 
+	ctx := context.Background()
+
 	cfg, err := config.Get()
 	if err != nil {
-		log.Error(err, nil)
+		log.Event(ctx, "error getting config", log.Error(err))
 		os.Exit(1)
 	}
 
-	log.Info("config on startup", log.Data{"config": cfg})
+	log.Event(ctx, "config on startup", log.Data{"config": cfg})
 
 	dc := dataset.NewAPIClient(cfg.DatasetAPIURL)
 	vc, err := vault.CreateVaultClient(cfg.VaultToken, cfg.VaultAddress, 3)
 	if err != nil {
-		log.ErrorC("could not create a vault client", err, nil)
+		log.Event(ctx, "could not create a vault client", log.Error(err))
 		os.Exit(1)
 	}
 

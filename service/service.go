@@ -15,8 +15,8 @@ import (
 	"github.com/ONSdigital/dp-download-service/handlers"
 	"github.com/ONSdigital/go-ns/healthcheck"
 	"github.com/ONSdigital/go-ns/identity"
-	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/server"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/ONSdigital/s3crypto"
 	"github.com/gorilla/mux"
 
@@ -85,8 +85,7 @@ func Create(bindAddr, vaultPath, bucketName, serviceAuthToken, downloadServiceTo
 	middlewareChain := alice.New(healthcheckHandler)
 
 	if isPublishing {
-
-		log.Debug("private endpoints are enabled. using identity middleware", nil)
+		log.Event(context.Background(), "private endpoints are enabled. using identity middleware")
 		identityHandler := identity.Handler(zebedeeURL)
 		middlewareChain = middlewareChain.Append(identityHandler)
 	} else {
@@ -120,31 +119,33 @@ func (d Download) Start() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
+	ctx, cancel := context.WithTimeout(context.Background(), d.shutdown)
+
 	select {
 	case err := <-d.errChan:
-		log.ErrorC("download service error received", err, nil)
+		log.Event(ctx, "download service error received", log.Error(err))
 	case <-signals:
-		log.Info("os signal received", nil)
+		log.Event(ctx, "os signal received")
 	}
 
 	// Gracefully shutdown the application closing any open resources.
-	log.Info("shutdown with timeout", log.Data{"timeout": d.shutdown})
-	ctx, cancel := context.WithTimeout(context.Background(), d.shutdown)
+	log.Event(ctx, "shutdown with timeout", log.Data{"timeout": d.shutdown})
 
 	start := time.Now()
 	d.close(ctx)
 	// healthTicker.Close()
 
-	log.Info("shutdown complete", log.Data{"duration": time.Since(start)})
+	log.Event(ctx, "shutdown complete", log.Data{"duration": time.Since(start)})
 	cancel()
 	os.Exit(1)
 }
 
 func (d Download) run() {
+	ctx := context.Background()
 	go func() {
-		log.Debug("starting download service...", nil)
+		log.Event(ctx, "starting download service...")
 		if err := d.server.ListenAndServe(); err != nil {
-			log.ErrorC("download service http service returned an error", err, nil)
+			log.Event(ctx, "download service http service returned an error", log.Error(err))
 			d.errChan <- err
 		}
 	}()
@@ -154,6 +155,6 @@ func (d Download) close(ctx context.Context) error {
 	if err := d.server.Shutdown(ctx); err != nil {
 		return err
 	}
-	log.Info("graceful shutdown of http server complete", nil)
+	log.Event(ctx, "graceful shutdown of http server complete")
 	return nil
 }
