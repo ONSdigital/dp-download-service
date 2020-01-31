@@ -15,7 +15,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/dp-download-service/handlers/mocks"
-	"github.com/ONSdigital/go-ns/common/commontest"
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/golang/mock/gomock"
@@ -125,7 +125,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken,mockServiceAuthToken, mockDownloadToken, mockCollectionID,"12345", "6789", "1").Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
 		d := Download{
 			DatasetClient: dc,
 		}
@@ -161,7 +161,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID,"12345", "6789", "1").Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -231,8 +231,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			IsPublishing:  true,
 		}
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				readCloser := ioutil.NopCloser(strings.NewReader(`{"identifier": "me"}`))
@@ -318,7 +317,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			},
 			State: "published",
 		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken,mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
+		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return("", errors.New("vault client error"))

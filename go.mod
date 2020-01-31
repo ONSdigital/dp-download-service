@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/ONSdigital/dp-api-clients-go v0.0.0-20200121150240-a62e4e04431d
+	github.com/ONSdigital/dp-rchttp v0.0.0-20200114090501-463a529590e8
 	github.com/ONSdigital/go-ns v0.0.0-20191104121206-f144c4ec2e58
 	github.com/ONSdigital/log.go v0.0.0-20191127134126-2a610b254f20
 	github.com/ONSdigital/s3crypto v0.0.0-20180725145621-f8943119a487
