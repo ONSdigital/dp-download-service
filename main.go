@@ -15,7 +15,14 @@ import (
 	"github.com/ONSdigital/log.go/log"
 )
 
-var BuildTime, GitCommit, Version string
+var (
+	// BuildTime represents the time in which the service was built
+	BuildTime string
+	// GitCommit represents the commit (SHA-1) hash of the service that is running
+	GitCommit string
+	// Version represents the version of the service that is running
+	Version string
+)
 
 func main() {
 	log.Namespace = "dp-download-service"
@@ -43,20 +50,11 @@ func main() {
 	sess := session.New(&aws.Config{Region: &region})
 
 	svc := service.Create(
-		cfg.BindAddr,
-		cfg.VaultPath,
-		cfg.BucketName,
-		cfg.ServiceAuthToken,
-		cfg.DownloadServiceToken,
-		cfg.ZebedeeURL,
+		*cfg,
 		dc,
 		fc,
 		sess,
 		vc,
-		cfg.GracefulShutdownTimeout,
-		cfg.HealthCheckInterval,
-		cfg.HealthCheckRecovery,
-		cfg.IsPublishing,
 		BuildTime,
 		GitCommit,
 		Version,

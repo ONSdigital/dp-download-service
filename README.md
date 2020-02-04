@@ -24,24 +24,26 @@ The endpoint `/healthcheck` checks the health of vault and the dataset api and r
 
 ### Configuration
 
-| Environment variable       | Default                                     | Description
-| -------------------------- | --------------------------------------------| -----------
-| BIND_ADDR                  | :23600                                      | The host and port to bind to
-| BUCKET_NAME                | "csv-exported"                              | The s3 bucket to decrypt files from
-| DATASET_API_URL            | http://localhost:22000                      | The dataset api url
-| DOWNLOAD_SERVICE_TOKEN     | QB0108EZ-825D-412C-9B1D-41EF7747F462        | The token to request public/private links from dataset api
-| FILTER_API_URL             | http://localhost:22100                      | The filter api url
-| SECRET_KEY                 | AL0108EA-825D-411C-9B1D-41EF7727F465        | A secret key used authentication
-| DATASET_AUTH_TOKEN         | FD0108EA-825D-411C-9B1D-41EF7727F465        | The host name for the CodeList API
-| GRACEFUL_SHUTDOWN_TIMEOUT  | 5s                                          | The graceful shutdown timeout in seconds
-| HEALTHCHECK_TIMEOUT        | 60s                                         | The timeout that the healthcheck allows for checked subsystems
-| VAULT_ADDR                 | http://localhost:8200                       | The vault address
-| VAULT_TOKEN                | -                                           | Vault token required for the client to talk to vault. (Use `make debug` to create a vault token)
-| VAULT_PATH                 | secret/shared/psk                           | The path where the psks will be stored in for vault
-| SERVICE_AUTH_TOKEN         | c60198e9-1864-4b68-ad0b-1e858e5b46a4        | The service auth token for the download service
-| ZEBEDEE_URL                | http://localhost:8082                       | The URL for zebedee
-| AWS_ACCESS_KEY_ID          | -                                           | The AWS access key credential
-| AWS_SECRET_ACCESS_KEY      | -                                           | The AWS secret key credential
+| Environment variable         | Default                                     | Description
+| ---------------------------- | --------------------------------------------| -----------
+| BIND_ADDR                    | :23600                                      | The host and port to bind to
+| BUCKET_NAME                  | "csv-exported"                              | The s3 bucket to decrypt files from
+| DATASET_API_URL              | http://localhost:22000                      | The dataset api url
+| DOWNLOAD_SERVICE_TOKEN       | QB0108EZ-825D-412C-9B1D-41EF7747F462        | The token to request public/private links from dataset api
+| FILTER_API_URL               | http://localhost:22100                      | The filter api url
+| SECRET_KEY                   | -                                           | A secret key used authentication
+| DATASET_AUTH_TOKEN           | FD0108EA-825D-411C-9B1D-41EF7727F465        | The dataset auth token
+| GRACEFUL_SHUTDOWN_TIMEOUT    | 5s                                          | The graceful shutdown timeout in time duration string format
+| HEALTHCHECK_INTERVAL         | 60s                                         | The period of time between health checks
+| HEALTHCHECK_CRITICAL_TIMEOUT | 5s                                          | The period of time after which failing checks will result in critical global check status
+| VAULT_ADDR                   | http://localhost:8200                       | The vault address
+| VAULT_TOKEN                  | -                                           | Vault token required for the client to talk to vault. (Use `make debug` to create a vault token)
+| VAULT_PATH                   | secret/shared/psk                           | The path where the psks will be stored in for vault
+| SERVICE_AUTH_TOKEN           | c60198e9-1864-4b68-ad0b-1e858e5b46a4        | The service auth token for the download service
+| ZEBEDEE_URL                  | http://localhost:8082                       | The URL for zebedee
+| AWS_ACCESS_KEY_ID            | -                                           | The AWS access key credential
+| AWS_SECRET_ACCESS_KEY        | -                                           | The AWS secret key credential
+| IS_PUBLISHING                | true                                        | Determines if the instance is publishing or not
 
 ### Contributing
 

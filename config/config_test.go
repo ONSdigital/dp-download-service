@@ -26,7 +26,7 @@ func TestSpec(t *testing.T) {
 				So(cfg.FilterAPIURL, ShouldEqual, "http://localhost:22100")
 				So(cfg.GracefulShutdownTimeout, ShouldEqual, 5*time.Second)
 				So(cfg.HealthCheckInterval, ShouldEqual, 1*time.Minute)
-				So(cfg.HealthCheckRecovery, ShouldEqual, 5*time.Second)
+				So(cfg.HealthCheckCriticalTimeout, ShouldEqual, 5*time.Second)
 				So(cfg.VaultToken, ShouldEqual, "")
 				So(cfg.VaultPath, ShouldEqual, "secret/shared/psk")
 				So(cfg.ServiceAuthToken, ShouldEqual, "c60198e9-1864-4b68-ad0b-1e858e5b46a4")

@@ -85,7 +85,8 @@ func setStatusCode(req *http.Request, w http.ResponseWriter, err error, logData 
 		status = err.Code()
 	}
 	logData["setting_response_status"] = status
-	log.Event(req.Context(), "error setStatusCode", logData, log.Error(err))
+	logData["error"] = err.Error()
+	log.Event(req.Context(), "setting status code for an error", logData)
 	if status == http.StatusNotFound {
 		message = notFoundMessage
 	}
