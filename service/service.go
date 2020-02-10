@@ -12,6 +12,7 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
+	"github.com/ONSdigital/dp-api-clients-go/middleware"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/handlers"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
@@ -58,7 +59,7 @@ func Create(
 	fc FilterClient,
 	s3sess *session.Session,
 	vc VaultClient,
-	buildTime, gitCommit, version string) Download {
+	hc *healthcheck.HealthCheck) Download {
 
 	ctx := context.Background()
 	router := mux.NewRouter()
@@ -73,13 +74,6 @@ func Create(
 		IsPublishing:  cfg.IsPublishing,
 	}
 
-	// Create healthcheck object with versionInfo
-	versionInfo, err := healthcheck.NewVersionInfo(buildTime, gitCommit, version)
-	if err != nil {
-		log.Event(ctx, "initialising healthcheck without versionInfo", log.Error(err))
-	}
-	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
-
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.Do("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.Do("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
@@ -87,8 +81,10 @@ func Create(
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.Do("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.HandleFunc("/health", hc.Handler)
 
-	middlewareChain := alice.New()
+	// Create new middleware chain with whitelisted handler for /health endpoint
+	middlewareChain := alice.New(middleware.Whitelist(middleware.HealthcheckFilter(hc.Handler)))
 
+	// For non-whitelisted endpoints, do identityHandler or corsHandler
 	if cfg.IsPublishing {
 		log.Event(ctx, "private endpoints are enabled. using identity middleware")
 		identityHandler := identity.Handler(cfg.ZebedeeURL)
@@ -109,7 +105,7 @@ func Create(
 		server:        httpServer,
 		shutdown:      cfg.GracefulShutdownTimeout,
 		errChan:       make(chan error, 1),
-		healthCheck:   &hc,
+		healthCheck:   hc,
 	}
 }
 

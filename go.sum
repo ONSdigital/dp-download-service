@@ -2,6 +2,10 @@ cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/ONSdigital/dp-api-clients-go v0.0.0-20200131144530-2105a3d42440 h1:ksGukF8OE40ox+5+58ce3L1G9fmHOwraGqgrZ4QnvBU=
 github.com/ONSdigital/dp-api-clients-go v0.0.0-20200131144530-2105a3d42440/go.mod h1:9lqor0I7caCnRWr04gU/r7x5dqxgoODob8L48q+cE4E=
+github.com/ONSdigital/dp-api-clients-go v1.2.1-0.20200210151409-0ac0634a1ee9 h1:mqcZQpE8rNDqnUq8U4DQOcRomr6HNacltjByB3W3KMo=
+github.com/ONSdigital/dp-api-clients-go v1.2.1-0.20200210151409-0ac0634a1ee9/go.mod h1:9lqor0I7caCnRWr04gU/r7x5dqxgoODob8L48q+cE4E=
+github.com/ONSdigital/dp-api-clients-go v1.2.1-0.20200210153826-a04a3ead5f12 h1:9jwi3y/lrgLhfb3wXotBfnL0Mj+MzSeJ+pYk6jp3aTs=
+github.com/ONSdigital/dp-api-clients-go v1.2.1-0.20200210153826-a04a3ead5f12/go.mod h1:9lqor0I7caCnRWr04gU/r7x5dqxgoODob8L48q+cE4E=
 github.com/ONSdigital/dp-healthcheck v0.0.0-20200131122546-9db6d3f0494e h1:H2KVzsFp5oTbqjPXDlTHOB/LvYy2I6Mc8eSTLrmZkXs=
 github.com/ONSdigital/dp-healthcheck v0.0.0-20200131122546-9db6d3f0494e/go.mod h1:zighxZ/0m5u7zo0eAr8XFlA+Dz2ic7A1vna6YXvhCjQ=
 github.com/ONSdigital/dp-mocking v0.0.0-20190905163309-fee2702ad1b9 h1:+WXVfTDyWXY1DQRDFSmt1b/ORKk5c7jGiPu7NoeaM/0=

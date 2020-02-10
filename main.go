@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/go-ns/vault"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -49,15 +50,21 @@ func main() {
 	region := "eu-west-1"
 	sess := session.New(&aws.Config{Region: &region})
 
+	// Create healthcheck object with versionInfo
+	versionInfo, err := healthcheck.NewVersionInfo(BuildTime, GitCommit, Version)
+	if err != nil {
+		log.Event(ctx, "Failed to obtain VersionInfo for healthcheck", log.Error(err))
+		os.Exit(1)
+	}
+	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
+
 	svc := service.Create(
 		*cfg,
 		dc,
 		fc,
 		sess,
 		vc,
-		BuildTime,
-		GitCommit,
-		Version,
+		&hc,
 	)
 
 	svc.Start()
