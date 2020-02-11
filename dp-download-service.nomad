@@ -51,7 +51,7 @@ job "dp-download-service" {
         tags = ["web"]
         check {
           type     = "http"
-          path     = "/healthcheck"
+          path     = "/health"
           interval = "10s"
           timeout  = "2s"
         }
@@ -120,7 +120,7 @@ job "dp-download-service" {
         tags = ["publishing"]
         check {
           type     = "http"
-          path     = "/healthcheck"
+          path     = "/health"
           interval = "10s"
           timeout  = "2s"
         }
