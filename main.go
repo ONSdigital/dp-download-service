@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	"github.com/ONSdigital/go-ns/vault"
+	vault "github.com/ONSdigital/dp-vault"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 
@@ -39,7 +39,7 @@ func main() {
 	log.Event(ctx, "config on startup", log.Data{"config": cfg})
 
 	dc := dataset.NewAPIClient(cfg.DatasetAPIURL)
-	vc, err := vault.CreateVaultClient(cfg.VaultToken, cfg.VaultAddress, 3)
+	vc, err := vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 3)
 	if err != nil {
 		log.Event(ctx, "could not create a vault client", log.Error(err))
 		os.Exit(1)
@@ -47,6 +47,7 @@ func main() {
 
 	fc := filter.New(cfg.FilterAPIURL)
 
+	// TODO migrate to dp-s3
 	region := "eu-west-1"
 	sess := session.New(&aws.Config{Region: &region})
 
@@ -57,6 +58,7 @@ func main() {
 		os.Exit(1)
 	}
 	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
+	registerCheckers(&hc, dc, vc, fc)
 
 	svc := service.Create(
 		*cfg,
@@ -68,4 +70,25 @@ func main() {
 	)
 
 	svc.Start()
+}
+
+// registerCheckers adds the checkers for the provided clients to the healthcheck object
+func registerCheckers(hc *healthcheck.HealthCheck,
+	dc *dataset.Client,
+	vc *vault.Client,
+	fc *filter.Client) (err error) {
+
+	if err = hc.AddCheck("Dataset API", dc.Checker); err != nil {
+		log.Event(nil, "Error Adding Check for Dataset API", log.Error(err))
+	}
+
+	if err = hc.AddCheck("Vault", vc.Checker); err != nil {
+		log.Event(nil, "Error Adding Check for Vault", log.Error(err))
+	}
+
+	if err = hc.AddCheck("Filter API", fc.Checker); err != nil {
+		log.Event(nil, "Error Adding Check for Filter API", log.Error(err))
+	}
+
+	return
 }

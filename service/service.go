@@ -116,10 +116,13 @@ func (d Download) Start() {
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	d.server.HandleOSSignals = false
-	ctx, cancel := context.WithTimeout(context.Background(), d.shutdown)
+	hcCtx := context.Background()
+	ctx, cancel := context.WithTimeout(hcCtx, d.shutdown)
 
-	// Start Healthcheck and server
-	d.healthCheck.Start(ctx)
+	// Start Healthcheck with non-timeout context
+	d.healthCheck.Start(hcCtx)
+
+	// Start HTTP service
 	d.run()
 
 	select {
