@@ -11,6 +11,7 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
+	"github.com/ONSdigital/dp-api-clients-go/health"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/log.go/log"
@@ -47,6 +48,12 @@ func main() {
 
 	fc := filter.New(cfg.FilterAPIURL)
 
+	// Create Health client for Zebedee, if we are in publishing mode.
+	var zc *health.Client
+	if cfg.IsPublishing {
+		zc = health.NewClient("Zebedee", cfg.ZebedeeURL)
+	}
+
 	// TODO migrate to dp-s3
 	region := "eu-west-1"
 	sess := session.New(&aws.Config{Region: &region})
@@ -58,7 +65,7 @@ func main() {
 		os.Exit(1)
 	}
 	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
-	registerCheckers(&hc, dc, vc, fc)
+	registerCheckers(&hc, cfg.IsPublishing, dc, vc, fc, zc)
 
 	svc := service.Create(
 		*cfg,
@@ -66,17 +73,20 @@ func main() {
 		fc,
 		sess,
 		vc,
+		zc,
 		&hc,
 	)
 
 	svc.Start()
 }
 
-// registerCheckers adds the checkers for the provided clients to the healthcheck object
-func registerCheckers(hc *healthcheck.HealthCheck,
+// registerCheckers adds the checkers for the provided clients to the healthcheck object.
+// Zebedee health client will only be registered if we are in publishing mode.
+func registerCheckers(hc *healthcheck.HealthCheck, isPublishing bool,
 	dc *dataset.Client,
 	vc *vault.Client,
-	fc *filter.Client) (err error) {
+	fc *filter.Client,
+	zc *health.Client) (err error) {
 
 	if err = hc.AddCheck("Dataset API", dc.Checker); err != nil {
 		log.Event(nil, "Error Adding Check for Dataset API", log.Error(err))
@@ -88,6 +98,12 @@ func registerCheckers(hc *healthcheck.HealthCheck,
 
 	if err = hc.AddCheck("Filter API", fc.Checker); err != nil {
 		log.Event(nil, "Error Adding Check for Filter API", log.Error(err))
+	}
+
+	if isPublishing {
+		if err = hc.AddCheck("Zebedee", zc.Checker); err != nil {
+			log.Event(nil, "Error Adding Check for Zebedee", log.Error(err))
+		}
 	}
 
 	return

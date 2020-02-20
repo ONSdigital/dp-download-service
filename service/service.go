@@ -12,6 +12,8 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
+	"github.com/ONSdigital/dp-api-clients-go/health"
+	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/ONSdigital/dp-api-clients-go/middleware"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/handlers"
@@ -52,13 +54,15 @@ type VaultClient interface {
 	ReadKey(path, key string) (string, error)
 }
 
-// Create should be called to create a new instance of the download service, with routes correctly initialised
+// Create should be called to create a new instance of the download service, with routes correctly initialised.
+// Note: zc is allowed to be nil if we are not in publishing mode
 func Create(
 	cfg config.Config,
 	dc DatasetClient,
 	fc FilterClient,
 	s3sess *session.Session,
 	vc VaultClient,
+	zc *health.Client,
 	hc *healthcheck.HealthCheck) Download {
 
 	ctx := context.Background()
@@ -87,7 +91,7 @@ func Create(
 	// For non-whitelisted endpoints, do identityHandler or corsHandler
 	if cfg.IsPublishing {
 		log.Event(ctx, "private endpoints are enabled. using identity middleware")
-		identityHandler := identity.Handler(cfg.ZebedeeURL)
+		identityHandler := identity.HandlerForHTTPClient(clientsidentity.NewAPIClient(zc.Client, cfg.ZebedeeURL))
 		middlewareChain = middlewareChain.Append(identityHandler)
 	} else {
 		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))
