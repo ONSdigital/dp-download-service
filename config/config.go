@@ -9,6 +9,7 @@ import (
 // Config represents the configuration required for the dp-download-service
 type Config struct {
 	BindAddr                   string        `envconfig:"BIND_ADDR"`
+	AwsRegion                  string        `envconfig:"AWS_REGION"`
 	BucketName                 string        `envconfig:"BUCKET_NAME"`
 	DatasetAPIURL              string        `envconfig:"DATASET_API_URL"`
 	DownloadServiceToken       string        `envconfig:"DOWNLOAD_SERVICE_TOKEN"     json:"-"`
@@ -36,6 +37,7 @@ func Get() (*Config, error) {
 
 	cfg = &Config{
 		BindAddr:                   ":23600",
+		AwsRegion:                  "eu-west-1",
 		BucketName:                 "csv-exported",
 		DatasetAPIURL:              "http://localhost:22000",
 		FilterAPIURL:               "http://localhost:22100",

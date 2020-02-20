@@ -4,16 +4,16 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-	"github.com/ONSdigital/dp-api-clients-go/dataset"
-	"github.com/ONSdigital/dp-api-clients-go/filter"
-	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/log.go/log"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 	"net/url"
 	"path/filepath"
+
+	"github.com/ONSdigital/dp-api-clients-go/dataset"
+	"github.com/ONSdigital/dp-api-clients-go/filter"
+	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/log.go/log"
+	"github.com/gorilla/mux"
 )
 
 // mockgen is prefixing the imports within the mock file with the vendor directory 'github.com/ONSdigital/dp-download-service/vendor/'
@@ -53,7 +53,7 @@ type VaultClient interface {
 
 // S3Client is an interface to represent methods called to retrieve from s3
 type S3Client interface {
-	GetObjectWithPSK(*s3.GetObjectInput, []byte) (*s3.GetObjectOutput, error)
+	GetWithPSK(key string, psk []byte) (io.ReadCloser, error)
 }
 
 type download struct {
@@ -73,7 +73,6 @@ type Download struct {
 	ServiceAuthToken     string
 	DownloadServiceToken string
 	SecretKey            string
-	BucketName           string
 	VaultPath            string
 	IsPublishing         bool
 }
@@ -186,11 +185,6 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 				filename := privateURL.Path
 				logData["filename"] = filename
 
-				input := &s3.GetObjectInput{
-					Bucket: &d.BucketName,
-					Key:    &filename,
-				}
-
 				vaultPath := d.VaultPath + "/" + filepath.Base(filename)
 				vaultKey := "key"
 				logData["vaultPath"] = vaultPath
@@ -208,19 +202,19 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 				}
 
 				log.Event(req.Context(), "getting file from s3", logData)
-				obj, err := d.S3Client.GetObjectWithPSK(input, psk)
+				s3Reader, err := d.S3Client.GetWithPSK(filename, psk)
 				if err != nil {
 					setStatusCode(req, w, err, logData)
 					return
 				}
 
 				defer func() {
-					if err := obj.Body.Close(); err != nil {
+					if err := s3Reader.Close(); err != nil {
 						log.Event(req.Context(), "error closing Body", log.Error(err))
 					}
 				}()
 
-				if _, err := io.Copy(w, obj.Body); err != nil {
+				if _, err := io.Copy(w, s3Reader); err != nil {
 					setStatusCode(req, w, err, logData)
 				}
 

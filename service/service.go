@@ -7,11 +7,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/justinas/alice"
 
-	"github.com/ONSdigital/dp-api-clients-go/dataset"
-	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/dp-api-clients-go/health"
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/ONSdigital/dp-api-clients-go/middleware"
@@ -21,7 +18,6 @@ import (
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/log.go/log"
-	"github.com/ONSdigital/s3crypto"
 	"github.com/gorilla/mux"
 
 	gorillahandlers "github.com/gorilla/handlers"
@@ -29,9 +25,9 @@ import (
 
 // Download represents the configuration to run the download service
 type Download struct {
-	datasetClient DatasetClient
-	filterClient  FilterClient
-	vaultClient   VaultClient
+	datasetClient handlers.DatasetClient
+	filterClient  handlers.FilterClient
+	vaultClient   handlers.VaultClient
 	router        *mux.Router
 	server        *server.Server
 	errChan       chan error
@@ -39,29 +35,14 @@ type Download struct {
 	healthCheck   *healthcheck.HealthCheck
 }
 
-// DatasetClient is an interface to represent methods called to action on the dataset api
-type DatasetClient interface {
-	GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (m dataset.Version, err error)
-}
-
-// FilterClient is an interface to represent methods called to action on the filter api
-type FilterClient interface {
-	GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, filterOutputID string) (filter.Model, error)
-}
-
-// VaultClient is an interface to represent methods called to action upon vault
-type VaultClient interface {
-	ReadKey(path, key string) (string, error)
-}
-
 // Create should be called to create a new instance of the download service, with routes correctly initialised.
 // Note: zc is allowed to be nil if we are not in publishing mode
 func Create(
 	cfg config.Config,
-	dc DatasetClient,
-	fc FilterClient,
-	s3sess *session.Session,
-	vc VaultClient,
+	dc handlers.DatasetClient,
+	fc handlers.FilterClient,
+	s3 handlers.S3Client,
+	vc handlers.VaultClient,
 	zc *health.Client,
 	hc *healthcheck.HealthCheck) Download {
 
@@ -72,8 +53,7 @@ func Create(
 		DatasetClient: dc,
 		VaultClient:   vc,
 		FilterClient:  fc,
-		S3Client:      s3crypto.New(s3sess, &s3crypto.Config{HasUserDefinedPSK: true}),
-		BucketName:    cfg.BucketName,
+		S3Client:      s3,
 		VaultPath:     cfg.VaultPath,
 		IsPublishing:  cfg.IsPublishing,
 	}
@@ -123,10 +103,7 @@ func (d Download) Start() {
 	hcCtx := context.Background()
 	ctx, cancel := context.WithTimeout(hcCtx, d.shutdown)
 
-	// Start Healthcheck with non-timeout context
 	d.healthCheck.Start(hcCtx)
-
-	// Start HTTP service
 	d.run()
 
 	select {
