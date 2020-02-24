@@ -32,11 +32,11 @@ func main() {
 
 	cfg, err := config.Get()
 	if err != nil {
-		log.Event(ctx, "error getting config", log.Error(err))
+		log.Event(ctx, "error getting config", log.ERROR, log.Error(err))
 		os.Exit(1)
 	}
 
-	log.Event(ctx, "config on startup", log.Data{"config": cfg})
+	log.Event(ctx, "config on startup", log.INFO, log.Data{"config": cfg})
 
 	// Create Dataset API client.
 	dc := dataset.NewAPIClient(cfg.DatasetAPIURL)
@@ -44,7 +44,7 @@ func main() {
 	// Create Vault client.
 	vc, err := vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 3)
 	if err != nil {
-		log.Event(ctx, "could not create a vault client", log.Error(err))
+		log.Event(ctx, "could not create a vault client", log.FATAL, log.Error(err))
 		os.Exit(1)
 	}
 
@@ -60,13 +60,13 @@ func main() {
 	// Create S3 client with region and bucket name.
 	s3, err := s3client.NewClient(cfg.AwsRegion, cfg.BucketName, true)
 	if err != nil {
-		log.Event(ctx, "could not create the s3 client", log.Error(err))
+		log.Event(ctx, "could not create the s3 client", log.ERROR, log.Error(err))
 	}
 
 	// Create healthcheck object with versionInfo and register Checkers.
 	versionInfo, err := healthcheck.NewVersionInfo(BuildTime, GitCommit, Version)
 	if err != nil {
-		log.Event(ctx, "Failed to obtain VersionInfo for healthcheck", log.Error(err))
+		log.Event(ctx, "Failed to obtain VersionInfo for healthcheck", log.FATAL, log.Error(err))
 		os.Exit(1)
 	}
 	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
@@ -95,25 +95,25 @@ func registerCheckers(hc *healthcheck.HealthCheck, isPublishing bool,
 	s3 *s3client.S3) (err error) {
 
 	if err = hc.AddCheck("Dataset API", dc.Checker); err != nil {
-		log.Event(nil, "Error Adding Check for Dataset API", log.Error(err))
+		log.Event(nil, "Error Adding Check for Dataset API", log.ERROR, log.Error(err))
 	}
 
 	if err = hc.AddCheck("Vault", vc.Checker); err != nil {
-		log.Event(nil, "Error Adding Check for Vault", log.Error(err))
+		log.Event(nil, "Error Adding Check for Vault", log.ERROR, log.Error(err))
 	}
 
 	if err = hc.AddCheck("Filter API", fc.Checker); err != nil {
-		log.Event(nil, "Error Adding Check for Filter API", log.Error(err))
+		log.Event(nil, "Error Adding Check for Filter API", log.ERROR, log.Error(err))
 	}
 
 	if isPublishing {
 		if err = hc.AddCheck("Zebedee", zc.Checker); err != nil {
-			log.Event(nil, "Error Adding Check for Zebedee", log.Error(err))
+			log.Event(nil, "Error Adding Check for Zebedee", log.ERROR, log.Error(err))
 		}
 	}
 
 	if err = hc.AddCheck("S3", s3.Checker); err != nil {
-		log.Event(nil, "Error Adding Check for S3", log.Error(err))
+		log.Event(nil, "Error Adding Check for S3", log.ERROR, log.Error(err))
 	}
 
 	return

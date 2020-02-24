@@ -70,7 +70,7 @@ func Create(
 
 	// For non-whitelisted endpoints, do identityHandler or corsHandler
 	if cfg.IsPublishing {
-		log.Event(ctx, "private endpoints are enabled. using identity middleware")
+		log.Event(ctx, "private endpoints are enabled. using identity middleware", log.INFO)
 		identityHandler := identity.HandlerForHTTPClient(clientsidentity.NewAPIClient(zc.Client, cfg.ZebedeeURL))
 		middlewareChain = middlewareChain.Append(identityHandler)
 	} else {
@@ -108,19 +108,19 @@ func (d Download) Start() {
 
 	select {
 	case err := <-d.errChan:
-		log.Event(ctx, "download service error received", log.Error(err))
+		log.Event(ctx, "download service error received", log.ERROR, log.Error(err))
 	case <-signals:
-		log.Event(ctx, "os signal received")
+		log.Event(ctx, "os signal received", log.INFO)
 	}
 
 	// Gracefully shutdown the application closing any open resources.
-	log.Event(ctx, "shutdown with timeout", log.Data{"timeout": d.shutdown})
+	log.Event(ctx, "shutdown with timeout", log.INFO, log.Data{"timeout": d.shutdown})
 
 	shutdownStart := time.Now()
 	d.close(ctx)
 	d.healthCheck.Stop()
 
-	log.Event(ctx, "shutdown complete", log.Data{"duration": time.Since(shutdownStart)})
+	log.Event(ctx, "shutdown complete", log.INFO, log.Data{"duration": time.Since(shutdownStart)})
 	cancel()
 	os.Exit(1)
 }
@@ -128,9 +128,9 @@ func (d Download) Start() {
 func (d Download) run() {
 	ctx := context.Background()
 	go func() {
-		log.Event(ctx, "starting download service...")
+		log.Event(ctx, "starting download service...", log.INFO)
 		if err := d.server.ListenAndServe(); err != nil {
-			log.Event(ctx, "download service http service returned an error", log.Error(err))
+			log.Event(ctx, "download service http service returned an error", log.ERROR, log.Error(err))
 			d.errChan <- err
 		}
 	}()
@@ -140,6 +140,6 @@ func (d Download) close(ctx context.Context) error {
 	if err := d.server.Shutdown(ctx); err != nil {
 		return err
 	}
-	log.Event(ctx, "graceful shutdown of http server complete")
+	log.Event(ctx, "graceful shutdown of http server complete", log.INFO)
 	return nil
 }

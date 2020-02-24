@@ -85,7 +85,7 @@ func setStatusCode(req *http.Request, w http.ResponseWriter, err error, logData 
 	}
 	logData["setting_response_status"] = status
 	logData["error"] = err.Error()
-	log.Event(req.Context(), "setting status code for an error", logData)
+	log.Event(req.Context(), "setting status code for an error", log.INFO, logData)
 	if status == http.StatusNotFound {
 		message = notFoundMessage
 	}
@@ -157,7 +157,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 		}
 
 		logData["published"] = published
-		log.Event(req.Context(), "attempting to get download", logData)
+		log.Event(req.Context(), "attempting to get download", log.INFO, logData)
 
 		authorised, logData := d.authenticate(req, logData)
 		logData["authorised"] = authorised
@@ -170,7 +170,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 		if len(downloads[extension].Private) > 0 {
 
 			logData["private_link"] = downloads[extension].Private
-			log.Event(req.Context(), "using private link", logData)
+			log.Event(req.Context(), "using private link", log.INFO, logData)
 
 			if published || authorised {
 
@@ -189,7 +189,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 				vaultKey := "key"
 				logData["vaultPath"] = vaultPath
 
-				log.Event(req.Context(), "getting download key from vault", logData)
+				log.Event(req.Context(), "getting download key from vault", log.INFO, logData)
 				pskStr, err := d.VaultClient.ReadKey(vaultPath, vaultKey)
 				if err != nil {
 					setStatusCode(req, w, err, logData)
@@ -201,7 +201,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 					return
 				}
 
-				log.Event(req.Context(), "getting file from s3", logData)
+				log.Event(req.Context(), "getting file from s3", log.INFO, logData)
 				s3Reader, err := d.S3Client.GetWithPSK(filename, psk)
 				if err != nil {
 					setStatusCode(req, w, err, logData)
@@ -210,7 +210,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 
 				defer func() {
 					if err := s3Reader.Close(); err != nil {
-						log.Event(req.Context(), "error closing Body", log.Error(err))
+						log.Event(req.Context(), "error closing Body", log.ERROR, log.Error(err))
 					}
 				}()
 
@@ -222,7 +222,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 			}
 		}
 
-		log.Event(req.Context(), "no public or private link found", logData)
+		log.Event(req.Context(), "no public or private link found", log.ERROR, logData)
 		http.Error(w, notFoundMessage, http.StatusNotFound)
 	}
 }
@@ -242,7 +242,7 @@ func getUserAccessTokenFromContext(ctx context.Context) string {
 	if ctx.Value(common.FlorenceIdentityKey) != nil {
 		accessToken, ok := ctx.Value(common.FlorenceIdentityKey).(string)
 		if !ok {
-			log.Event(ctx, "access token error", log.Error(errors.New("error casting access token context value to string")))
+			log.Event(ctx, "access token error", log.ERROR, log.Error(errors.New("error casting access token context value to string")))
 		}
 		return accessToken
 	}
@@ -253,7 +253,7 @@ func getCollectionIDFromContext(ctx context.Context) string {
 	if ctx.Value(common.CollectionIDHeaderKey) != nil {
 		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
 		if !ok {
-			log.Event(ctx, "collection id error", log.Error(errors.New("error casting collection ID context value to string")))
+			log.Event(ctx, "collection id error", log.ERROR, log.Error(errors.New("error casting collection ID context value to string")))
 		}
 		return collectionID
 	}
