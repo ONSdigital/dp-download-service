@@ -32,7 +32,7 @@ func main() {
 
 	cfg, err := config.Get()
 	if err != nil {
-		log.Event(ctx, "error getting config", log.ERROR, log.Error(err))
+		log.Event(ctx, "error getting config", log.FATAL, log.Error(err))
 		os.Exit(1)
 	}
 
@@ -70,7 +70,9 @@ func main() {
 		os.Exit(1)
 	}
 	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
-	registerCheckers(&hc, cfg.IsPublishing, dc, vc, fc, zc, s3)
+	if err = registerCheckers(&hc, cfg.IsPublishing, dc, vc, fc, zc, s3); err != nil {
+		os.Exit(1)
+	}
 
 	// Create and start Service providing the required clients.
 	svc := service.Create(
