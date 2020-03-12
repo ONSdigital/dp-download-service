@@ -25,6 +25,7 @@ import (
 
 // Download represents the configuration to run the download service
 type Download struct {
+	ctx           context.Context
 	datasetClient handlers.DatasetClient
 	filterClient  handlers.FilterClient
 	vaultClient   handlers.VaultClient
@@ -38,6 +39,7 @@ type Download struct {
 // Create should be called to create a new instance of the download service, with routes correctly initialised.
 // Note: zc is allowed to be nil if we are not in publishing mode
 func Create(
+	ctx context.Context,
 	cfg config.Config,
 	dc handlers.DatasetClient,
 	fc handlers.FilterClient,
@@ -46,7 +48,6 @@ func Create(
 	zc *health.Client,
 	hc *healthcheck.HealthCheck) Download {
 
-	ctx := context.Background()
 	router := mux.NewRouter()
 
 	d := handlers.Download{
@@ -94,17 +95,15 @@ func Create(
 }
 
 // Start should be called to manage the running of the download service
-func (d Download) Start() {
+func (d Download) Start(ctx context.Context) {
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	d.server.HandleOSSignals = false
-	hcCtx := context.Background()
-	ctx, cancel := context.WithTimeout(hcCtx, d.shutdown)
 
-	d.healthCheck.Start(hcCtx)
-	d.run()
+	d.healthCheck.Start(ctx)
+	d.run(ctx)
 
 	select {
 	case err := <-d.errChan:
@@ -113,20 +112,21 @@ func (d Download) Start() {
 		log.Event(ctx, "os signal received", log.INFO)
 	}
 
+	shutdownCtx, cancel := context.WithTimeout(ctx, d.shutdown)
+
 	// Gracefully shutdown the application closing any open resources.
-	log.Event(ctx, "shutdown with timeout", log.INFO, log.Data{"timeout": d.shutdown})
+	log.Event(shutdownCtx, "shutdown with timeout", log.INFO, log.Data{"timeout": d.shutdown})
 
 	shutdownStart := time.Now()
-	d.close(ctx)
+	d.close(shutdownCtx)
 	d.healthCheck.Stop()
 
-	log.Event(ctx, "shutdown complete", log.INFO, log.Data{"duration": time.Since(shutdownStart)})
+	log.Event(shutdownCtx, "shutdown complete", log.INFO, log.Data{"duration": time.Since(shutdownStart)})
 	cancel()
 	os.Exit(1)
 }
 
-func (d Download) run() {
-	ctx := context.Background()
+func (d Download) run(ctx context.Context) {
 	go func() {
 		log.Event(ctx, "starting download service...", log.INFO)
 		if err := d.server.ListenAndServe(); err != nil {

@@ -76,6 +76,7 @@ func main() {
 
 	// Create and start Service providing the required clients.
 	svc := service.Create(
+		ctx,
 		*cfg,
 		dc,
 		fc,
@@ -84,7 +85,7 @@ func main() {
 		zc,
 		&hc,
 	)
-	svc.Start()
+	svc.Start(ctx)
 }
 
 // registerCheckers adds the checkers for the provided clients to the healthcheck object.
