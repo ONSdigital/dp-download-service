@@ -70,7 +70,7 @@ func main() {
 		os.Exit(1)
 	}
 	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
-	if err = registerCheckers(&hc, cfg.IsPublishing, dc, vc, fc, zc, s3); err != nil {
+	if err = registerCheckers(ctx, &hc, cfg.IsPublishing, dc, vc, fc, zc, s3); err != nil {
 		os.Exit(1)
 	}
 
@@ -90,7 +90,7 @@ func main() {
 
 // registerCheckers adds the checkers for the provided clients to the healthcheck object.
 // Zebedee health client will only be registered if we are in publishing mode.
-func registerCheckers(hc *healthcheck.HealthCheck, isPublishing bool,
+func registerCheckers(ctx context.Context, hc *healthcheck.HealthCheck, isPublishing bool,
 	dc *dataset.Client,
 	vc *vault.Client,
 	fc *filter.Client,
@@ -98,25 +98,25 @@ func registerCheckers(hc *healthcheck.HealthCheck, isPublishing bool,
 	s3 *s3client.S3) (err error) {
 
 	if err = hc.AddCheck("Dataset API", dc.Checker); err != nil {
-		log.Event(nil, "Error Adding Check for Dataset API", log.ERROR, log.Error(err))
+		log.Event(ctx, "Error Adding Check for Dataset API", log.ERROR, log.Error(err))
 	}
 
 	if err = hc.AddCheck("Vault", vc.Checker); err != nil {
-		log.Event(nil, "Error Adding Check for Vault", log.ERROR, log.Error(err))
+		log.Event(ctx, "Error Adding Check for Vault", log.ERROR, log.Error(err))
 	}
 
 	if err = hc.AddCheck("Filter API", fc.Checker); err != nil {
-		log.Event(nil, "Error Adding Check for Filter API", log.ERROR, log.Error(err))
+		log.Event(ctx, "Error Adding Check for Filter API", log.ERROR, log.Error(err))
 	}
 
 	if isPublishing {
 		if err = hc.AddCheck("Zebedee", zc.Checker); err != nil {
-			log.Event(nil, "Error Adding Check for Zebedee", log.ERROR, log.Error(err))
+			log.Event(ctx, "Error Adding Check for Zebedee", log.ERROR, log.Error(err))
 		}
 	}
 
 	if err = hc.AddCheck("S3", s3.Checker); err != nil {
-		log.Event(nil, "Error Adding Check for S3", log.ERROR, log.Error(err))
+		log.Event(ctx, "Error Adding Check for S3", log.ERROR, log.Error(err))
 	}
 
 	return
