@@ -25,7 +25,6 @@ import (
 
 // Download represents the configuration to run the download service
 type Download struct {
-	ctx           context.Context
 	datasetClient handlers.DatasetClient
 	filterClient  handlers.FilterClient
 	vaultClient   handlers.VaultClient
