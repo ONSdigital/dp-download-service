@@ -30,7 +30,6 @@ type Download struct {
 	vaultClient   handlers.VaultClient
 	router        *mux.Router
 	server        *server.Server
-	errChan       chan error
 	shutdown      time.Duration
 	healthCheck   *healthcheck.HealthCheck
 }
@@ -88,7 +87,6 @@ func Create(
 		router:        router,
 		server:        httpServer,
 		shutdown:      cfg.GracefulShutdownTimeout,
-		errChan:       make(chan error, 1),
 		healthCheck:   hc,
 	}
 }
@@ -104,12 +102,8 @@ func (d Download) Start(ctx context.Context) {
 	d.healthCheck.Start(ctx)
 	d.run(ctx)
 
-	select {
-	case err := <-d.errChan:
-		log.Event(ctx, "download service error received", log.ERROR, log.Error(err))
-	case <-signals:
-		log.Event(ctx, "os signal received", log.INFO)
-	}
+	<-signals
+	log.Event(ctx, "os signal received", log.INFO)
 
 	shutdownCtx, cancel := context.WithTimeout(ctx, d.shutdown)
 
@@ -130,7 +124,6 @@ func (d Download) run(ctx context.Context) {
 		log.Event(ctx, "starting download service...", log.INFO)
 		if err := d.server.ListenAndServe(); err != nil {
 			log.Event(ctx, "download service http service returned an error", log.ERROR, log.Error(err))
-			d.errChan <- err
 		}
 	}()
 }
