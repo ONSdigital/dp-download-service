@@ -48,13 +48,13 @@ func main() {
 
 	s3cli, err := s3client.NewClient(region, bucket, true)
 	if err != nil {
-		log.Event(ctx, "error creating new S3 client", log.ERROR, log.Error(err))
+		log.Event(ctx, "error creating new s3 client", log.ERROR, log.Error(err))
 		return
 	}
 
 	err = s3cli.PutWithPSK(&filename, rs, psk)
 	if err != nil {
-		log.Event(ctx, "error putting object with PSK", log.ERROR, log.Error(err))
+		log.Event(ctx, "error putting object with psk", log.ERROR, log.Error(err))
 		return
 	}
 

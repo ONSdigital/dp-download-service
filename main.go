@@ -66,7 +66,7 @@ func main() {
 	// Create healthcheck object with versionInfo and register Checkers.
 	versionInfo, err := healthcheck.NewVersionInfo(BuildTime, GitCommit, Version)
 	if err != nil {
-		log.Event(ctx, "Failed to obtain VersionInfo for healthcheck", log.FATAL, log.Error(err))
+		log.Event(ctx, "failed to obtain version info for healthcheck", log.FATAL, log.Error(err))
 		os.Exit(1)
 	}
 	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
@@ -98,25 +98,25 @@ func registerCheckers(ctx context.Context, hc *healthcheck.HealthCheck, isPublis
 	s3 *s3client.S3) (err error) {
 
 	if err = hc.AddCheck("Dataset API", dc.Checker); err != nil {
-		log.Event(ctx, "Error Adding Check for Dataset API", log.ERROR, log.Error(err))
+		log.Event(ctx, "error adding check for dataset api", log.ERROR, log.Error(err))
 	}
 
 	if err = hc.AddCheck("Vault", vc.Checker); err != nil {
-		log.Event(ctx, "Error Adding Check for Vault", log.ERROR, log.Error(err))
+		log.Event(ctx, "error adding check for vault", log.ERROR, log.Error(err))
 	}
 
 	if err = hc.AddCheck("Filter API", fc.Checker); err != nil {
-		log.Event(ctx, "Error Adding Check for Filter API", log.ERROR, log.Error(err))
+		log.Event(ctx, "error adding check for filter api", log.ERROR, log.Error(err))
 	}
 
 	if isPublishing {
 		if err = hc.AddCheck("Zebedee", zc.Checker); err != nil {
-			log.Event(ctx, "Error Adding Check for Zebedee", log.ERROR, log.Error(err))
+			log.Event(ctx, "error adding check for zebedee", log.ERROR, log.Error(err))
 		}
 	}
 
 	if err = hc.AddCheck("S3", s3.Checker); err != nil {
-		log.Event(ctx, "Error Adding Check for S3", log.ERROR, log.Error(err))
+		log.Event(ctx, "Error adding check for s3", log.ERROR, log.Error(err))
 	}
 
 	return

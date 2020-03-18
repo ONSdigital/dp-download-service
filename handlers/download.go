@@ -210,7 +210,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 
 				defer func() {
 					if err := s3Reader.Close(); err != nil {
-						log.Event(req.Context(), "error closing Body", log.ERROR, log.Error(err))
+						log.Event(req.Context(), "error closing body", log.ERROR, log.Error(err))
 					}
 				}()
 
