@@ -98,38 +98,37 @@ func registerCheckers(ctx context.Context, hc *healthcheck.HealthCheck, isPublis
 	zc *health.Client,
 	s3 *s3client.S3) error {
 
-	anyError := false
+	hasErrors := false
 
 	if err := hc.AddCheck("Dataset API", dc.Checker); err != nil {
-		anyError = true
+		hasErrors = true
 		log.Event(ctx, "error adding check for dataset api", log.ERROR, log.Error(err))
 	}
 
 	if err := hc.AddCheck("Vault", vc.Checker); err != nil {
-		anyError = true
+		hasErrors = true
 		log.Event(ctx, "error adding check for vault", log.ERROR, log.Error(err))
 	}
 
 	if err := hc.AddCheck("Filter API", fc.Checker); err != nil {
-		anyError = true
+		hasErrors = true
 		log.Event(ctx, "error adding check for filter api", log.ERROR, log.Error(err))
 	}
 
 	if isPublishing {
 		if err := hc.AddCheck("Zebedee", zc.Checker); err != nil {
-			anyError = true
+			hasErrors = true
 			log.Event(ctx, "error adding check for zebedee", log.ERROR, log.Error(err))
 		}
 	}
 
 	if err := hc.AddCheck("S3", s3.Checker); err != nil {
-		anyError = true
-		log.Event(ctx, "Error adding check for s3", log.ERROR, log.Error(err))
+		hasErrors = true
+		log.Event(ctx, "error adding check for s3", log.ERROR, log.Error(err))
 	}
 
-	if anyError {
+	if hasErrors {
 		return errors.New("Error(s) registering checkers for healthcheck")
 	}
-
 	return nil
 }

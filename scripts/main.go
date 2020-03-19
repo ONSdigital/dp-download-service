@@ -29,7 +29,7 @@ func main() {
 		log.Event(ctx, "failed to connect to vault", log.ERROR, log.Error(err), logData)
 		return
 	}
-	log.Event(ctx, "Created vault client", log.INFO, logData)
+	log.Event(ctx, "created vault client", log.INFO, logData)
 
 	psk := createPSK()
 	pskStr := hex.EncodeToString(psk)
