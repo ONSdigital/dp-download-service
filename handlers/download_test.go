@@ -17,7 +17,6 @@ import (
 	"github.com/ONSdigital/dp-download-service/handlers/mocks"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/identity"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
@@ -37,7 +36,6 @@ const (
 )
 
 var (
-	testBucket    = "some-bucket"
 	testFilename  = "my-file.csv"
 	testVaultPath = rootVaultPath + "/" + testFilename
 	expectedS3Key = "/datasets/" + testFilename
@@ -166,22 +164,14 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
 
-		input := &s3.GetObjectInput{
-			Bucket: &testBucket,
-			Key:    &expectedS3Key,
-		}
-
-		output := &s3.GetObjectOutput{
-			Body: ioutil.NopCloser(strings.NewReader(testCsvContent)),
-		}
+		output := ioutil.NopCloser(strings.NewReader(testCsvContent))
 		s3c := mocks.NewMockS3Client(mockCtrl)
-		s3c.EXPECT().GetObjectWithPSK(input, []byte(testPSK)).Return(output, nil)
+		s3c.EXPECT().GetWithPSK(expectedS3Key, []byte(testPSK)).Return(output, nil)
 
 		d := Download{
 			DatasetClient: dc,
 			VaultClient:   vc,
 			S3Client:      s3c,
-			BucketName:    testBucket,
 			VaultPath:     rootVaultPath,
 		}
 
@@ -211,22 +201,14 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
 
-		input := &s3.GetObjectInput{
-			Bucket: &testBucket,
-			Key:    &expectedS3Key,
-		}
-
-		output := &s3.GetObjectOutput{
-			Body: ioutil.NopCloser(strings.NewReader(testCsvContent)),
-		}
+		output := ioutil.NopCloser(strings.NewReader(testCsvContent))
 		s3c := mocks.NewMockS3Client(mockCtrl)
-		s3c.EXPECT().GetObjectWithPSK(input, []byte(testPSK)).Return(output, nil)
+		s3c.EXPECT().GetWithPSK(expectedS3Key, []byte(testPSK)).Return(output, nil)
 
 		d := Download{
 			DatasetClient: dc,
 			VaultClient:   vc,
 			S3Client:      s3c,
-			BucketName:    testBucket,
 			VaultPath:     rootVaultPath,
 			IsPublishing:  true,
 		}
@@ -384,19 +366,13 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
 
-		input := &s3.GetObjectInput{
-			Bucket: &testBucket,
-			Key:    &expectedS3Key,
-		}
-
 		s3c := mocks.NewMockS3Client(mockCtrl)
-		s3c.EXPECT().GetObjectWithPSK(input, []byte(testPSK)).Return(nil, errors.New("s3 client error"))
+		s3c.EXPECT().GetWithPSK(expectedS3Key, []byte(testPSK)).Return(nil, errors.New("s3 client error"))
 
 		d := Download{
 			DatasetClient: dc,
 			VaultClient:   vc,
 			S3Client:      s3c,
-			BucketName:    testBucket,
 			VaultPath:     rootVaultPath,
 		}
 
@@ -425,26 +401,17 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
 
-		input := &s3.GetObjectInput{
-			Bucket: &testBucket,
-			Key:    &expectedS3Key,
-		}
-
 		er, ew := errors.New("readError"), errors.New("writeError")
 		rdr := zeroErrReader{err: er}
 		wtr := errWriter{w, ew}
 
-		output := &s3.GetObjectOutput{
-			Body: rdr,
-		}
 		s3c := mocks.NewMockS3Client(mockCtrl)
-		s3c.EXPECT().GetObjectWithPSK(input, []byte(testPSK)).Return(output, nil)
+		s3c.EXPECT().GetWithPSK(expectedS3Key, []byte(testPSK)).Return(rdr, nil)
 
 		d := Download{
 			DatasetClient: dc,
 			VaultClient:   vc,
 			S3Client:      s3c,
-			BucketName:    testBucket,
 			VaultPath:     rootVaultPath,
 		}
 

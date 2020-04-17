@@ -8,69 +8,57 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/ONSdigital/go-ns/vault"
+	s3client "github.com/ONSdigital/dp-s3"
+	vault "github.com/ONSdigital/dp-vault"
 	"github.com/ONSdigital/log.go/log"
-	"github.com/ONSdigital/s3crypto"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 var filename = "2470609-cpicoicoptestcsv"
 var bucket = "dp-frontend-florence-file-uploads"
+var region = "eu-west-1"
 
 func main() {
 	vaultAddress := os.Getenv("VAULT_ADDR")
 	token := os.Getenv("VAULT_TOKEN")
 
-	client, err := vault.CreateVaultClient(token, vaultAddress, 3)
-
 	ctx := context.Background()
 	logData := log.Data{"address": vaultAddress}
-	log.Event(ctx, "Created vault client", logData)
 
+	client, err := vault.CreateClient(token, vaultAddress, 3)
 	if err != nil {
-		log.Event(ctx, "failed to connect to vault", log.Error(err), logData)
+		log.Event(ctx, "failed to connect to vault", log.ERROR, log.Error(err), logData)
 		return
 	}
+	log.Event(ctx, "created vault client", log.INFO, logData)
 
 	psk := createPSK()
 	pskStr := hex.EncodeToString(psk)
 
 	if err := client.WriteKey("secret/shared/psk", filename, pskStr); err != nil {
-		log.Event(ctx, "error writting key", log.Error(err))
+		log.Event(ctx, "error writting key", log.ERROR, log.Error(err))
 		return
 	}
 
 	b, err := ioutil.ReadFile("cpicoicoptest.csv")
 	if err != nil {
-		log.Event(ctx, "failed to connect to vault", log.Error(err), logData)
+		log.Event(ctx, "failed to connect to vault", log.ERROR, log.Error(err), logData)
 		return
 	}
 	rs := bytes.NewReader(b)
 
-	input := &s3.PutObjectInput{
-		Body:   rs,
-		Key:    &filename,
-		Bucket: &bucket,
-	}
-
-	region := "eu-west-1"
-
-	sess, err := session.NewSession(&aws.Config{Region: &region})
+	s3cli, err := s3client.NewClient(region, bucket, true)
 	if err != nil {
-		log.Event(ctx, "error creating new session", log.Error(err))
-		return
-	}
-	s3cli := s3crypto.New(sess, &s3crypto.Config{HasUserDefinedPSK: true})
-
-	_, err = s3cli.PutObjectWithPSK(input, psk)
-	if err != nil {
-		log.Event(ctx, "error putting object with PSK", log.Error(err))
+		log.Event(ctx, "error creating new s3 client", log.ERROR, log.Error(err))
 		return
 	}
 
-	log.Event(ctx, "file encrypted and uploaded to s3", log.Data{"file": filename})
+	err = s3cli.PutWithPSK(&filename, rs, psk)
+	if err != nil {
+		log.Event(ctx, "error putting object with psk", log.ERROR, log.Error(err))
+		return
+	}
+
+	log.Event(ctx, "file encrypted and uploaded to s3", log.INFO, log.Data{"file": filename})
 
 }
 
