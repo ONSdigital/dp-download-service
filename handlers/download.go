@@ -77,7 +77,7 @@ type Download struct {
 	IsPublishing         bool
 }
 
-func setStatusCode(req *http.Request, w http.ResponseWriter, err error, logData log.Data) {
+func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logData log.Data) {
 	status := http.StatusInternalServerError
 	message := internalServerMessage
 	if err, ok := err.(ClientError); ok {
@@ -85,7 +85,7 @@ func setStatusCode(req *http.Request, w http.ResponseWriter, err error, logData 
 	}
 	logData["setting_response_status"] = status
 	logData["error"] = err.Error()
-	log.Event(req.Context(), "setting status code for an error", log.INFO, logData)
+	log.Event(ctx, "setting status code for an error", log.INFO, logData)
 	if status == http.StatusNotFound {
 		message = notFoundMessage
 	}
@@ -98,6 +98,7 @@ func setStatusCode(req *http.Request, w http.ResponseWriter, err error, logData 
 // whether or not the version is published.
 func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
 		vars := mux.Vars(req)
 		datasetID := vars["datasetID"]
 		edition := vars["edition"]
@@ -118,7 +119,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 
 			fo, err := d.FilterClient.GetOutput(req.Context(), userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID)
 			if err != nil {
-				setStatusCode(req, w, err, logData)
+				setStatusCode(ctx, w, err, logData)
 				return
 			}
 
@@ -138,7 +139,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 
 			v, err := d.DatasetClient.GetVersion(req.Context(), userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version)
 			if err != nil {
-				setStatusCode(req, w, err, logData)
+				setStatusCode(ctx, w, err, logData)
 				return
 			}
 
@@ -178,7 +179,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 
 				privateURL, err := url.Parse(privateFile)
 				if err != nil {
-					setStatusCode(req, w, err, logData)
+					setStatusCode(ctx, w, err, logData)
 					return
 				}
 
@@ -192,19 +193,19 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 				log.Event(req.Context(), "getting download key from vault", log.INFO, logData)
 				pskStr, err := d.VaultClient.ReadKey(vaultPath, vaultKey)
 				if err != nil {
-					setStatusCode(req, w, err, logData)
+					setStatusCode(ctx, w, err, logData)
 					return
 				}
 				psk, err := hex.DecodeString(pskStr)
 				if err != nil {
-					setStatusCode(req, w, err, logData)
+					setStatusCode(ctx, w, err, logData)
 					return
 				}
 
 				log.Event(req.Context(), "getting file from s3", log.INFO, logData)
 				s3Reader, err := d.S3Client.GetWithPSK(filename, psk)
 				if err != nil {
-					setStatusCode(req, w, err, logData)
+					setStatusCode(ctx, w, err, logData)
 					return
 				}
 
@@ -215,7 +216,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 				}()
 
 				if _, err := io.Copy(w, s3Reader); err != nil {
-					setStatusCode(req, w, err, logData)
+					setStatusCode(ctx, w, err, logData)
 				}
 
 				return
