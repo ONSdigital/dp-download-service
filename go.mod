@@ -10,7 +10,7 @@ require (
 	github.com/ONSdigital/dp-vault v1.1.0
 	github.com/ONSdigital/go-ns v0.0.0-20200205115900-a11716f93bad
 	github.com/ONSdigital/log.go v1.0.0
-	github.com/golang/mock v1.4.0
+	github.com/golang/mock v1.4.3
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.7.3
 	github.com/justinas/alice v1.2.0

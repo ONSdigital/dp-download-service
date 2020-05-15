@@ -80,9 +80,12 @@ type Download struct {
 func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logData log.Data) {
 	status := http.StatusInternalServerError
 	message := internalServerMessage
-	if err, ok := err.(ClientError); ok {
-		status = err.Code()
+
+	var cliErr ClientError
+	if errors.As(err, &cliErr) {
+		status = cliErr.Code()
 	}
+
 	logData["setting_response_status"] = status
 	logData["error"] = err.Error()
 	log.Event(ctx, "setting status code for an error", log.INFO, logData)
@@ -260,3 +263,4 @@ func getCollectionIDFromContext(ctx context.Context) string {
 	}
 	return ""
 }
+
