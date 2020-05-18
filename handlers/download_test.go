@@ -36,9 +36,17 @@ const (
 )
 
 var (
-	testFilename  = "my-file.csv"
-	testVaultPath = rootVaultPath + "/" + testFilename
-	expectedS3Key = "/datasets/" + testFilename
+	testFilename              = "my-file.csv"
+	testVaultPath             = rootVaultPath + "/" + testFilename
+	expectedS3Key             = "/datasets/" + testFilename
+	testError                 = errors.New("borked")
+	getFilterOutputParameters = getFilterOutputParams{
+		userAuthToken:        "userAuthToken",
+		serviceAuthToken:     "serviceAuthToken",
+		downloadServiceToken: "downloadServiceToken",
+		collectionID:         "collectionID",
+		filterOutputID:       "filterOutputID",
+	}
 )
 
 type testClientError struct {
@@ -437,4 +445,113 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
 	})
+}
+
+func TestGetDownloadsForFilterOutput(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	Convey("should return the error if filter client get output is unsuccessful", t, func() {
+		filterCli := filterClientReturningErrorForGetOutput(ctrl, getFilterOutputParameters)
+		d := Download{FilterClient: filterCli}
+
+		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, getFilterOutputParameters)
+
+		So(downloads, ShouldHaveLength, 0)
+		So(isPublished, ShouldBeFalse)
+		So(err, ShouldResemble, testError)
+	})
+
+	Convey("should return publish false if downloads is empty", t, func() {
+		filterCli := filterClientReturningEmptyDownloadsForGetOutput(ctrl, getFilterOutputParameters)
+		d := Download{FilterClient: filterCli}
+
+		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, getFilterOutputParameters)
+
+		So(downloads, ShouldHaveLength, 0)
+		So(isPublished, ShouldBeFalse)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("should return expected values if downloads is not empty", t, func() {
+		filterCli, outputDownload := filterClientReturningDownloadsForGetOutput(ctrl, getFilterOutputParameters)
+		d := Download{FilterClient: filterCli}
+
+		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, getFilterOutputParameters)
+
+		So(downloads, ShouldHaveLength, 1)
+		csv := downloads["csv"]
+
+		So(csv, ShouldResemble, download{
+			URL:     outputDownload.URL,
+			Size:    csv.Size,
+			Public:  csv.Public,
+			Private: csv.Private,
+			Skipped: csv.Skipped,
+		})
+
+		So(isPublished, ShouldBeTrue)
+		So(err, ShouldBeNil)
+	})
+}
+
+func filterClientReturningErrorForGetOutput(c *gomock.Controller, p getFilterOutputParams) *mocks.MockFilterClient {
+	filterCli := mocks.NewMockFilterClient(c)
+
+	filterCli.EXPECT().GetOutput(
+		nil,
+		gomock.Eq(p.userAuthToken),
+		gomock.Eq(p.serviceAuthToken),
+		gomock.Eq(p.downloadServiceToken),
+		gomock.Eq(p.collectionID),
+		gomock.Eq(p.filterOutputID),
+	).Times(1).Return(filter.Model{}, testError)
+
+	return filterCli
+}
+
+func filterClientReturningEmptyDownloadsForGetOutput(c *gomock.Controller, p getFilterOutputParams) *mocks.MockFilterClient {
+	filterCli := mocks.NewMockFilterClient(c)
+
+	output := filter.Model{Downloads: make(map[string]filter.Download)}
+
+	filterCli.EXPECT().GetOutput(
+		nil,
+		gomock.Eq(p.userAuthToken),
+		gomock.Eq(p.serviceAuthToken),
+		gomock.Eq(p.downloadServiceToken),
+		gomock.Eq(p.collectionID),
+		gomock.Eq(p.filterOutputID),
+	).Times(1).Return(output, nil)
+
+	return filterCli
+}
+
+func filterClientReturningDownloadsForGetOutput(c *gomock.Controller, p getFilterOutputParams) (*mocks.MockFilterClient, filter.Download) {
+	filterCli := mocks.NewMockFilterClient(c)
+
+	download := filter.Download{
+		URL:     "/downloadURL",
+		Size:    "666",
+		Public:  "/public/download/url",
+		Private: "/private/download/url",
+		Skipped: false,
+	}
+
+	output := filter.Model{
+		IsPublished: true,
+		Downloads: map[string]filter.Download{
+			"csv": download,
+		}}
+
+	filterCli.EXPECT().GetOutput(
+		nil,
+		gomock.Eq(p.userAuthToken),
+		gomock.Eq(p.serviceAuthToken),
+		gomock.Eq(p.downloadServiceToken),
+		gomock.Eq(p.collectionID),
+		gomock.Eq(p.filterOutputID),
+	).Times(1).Return(output, nil)
+
+	return filterCli, download
 }

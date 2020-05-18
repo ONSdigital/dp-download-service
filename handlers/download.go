@@ -77,6 +77,14 @@ type Download struct {
 	IsPublishing         bool
 }
 
+type getFilterOutputParams struct {
+	userAuthToken        string
+	serviceAuthToken     string
+	downloadServiceToken string
+	collectionID         string
+	filterOutputID       string
+}
+
 func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logData log.Data) {
 	status := http.StatusInternalServerError
 	message := internalServerMessage
@@ -120,16 +128,19 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 				"type":             extension,
 			}
 
-			fo, err := d.FilterClient.GetOutput(req.Context(), userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID)
+			params := getFilterOutputParams{
+				userAuthToken:        userAuthToken,
+				serviceAuthToken:     serviceAuthToken,
+				downloadServiceToken: downloadServiceToken,
+				collectionID:         collectionID,
+				filterOutputID:       filterOutputID,
+			}
+
+			var err error
+			downloads, published, err = d.getDownloadsForFilterOutput(ctx, params)
 			if err != nil {
 				setStatusCode(ctx, w, err, logData)
 				return
-			}
-
-			published = fo.IsPublished
-
-			for k, v := range fo.Downloads {
-				downloads[k] = download(v)
 			}
 
 		} else {
@@ -231,6 +242,19 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 	}
 }
 
+func (d Download) getDownloadsForFilterOutput(ctx context.Context, p getFilterOutputParams) (map[string]download, bool, error) {
+	fo, err := d.FilterClient.GetOutput(ctx, p.userAuthToken, p.serviceAuthToken, p.downloadServiceToken, p.collectionID, p.filterOutputID)
+	if err != nil {
+		return nil, false, err
+	}
+
+	downloads := make(map[string]download)
+	for k, v := range fo.Downloads {
+		downloads[k] = download(v)
+	}
+	return downloads, fo.IsPublished, nil
+}
+
 func (d Download) authenticate(r *http.Request, logData map[string]interface{}) (bool, map[string]interface{}) {
 	var authorised bool
 
@@ -263,4 +287,3 @@ func getCollectionIDFromContext(ctx context.Context) string {
 	}
 	return ""
 }
-
