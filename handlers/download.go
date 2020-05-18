@@ -246,6 +246,7 @@ func getDownloadParameters(req *http.Request, serviceAuthToken, downloadServiceT
 	}
 }
 
+//getDownloadsForFilterOutput get the downloads for a filter output job.
 func (d Download) getDownloadsForFilterOutput(ctx context.Context, p downloadParameters) (map[string]download, bool, error) {
 	fo, err := d.FilterClient.GetOutput(ctx, p.userAuthToken, p.serviceAuthToken, p.downloadServiceToken, p.collectionID, p.filterOutputID)
 	if err != nil {
@@ -259,6 +260,7 @@ func (d Download) getDownloadsForFilterOutput(ctx context.Context, p downloadPar
 	return downloads, fo.IsPublished, nil
 }
 
+//getDownloadsForFilterOutput get the downloads for a dataset version
 func (d Download) getDownloadForDataset(ctx context.Context, p downloadParameters) (map[string]download, bool, error) {
 	version, err := d.DatasetClient.GetVersion(ctx, p.userAuthToken, p.serviceAuthToken, p.downloadServiceToken, p.collectionID, p.datasetID, p.edition, p.version)
 	if err != nil {
