@@ -77,12 +77,15 @@ type Download struct {
 	IsPublishing         bool
 }
 
-type getFilterOutputParams struct {
+type downloadParameters struct {
 	userAuthToken        string
 	serviceAuthToken     string
 	downloadServiceToken string
 	collectionID         string
 	filterOutputID       string
+	datasetID            string
+	edition              string
+	version              string
 }
 
 func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logData log.Data) {
@@ -110,30 +113,16 @@ func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logDat
 func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		vars := mux.Vars(req)
-		datasetID := vars["datasetID"]
-		edition := vars["edition"]
-		version := vars["version"]
-		filterOutputID := vars["filterOutputID"]
+		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
 
 		logData := log.Data{}
 		published := false
 		downloads := make(map[string]download)
-		userAuthToken := getUserAccessTokenFromContext(req.Context())
-		collectionID := getCollectionIDFromContext(req.Context())
 
-		if len(filterOutputID) > 0 {
+		if len(params.filterOutputID) > 0 {
 			logData = log.Data{
-				"filter_output_id": filterOutputID,
+				"filter_output_id": params.filterOutputID,
 				"type":             extension,
-			}
-
-			params := getFilterOutputParams{
-				userAuthToken:        userAuthToken,
-				serviceAuthToken:     serviceAuthToken,
-				downloadServiceToken: downloadServiceToken,
-				collectionID:         collectionID,
-				filterOutputID:       filterOutputID,
 			}
 
 			var err error
@@ -145,13 +134,13 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 
 		} else {
 			logData = log.Data{
-				"dataset_id": datasetID,
-				"edition":    edition,
-				"version":    version,
+				"dataset_id": params.datasetID,
+				"edition":    params.edition,
+				"version":    params.version,
 				"type":       extension,
 			}
 
-			v, err := d.DatasetClient.GetVersion(req.Context(), userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version)
+			v, err := d.DatasetClient.GetVersion(req.Context(), params.userAuthToken, serviceAuthToken, downloadServiceToken, params.collectionID, params.datasetID, params.edition, params.version)
 			if err != nil {
 				setStatusCode(ctx, w, err, logData)
 				return
@@ -242,7 +231,22 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 	}
 }
 
-func (d Download) getDownloadsForFilterOutput(ctx context.Context, p getFilterOutputParams) (map[string]download, bool, error) {
+func getDownloadParameters(req *http.Request, serviceAuthToken, downloadServiceToken string) downloadParameters {
+	vars := mux.Vars(req)
+
+	return downloadParameters{
+		userAuthToken:        getUserAccessTokenFromContext(req.Context()),
+		serviceAuthToken:     serviceAuthToken,
+		downloadServiceToken: downloadServiceToken,
+		collectionID:         getCollectionIDFromContext(req.Context()),
+		filterOutputID:       vars["filterOutputID"],
+		datasetID:            vars["datasetID"],
+		edition:              vars["edition"],
+		version:              vars["version"],
+	}
+}
+
+func (d Download) getDownloadsForFilterOutput(ctx context.Context, p downloadParameters) (map[string]download, bool, error) {
 	fo, err := d.FilterClient.GetOutput(ctx, p.userAuthToken, p.serviceAuthToken, p.downloadServiceToken, p.collectionID, p.filterOutputID)
 	if err != nil {
 		return nil, false, err
@@ -253,6 +257,28 @@ func (d Download) getDownloadsForFilterOutput(ctx context.Context, p getFilterOu
 		downloads[k] = download(v)
 	}
 	return downloads, fo.IsPublished, nil
+}
+
+func (d Download) getDownloadForDataset(ctx context.Context, p downloadParameters) (map[string]download, bool, error) {
+	version, err := d.DatasetClient.GetVersion(ctx, p.userAuthToken, p.serviceAuthToken, p.downloadServiceToken, p.collectionID, p.datasetID, p.edition, p.version)
+	if err != nil {
+		return nil, false, err
+	}
+
+	downloads := make(map[string]download)
+	for k, v := range version.Downloads {
+		datasetDownloadWithSkipped := download{
+			URL:     v.URL,
+			Size:    v.Size,
+			Public:  v.Public,
+			Private: v.Private,
+			Skipped: false,
+		}
+		downloads[k] = datasetDownloadWithSkipped
+	}
+
+	isPublished := version.State == "published"
+	return downloads, isPublished, nil
 }
 
 func (d Download) authenticate(r *http.Request, logData map[string]interface{}) (bool, map[string]interface{}) {

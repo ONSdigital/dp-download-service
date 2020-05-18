@@ -36,16 +36,25 @@ const (
 )
 
 var (
-	testFilename              = "my-file.csv"
-	testVaultPath             = rootVaultPath + "/" + testFilename
-	expectedS3Key             = "/datasets/" + testFilename
-	testError                 = errors.New("borked")
-	getFilterOutputParameters = getFilterOutputParams{
+	testFilename  = "my-file.csv"
+	testVaultPath = rootVaultPath + "/" + testFilename
+	expectedS3Key = "/datasets/" + testFilename
+	testError     = errors.New("borked")
+
+	testFilterOutputDownloadParams = downloadParameters{
 		userAuthToken:        "userAuthToken",
 		serviceAuthToken:     "serviceAuthToken",
 		downloadServiceToken: "downloadServiceToken",
 		collectionID:         "collectionID",
 		filterOutputID:       "filterOutputID",
+	}
+	testDatasetVersionDownloadParams = downloadParameters{
+		userAuthToken:        "userAuthToken",
+		serviceAuthToken:     "serviceAuthToken",
+		downloadServiceToken: "downloadServiceToken",
+		datasetID:            "datasetID",
+		edition:              "edition",
+		version:              "version",
 	}
 )
 
@@ -452,10 +461,10 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 	defer ctrl.Finish()
 
 	Convey("should return the error if filter client get output is unsuccessful", t, func() {
-		filterCli := filterClientReturningErrorForGetOutput(ctrl, getFilterOutputParameters)
+		filterCli := filterClientReturningErrorForGetOutput(ctrl, testFilterOutputDownloadParams)
 		d := Download{FilterClient: filterCli}
 
-		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, getFilterOutputParameters)
+		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, testFilterOutputDownloadParams)
 
 		So(downloads, ShouldHaveLength, 0)
 		So(isPublished, ShouldBeFalse)
@@ -463,10 +472,10 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 	})
 
 	Convey("should return publish false if downloads is empty", t, func() {
-		filterCli := filterClientReturningEmptyDownloadsForGetOutput(ctrl, getFilterOutputParameters)
+		filterCli := filterClientReturningEmptyDownloadsForGetOutput(ctrl, testFilterOutputDownloadParams)
 		d := Download{FilterClient: filterCli}
 
-		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, getFilterOutputParameters)
+		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, testFilterOutputDownloadParams)
 
 		So(downloads, ShouldHaveLength, 0)
 		So(isPublished, ShouldBeFalse)
@@ -474,10 +483,10 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 	})
 
 	Convey("should return expected values if downloads is not empty", t, func() {
-		filterCli, outputDownload := filterClientReturningDownloadsForGetOutput(ctrl, getFilterOutputParameters)
+		filterCli, outputDownload := filterClientReturningDownloadsForGetOutput(ctrl, testFilterOutputDownloadParams)
 		d := Download{FilterClient: filterCli}
 
-		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, getFilterOutputParameters)
+		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, testFilterOutputDownloadParams)
 
 		So(downloads, ShouldHaveLength, 1)
 		csv := downloads["csv"]
@@ -495,7 +504,7 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 	})
 }
 
-func filterClientReturningErrorForGetOutput(c *gomock.Controller, p getFilterOutputParams) *mocks.MockFilterClient {
+func filterClientReturningErrorForGetOutput(c *gomock.Controller, p downloadParameters) *mocks.MockFilterClient {
 	filterCli := mocks.NewMockFilterClient(c)
 
 	filterCli.EXPECT().GetOutput(
@@ -510,7 +519,7 @@ func filterClientReturningErrorForGetOutput(c *gomock.Controller, p getFilterOut
 	return filterCli
 }
 
-func filterClientReturningEmptyDownloadsForGetOutput(c *gomock.Controller, p getFilterOutputParams) *mocks.MockFilterClient {
+func filterClientReturningEmptyDownloadsForGetOutput(c *gomock.Controller, p downloadParameters) *mocks.MockFilterClient {
 	filterCli := mocks.NewMockFilterClient(c)
 
 	output := filter.Model{Downloads: make(map[string]filter.Download)}
@@ -527,7 +536,7 @@ func filterClientReturningEmptyDownloadsForGetOutput(c *gomock.Controller, p get
 	return filterCli
 }
 
-func filterClientReturningDownloadsForGetOutput(c *gomock.Controller, p getFilterOutputParams) (*mocks.MockFilterClient, filter.Download) {
+func filterClientReturningDownloadsForGetOutput(c *gomock.Controller, p downloadParameters) (*mocks.MockFilterClient, filter.Download) {
 	filterCli := mocks.NewMockFilterClient(c)
 
 	download := filter.Download{
@@ -554,4 +563,118 @@ func filterClientReturningDownloadsForGetOutput(c *gomock.Controller, p getFilte
 	).Times(1).Return(output, nil)
 
 	return filterCli, download
+}
+
+func TestGetDownloadForDataset(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	Convey("should return error is dataset client get version returns an error", t, func() {
+		datasetCli := datasetClientReturningErrorForGetVersion(ctrl, testDatasetVersionDownloadParams)
+
+		d := Download{DatasetClient: datasetCli}
+
+		downloads, isPublished, err := d.getDownloadForDataset(nil, testDatasetVersionDownloadParams)
+
+		So(downloads, ShouldHaveLength, 0)
+		So(isPublished, ShouldBeFalse)
+		So(err, ShouldResemble, testError)
+	})
+
+	Convey("should return published false if dataset state not published", t, func() {
+		datasetCli, expected := datasetClientReturningUnpublishedDatasetVersion(ctrl, testDatasetVersionDownloadParams)
+
+		d := Download{DatasetClient: datasetCli}
+
+		downloads, isPublished, err := d.getDownloadForDataset(nil, testDatasetVersionDownloadParams)
+
+		So(downloads, ShouldHaveLength, 1)
+		actual := downloads["csv"]
+		So(actual.Skipped, ShouldBeFalse)
+		So(actual.URL, ShouldEqual, expected.URL)
+		So(actual.Private, ShouldEqual, expected.Private)
+		So(actual.Public, ShouldEqual, expected.Public)
+
+		So(isPublished, ShouldBeFalse)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("should return empty downloads if dataset version downloads empty", t, func() {
+		datasetCli := datasetClientReturningDatasetVersionWithEmptyDownloads(ctrl, testDatasetVersionDownloadParams)
+
+		d := Download{DatasetClient: datasetCli}
+
+		downloads, isPublished, err := d.getDownloadForDataset(nil, testDatasetVersionDownloadParams)
+
+		So(downloads, ShouldHaveLength, 0)
+		So(isPublished, ShouldBeFalse)
+		So(err, ShouldBeNil)
+	})
+}
+
+func datasetClientReturningErrorForGetVersion(c *gomock.Controller, p downloadParameters) *mocks.MockDatasetClient {
+	cli := mocks.NewMockDatasetClient(c)
+
+	cli.EXPECT().GetVersion(
+		gomock.Any(),
+		gomock.Eq(p.userAuthToken),
+		gomock.Eq(p.serviceAuthToken),
+		gomock.Eq(p.downloadServiceToken),
+		gomock.Eq(p.collectionID),
+		gomock.Eq(p.datasetID),
+		gomock.Eq(p.edition),
+		gomock.Eq(p.version),
+	).Times(1).Return(dataset.Version{}, testError)
+	return cli
+}
+
+func datasetClientReturningUnpublishedDatasetVersion(c *gomock.Controller, p downloadParameters) (*mocks.MockDatasetClient, dataset.Download) {
+	cli := mocks.NewMockDatasetClient(c)
+
+	csv := dataset.Download{
+		URL:     "/abc",
+		Size:    "1",
+		Public:  "/public",
+		Private: "/private",
+	}
+
+	version := dataset.Version{
+		State:     "",
+		Downloads: map[string]dataset.Download{"csv": csv},
+	}
+
+	cli.EXPECT().GetVersion(
+		gomock.Any(),
+		gomock.Eq(p.userAuthToken),
+		gomock.Eq(p.serviceAuthToken),
+		gomock.Eq(p.downloadServiceToken),
+		gomock.Eq(p.collectionID),
+		gomock.Eq(p.datasetID),
+		gomock.Eq(p.edition),
+		gomock.Eq(p.version),
+	).Times(1).Return(version, nil)
+
+	return cli, csv
+}
+
+func datasetClientReturningDatasetVersionWithEmptyDownloads(c *gomock.Controller, p downloadParameters) *mocks.MockDatasetClient {
+	cli := mocks.NewMockDatasetClient(c)
+
+	version := dataset.Version{
+		State:     "",
+		Downloads: map[string]dataset.Download{},
+	}
+
+	cli.EXPECT().GetVersion(
+		gomock.Any(),
+		gomock.Eq(p.userAuthToken),
+		gomock.Eq(p.serviceAuthToken),
+		gomock.Eq(p.downloadServiceToken),
+		gomock.Eq(p.collectionID),
+		gomock.Eq(p.datasetID),
+		gomock.Eq(p.edition),
+		gomock.Eq(p.version),
+	).Times(1).Return(version, nil)
+
+	return cli
 }
