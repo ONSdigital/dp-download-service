@@ -600,7 +600,7 @@ func TestGetDownloadForDataset(t *testing.T) {
 
 		d := Download{DatasetClient: datasetCli}
 
-		downloads, isPublished, err := d.getDownloadForDataset(nil, testDatasetVersionDownloadParams)
+		downloads, isPublished, err := d.getDownloadForDatasetVersion(nil, testDatasetVersionDownloadParams)
 
 		So(downloads, ShouldHaveLength, 0)
 		So(isPublished, ShouldBeFalse)
@@ -616,7 +616,7 @@ func TestGetDownloadForDataset(t *testing.T) {
 			DatasetClient: datasetCli,
 		}
 
-		downloads, isPublished, err := d.getDownloadForDataset(nil, testDatasetVersionDownloadParams)
+		downloads, isPublished, err := d.getDownloadForDatasetVersion(nil, testDatasetVersionDownloadParams)
 
 		So(downloads, ShouldHaveLength, 1)
 		actual := downloads["csv"]
@@ -635,7 +635,7 @@ func TestGetDownloadForDataset(t *testing.T) {
 
 		d := Download{DatasetClient: datasetCli}
 
-		downloads, isPublished, err := d.getDownloadForDataset(nil, testDatasetVersionDownloadParams)
+		downloads, isPublished, err := d.getDownloadForDatasetVersion(nil, testDatasetVersionDownloadParams)
 
 		So(downloads, ShouldHaveLength, 0)
 		So(isPublished, ShouldBeFalse)
@@ -649,7 +649,7 @@ func TestGetDownloadForDataset(t *testing.T) {
 
 		d := Download{DatasetClient: datasetCli}
 
-		downloads, isPublished, err := d.getDownloadForDataset(nil, testDatasetVersionDownloadParams)
+		downloads, isPublished, err := d.getDownloadForDatasetVersion(nil, testDatasetVersionDownloadParams)
 
 		So(downloads, ShouldHaveLength, 1)
 		actual := downloads["csv"]

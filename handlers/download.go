@@ -56,6 +56,11 @@ type S3Client interface {
 	GetWithPSK(key string, psk []byte) (io.ReadCloser, error)
 }
 
+type downloads struct {
+	mapping     map[string]download
+	isPublished bool
+}
+
 type download struct {
 	URL     string `json:"href"`
 	Size    string `json:"size"`
@@ -64,7 +69,7 @@ type download struct {
 	Skipped bool   `json:"skipped,omitempty"`
 }
 
-// Download represents the configuration for a download handler
+// DownloadInfo represents the configuration for a download handler
 type Download struct {
 	DatasetClient        DatasetClient
 	VaultClient          VaultClient
@@ -114,50 +119,21 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
-
 		logData := log.Data{}
+
 		published := false
 		downloads := make(map[string]download)
+		var err error
 
 		if len(params.filterOutputID) > 0 {
-			logData = log.Data{
-				"filter_output_id": params.filterOutputID,
-				"type":             extension,
-			}
-
-			var err error
 			downloads, published, err = d.getDownloadsForFilterOutput(ctx, params)
-			if err != nil {
-				setStatusCode(ctx, w, err, logData)
-				return
-			}
-
 		} else {
-			logData = log.Data{
-				"dataset_id": params.datasetID,
-				"edition":    params.edition,
-				"version":    params.version,
-				"type":       extension,
-			}
+			downloads, published, err = d.getDownloadForDatasetVersion(ctx, params)
+		}
 
-			v, err := d.DatasetClient.GetVersion(req.Context(), params.userAuthToken, serviceAuthToken, downloadServiceToken, params.collectionID, params.datasetID, params.edition, params.version)
-			if err != nil {
-				setStatusCode(ctx, w, err, logData)
-				return
-			}
-
-			published = v.State == "published"
-
-			for k, v := range v.Downloads {
-				datasetDownloadWithSkipped := download{
-					URL:     v.URL,
-					Size:    v.Size,
-					Public:  v.Public,
-					Private: v.Private,
-					Skipped: false,
-				}
-				downloads[k] = datasetDownloadWithSkipped
-			}
+		if err != nil {
+			setStatusCode(ctx, w, err, logData)
+			return
 		}
 
 		logData["published"] = published
@@ -261,7 +237,7 @@ func (d Download) getDownloadsForFilterOutput(ctx context.Context, p downloadPar
 }
 
 //getDownloadsForFilterOutput get the downloads for a dataset version
-func (d Download) getDownloadForDataset(ctx context.Context, p downloadParameters) (map[string]download, bool, error) {
+func (d Download) getDownloadForDatasetVersion(ctx context.Context, p downloadParameters) (map[string]download, bool, error) {
 	version, err := d.DatasetClient.GetVersion(ctx, p.userAuthToken, p.serviceAuthToken, p.downloadServiceToken, p.collectionID, p.datasetID, p.edition, p.version)
 	if err != nil {
 		return nil, false, err
