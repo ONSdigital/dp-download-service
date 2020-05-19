@@ -1,22 +1,22 @@
-package dataset
+package downloads
 
 import (
 	"testing"
 
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
-	"github.com/ONSdigital/dp-download-service/handlers/mocks"
+	"github.com/ONSdigital/dp-download-service/downloads/mocks"
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 var (
 	testDatasetVersionDownloadParams = Parameters{
-		userAuthToken:        "userAuthToken",
-		serviceAuthToken:     "serviceAuthToken",
-		downloadServiceToken: "downloadServiceToken",
-		datasetID:            "datasetID",
-		edition:              "edition",
-		version:              "version",
+		UserAuthToken:        "userAuthToken",
+		ServiceAuthToken:     "serviceAuthToken",
+		DownloadServiceToken: "downloadServiceToken",
+		DatasetID:            "datasetID",
+		Edition:              "edition",
+		Version:              "version",
 	}
 )
 
@@ -98,13 +98,13 @@ func erroringDatasetClient(c *gomock.Controller, p Parameters, err error) *mocks
 
 	cli.EXPECT().GetVersion(
 		gomock.Any(),
-		gomock.Eq(p.userAuthToken),
-		gomock.Eq(p.serviceAuthToken),
-		gomock.Eq(p.downloadServiceToken),
-		gomock.Eq(p.collectionID),
-		gomock.Eq(p.datasetID),
-		gomock.Eq(p.edition),
-		gomock.Eq(p.version),
+		gomock.Eq(p.UserAuthToken),
+		gomock.Eq(p.ServiceAuthToken),
+		gomock.Eq(p.DownloadServiceToken),
+		gomock.Eq(p.CollectionID),
+		gomock.Eq(p.DatasetID),
+		gomock.Eq(p.Edition),
+		gomock.Eq(p.Version),
 	).Times(1).Return(dataset.Version{}, err)
 	return cli
 }
@@ -135,13 +135,13 @@ func successfulDatasetClient(c *gomock.Controller, p Parameters, v dataset.Versi
 
 	cli.EXPECT().GetVersion(
 		gomock.Any(),
-		gomock.Eq(p.userAuthToken),
-		gomock.Eq(p.serviceAuthToken),
-		gomock.Eq(p.downloadServiceToken),
-		gomock.Eq(p.collectionID),
-		gomock.Eq(p.datasetID),
-		gomock.Eq(p.edition),
-		gomock.Eq(p.version),
+		gomock.Eq(p.UserAuthToken),
+		gomock.Eq(p.ServiceAuthToken),
+		gomock.Eq(p.DownloadServiceToken),
+		gomock.Eq(p.CollectionID),
+		gomock.Eq(p.DatasetID),
+		gomock.Eq(p.Edition),
+		gomock.Eq(p.Version),
 	).Times(1).Return(v, nil)
 	return cli
 }

@@ -10,13 +10,12 @@ import (
 	"testing"
 
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
+	"github.com/ONSdigital/dp-download-service/downloads"
+	"github.com/ONSdigital/go-ns/identity"
 	"github.com/justinas/alice"
 
-	"github.com/ONSdigital/dp-api-clients-go/dataset"
-	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/dp-download-service/handlers/mocks"
 	rchttp "github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/identity"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
@@ -41,20 +40,38 @@ var (
 	expectedS3Key = "/datasets/" + testFilename
 	testError     = errors.New("borked")
 
-	testFilterOutputDownloadParams = downloadParameters{
-		userAuthToken:        "userAuthToken",
-		serviceAuthToken:     "serviceAuthToken",
-		downloadServiceToken: "downloadServiceToken",
-		collectionID:         "collectionID",
-		filterOutputID:       "filterOutputID",
+	downloadWithPublicLink = downloads.Info{
+		URL:     "/downloadURL",
+		Size:    "666",
+		Public:  testPublicDownload,
+		Skipped: false,
 	}
-	testDatasetVersionDownloadParams = downloadParameters{
-		userAuthToken:        "userAuthToken",
-		serviceAuthToken:     "serviceAuthToken",
-		downloadServiceToken: "downloadServiceToken",
-		datasetID:            "datasetID",
-		edition:              "edition",
-		version:              "version",
+
+	downloadWithPrivateLink = downloads.Info{
+		URL:     "/downloadURL",
+		Size:    "666",
+		Private: testPrivateDownload,
+		Skipped: false,
+	}
+
+	publishedDownloadPublicLink = downloads.Model{
+		IsPublished: true,
+		Available:   map[string]downloads.Info{"csv": downloadWithPublicLink},
+	}
+
+	publishedDownloadPrivateLink = downloads.Model{
+		IsPublished: true,
+		Available:   map[string]downloads.Info{"csv": downloadWithPrivateLink},
+	}
+
+	unpublishedDownloadPrivateLink = downloads.Model{
+		IsPublished: false,
+		Available:   map[string]downloads.Info{"csv": downloadWithPrivateLink},
+	}
+
+	publishedDownloadNoFile = downloads.Model{
+		IsPublished: true,
+		Available:   map[string]downloads.Info{},
 	}
 )
 
@@ -94,10 +111,8 @@ func (w errWriter) Write([]byte) (int, error) {
 func TestDownloadDoReturnsRedirect(t *testing.T) {
 	t.Parallel()
 	mockCtrl := gomock.NewController(t)
-	mockCollectionID := ""
 	mockDownloadToken := ""
 	mockServiceAuthToken := ""
-	mockUserAuthToken := ""
 	defer mockCtrl.Finish()
 
 	Convey("Given a public link to the download exists on the filter api then return a status 301 to the download", t, func() {
@@ -105,19 +120,12 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		fc := mocks.NewMockFilterClient(mockCtrl)
-		fo := filter.Model{
-			Downloads: map[string]filter.Download{
-				"csv": {
-					Public: testPublicDownload,
-				},
-			},
-			IsPublished: true,
-		}
-		fc.EXPECT().GetOutput(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "abcdefg").Return(fo, nil)
-		d := Download{
-			FilterClient: fc,
-		}
+		params := downloads.Parameters{FilterOutputID: "abcdefg"}
+
+		dl := mocks.NewMockDatasetDownloads(mockCtrl)
+		dl.EXPECT().GetFilterOutputDownloads(gomock.Any(), params).Return(publishedDownloadPublicLink, nil)
+
+		d := Download{DatasetDownloads: dl}
 
 		r.HandleFunc("/downloads/filter-outputs/{filterOutputID}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
@@ -131,19 +139,12 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		dc := mocks.NewMockDatasetClient(mockCtrl)
-		ver := dataset.Version{
-			Downloads: map[string]dataset.Download{
-				"csv": {
-					Public: testPublicDownload,
-				},
-			},
-			State: "published",
-		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
-		d := Download{
-			DatasetClient: dc,
-		}
+		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
+
+		dl := mocks.NewMockDatasetDownloads(mockCtrl)
+		dl.EXPECT().GetDatasetVersionDownloads(gomock.Any(), params).Return(publishedDownloadPublicLink, nil)
+
+		d := Download{DatasetDownloads: dl}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
@@ -156,10 +157,8 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 func TestDownloadDoReturnsOK(t *testing.T) {
 	t.Parallel()
 	mockCtrl := gomock.NewController(t)
-	mockCollectionID := ""
 	mockDownloadToken := ""
 	mockServiceAuthToken := ""
-	mockUserAuthToken := ""
 	defer mockCtrl.Finish()
 
 	Convey("Given a private link to the download exists on the dataset api and the dataset is published then the file is streamed in the response body", t, func() {
@@ -167,16 +166,10 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		dc := mocks.NewMockDatasetClient(mockCtrl)
-		ver := dataset.Version{
-			Downloads: map[string]dataset.Download{
-				"csv": {
-					Private: testPrivateDownload,
-				},
-			},
-			State: "published",
-		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
+		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
+
+		dl := mocks.NewMockDatasetDownloads(mockCtrl)
+		dl.EXPECT().GetDatasetVersionDownloads(gomock.Any(), params).Return(publishedDownloadPrivateLink, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -186,10 +179,10 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		s3c.EXPECT().GetWithPSK(expectedS3Key, []byte(testPSK)).Return(output, nil)
 
 		d := Download{
-			DatasetClient: dc,
-			VaultClient:   vc,
-			S3Client:      s3c,
-			VaultPath:     rootVaultPath,
+			DatasetDownloads: dl,
+			VaultClient:      vc,
+			S3Client:         s3c,
+			VaultPath:        rootVaultPath,
 		}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
@@ -204,16 +197,10 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		dc := mocks.NewMockDatasetClient(mockCtrl)
-		ver := dataset.Version{
-			Downloads: map[string]dataset.Download{
-				"csv": {
-					Private: testPrivateDownload,
-				},
-			},
-			State: "associated",
-		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
+		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
+
+		dl := mocks.NewMockDatasetDownloads(mockCtrl)
+		dl.EXPECT().GetDatasetVersionDownloads(gomock.Any(), params).Return(unpublishedDownloadPrivateLink, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -223,11 +210,11 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		s3c.EXPECT().GetWithPSK(expectedS3Key, []byte(testPSK)).Return(output, nil)
 
 		d := Download{
-			DatasetClient: dc,
-			VaultClient:   vc,
-			S3Client:      s3c,
-			VaultPath:     rootVaultPath,
-			IsPublishing:  true,
+			DatasetDownloads: dl,
+			VaultClient:      vc,
+			S3Client:         s3c,
+			VaultPath:        rootVaultPath,
+			IsPublishing:     true,
 		}
 
 		httpClient := &rchttp.ClienterMock{
@@ -258,23 +245,22 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 func TestDownloadDoFailureScenarios(t *testing.T) {
 	t.Parallel()
 	mockCtrl := gomock.NewController(t)
-	mockCollectionID := ""
 	mockDownloadToken := ""
 	mockServiceAuthToken := ""
-	mockUserAuthToken := ""
 	defer mockCtrl.Finish()
 
-	Convey("Given the dataset client returns a status not found then the download client returns this status back to the caller", t, func() {
+	Convey("Should return HTTP status not found if the dataset downloader returns a dataset version not found error", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		dc := mocks.NewMockDatasetClient(mockCtrl)
+		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 		err := testClientError{http.StatusNotFound}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(dataset.Version{}, err)
-		d := Download{
-			DatasetClient: dc,
-		}
+
+		dl := mocks.NewMockDatasetDownloads(mockCtrl)
+		dl.EXPECT().GetDatasetVersionDownloads(gomock.Any(), params).Return(downloads.Model{}, err)
+
+		d := Download{DatasetDownloads: dl}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
@@ -288,12 +274,13 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		fc := mocks.NewMockFilterClient(mockCtrl)
+		params := downloads.Parameters{FilterOutputID: "abcdefg"}
 		testErr := errors.New("filter client error")
-		fc.EXPECT().GetOutput(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "abcdefg").Return(filter.Model{}, testErr)
-		d := Download{
-			FilterClient: fc,
-		}
+
+		dl := mocks.NewMockDatasetDownloads(mockCtrl)
+		dl.EXPECT().GetFilterOutputDownloads(gomock.Any(), params).Return(downloads.Model{}, testErr)
+
+		d := Download{DatasetDownloads: dl}
 
 		r.HandleFunc("/downloads/filter-outputs/{filterOutputID}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
@@ -307,24 +294,18 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		dc := mocks.NewMockDatasetClient(mockCtrl)
-		ver := dataset.Version{
-			Downloads: map[string]dataset.Download{
-				"csv": {
-					Private: testPrivateDownload,
-				},
-			},
-			State: "published",
-		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
+		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
+
+		dl := mocks.NewMockDatasetDownloads(mockCtrl)
+		dl.EXPECT().GetDatasetVersionDownloads(gomock.Any(), params).Return(publishedDownloadPrivateLink, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return("", errors.New("vault client error"))
 
 		d := Download{
-			DatasetClient: dc,
-			VaultClient:   vc,
-			VaultPath:     rootVaultPath,
+			DatasetDownloads: dl,
+			VaultClient:      vc,
+			VaultPath:        rootVaultPath,
 		}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
@@ -338,24 +319,18 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		dc := mocks.NewMockDatasetClient(mockCtrl)
-		ver := dataset.Version{
-			Downloads: map[string]dataset.Download{
-				"csv": {
-					Private: testPrivateDownload,
-				},
-			},
-			State: "published",
-		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
+		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
+
+		dl := mocks.NewMockDatasetDownloads(mockCtrl)
+		dl.EXPECT().GetDatasetVersionDownloads(gomock.Any(), params).Return(publishedDownloadPrivateLink, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testBadEncodedPSK, nil)
 
 		d := Download{
-			DatasetClient: dc,
-			VaultClient:   vc,
-			VaultPath:     rootVaultPath,
+			DatasetDownloads: dl,
+			VaultClient:      vc,
+			VaultPath:        rootVaultPath,
 		}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
@@ -369,16 +344,10 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		dc := mocks.NewMockDatasetClient(mockCtrl)
-		ver := dataset.Version{
-			Downloads: map[string]dataset.Download{
-				"csv": {
-					Private: testPrivateDownload,
-				},
-			},
-			State: "published",
-		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
+		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
+
+		dl := mocks.NewMockDatasetDownloads(mockCtrl)
+		dl.EXPECT().GetDatasetVersionDownloads(gomock.Any(), params).Return(publishedDownloadPrivateLink, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -387,10 +356,10 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		s3c.EXPECT().GetWithPSK(expectedS3Key, []byte(testPSK)).Return(nil, errors.New("s3 client error"))
 
 		d := Download{
-			DatasetClient: dc,
-			VaultClient:   vc,
-			S3Client:      s3c,
-			VaultPath:     rootVaultPath,
+			DatasetDownloads: dl,
+			VaultClient:      vc,
+			S3Client:         s3c,
+			VaultPath:        rootVaultPath,
 		}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
@@ -404,16 +373,10 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		dc := mocks.NewMockDatasetClient(mockCtrl)
-		ver := dataset.Version{
-			Downloads: map[string]dataset.Download{
-				"csv": {
-					Private: testPrivateDownload,
-				},
-			},
-			State: "published",
-		}
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(ver, nil)
+		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
+
+		dl := mocks.NewMockDatasetDownloads(mockCtrl)
+		dl.EXPECT().GetDatasetVersionDownloads(gomock.Any(), params).Return(publishedDownloadPrivateLink, nil)
 
 		vc := mocks.NewMockVaultClient(mockCtrl)
 		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
@@ -426,10 +389,10 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		s3c.EXPECT().GetWithPSK(expectedS3Key, []byte(testPSK)).Return(rdr, nil)
 
 		d := Download{
-			DatasetClient: dc,
-			VaultClient:   vc,
-			S3Client:      s3c,
-			VaultPath:     rootVaultPath,
+			DatasetDownloads: dl,
+			VaultClient:      vc,
+			S3Client:         s3c,
+			VaultPath:        rootVaultPath,
 		}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
@@ -443,278 +406,16 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		dc := mocks.NewMockDatasetClient(mockCtrl)
-		dc.EXPECT().GetVersion(gomock.Any(), mockUserAuthToken, mockServiceAuthToken, mockDownloadToken, mockCollectionID, "12345", "6789", "1").Return(dataset.Version{}, nil)
-		d := Download{
-			DatasetClient: dc,
-		}
+		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
+
+		dl := mocks.NewMockDatasetDownloads(mockCtrl)
+		dl.EXPECT().GetDatasetVersionDownloads(gomock.Any(), params).Return(publishedDownloadNoFile, nil)
+
+		d := Download{DatasetDownloads: dl}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
 	})
-}
-
-func TestGetDownloadsForFilterOutput(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	Convey("should return the error if filter client get output is unsuccessful", t, func() {
-		filterCli := erroringFilterOutputClient(ctrl, testFilterOutputDownloadParams, testError)
-
-		d := Download{
-			FilterClient: filterCli,
-		}
-
-		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, testFilterOutputDownloadParams)
-
-		So(downloads, ShouldHaveLength, 0)
-		So(isPublished, ShouldBeFalse)
-		So(err, ShouldResemble, testError)
-	})
-
-	Convey("should return publish false if dataset not published", t, func() {
-		csvDownload := getTestFilterDownload()
-		filterOutput := getTestDatasetFilterOutput(false, &csvDownload)
-		filterCli := successfulFilterOutputClient(ctrl, testFilterOutputDownloadParams, filterOutput)
-
-		d := Download{
-			FilterClient: filterCli,
-		}
-
-		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, testFilterOutputDownloadParams)
-
-		csv := downloads["csv"]
-
-		So(csv, ShouldResemble, download{
-			URL:     csvDownload.URL,
-			Size:    csv.Size,
-			Public:  csv.Public,
-			Private: csv.Private,
-			Skipped: csv.Skipped,
-		})
-
-		So(downloads, ShouldHaveLength, 1)
-		So(isPublished, ShouldBeFalse)
-		So(err, ShouldBeNil)
-	})
-
-	Convey("should return expected values if downloads is not empty", t, func() {
-		csvDownload := getTestFilterDownload()
-		filterOutput := getTestDatasetFilterOutput(true, &csvDownload)
-		filterCli := successfulFilterOutputClient(ctrl, testFilterOutputDownloadParams, filterOutput)
-
-		d := Download{
-			FilterClient: filterCli,
-		}
-
-		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, testFilterOutputDownloadParams)
-
-		So(downloads, ShouldHaveLength, 1)
-		csv := downloads["csv"]
-
-		So(csv, ShouldResemble, download{
-			URL:     csvDownload.URL,
-			Size:    csv.Size,
-			Public:  csv.Public,
-			Private: csv.Private,
-			Skipped: csv.Skipped,
-		})
-
-		So(isPublished, ShouldBeTrue)
-		So(err, ShouldBeNil)
-	})
-
-	Convey("should return expected values if downloads is empty", t, func() {
-		filterOutput := getTestDatasetFilterOutput(true, nil)
-		filterCli := successfulFilterOutputClient(ctrl, testFilterOutputDownloadParams, filterOutput)
-
-		d := Download{FilterClient: filterCli}
-
-		downloads, isPublished, err := d.getDownloadsForFilterOutput(nil, testFilterOutputDownloadParams)
-
-		So(downloads, ShouldHaveLength, 0)
-		So(isPublished, ShouldBeTrue)
-		So(err, ShouldBeNil)
-	})
-}
-
-func successfulFilterOutputClient(c *gomock.Controller, p downloadParameters, output filter.Model) *mocks.MockFilterClient {
-	filterCli := mocks.NewMockFilterClient(c)
-
-	filterCli.EXPECT().GetOutput(
-		nil,
-		gomock.Eq(p.userAuthToken),
-		gomock.Eq(p.serviceAuthToken),
-		gomock.Eq(p.downloadServiceToken),
-		gomock.Eq(p.collectionID),
-		gomock.Eq(p.filterOutputID),
-	).Times(1).Return(output, nil)
-
-	return filterCli
-}
-
-func erroringFilterOutputClient(c *gomock.Controller, p downloadParameters, err error) *mocks.MockFilterClient {
-	filterCli := mocks.NewMockFilterClient(c)
-
-	filterCli.EXPECT().GetOutput(
-		nil,
-		gomock.Eq(p.userAuthToken),
-		gomock.Eq(p.serviceAuthToken),
-		gomock.Eq(p.downloadServiceToken),
-		gomock.Eq(p.collectionID),
-		gomock.Eq(p.filterOutputID),
-	).Times(1).Return(filter.Model{}, err)
-
-	return filterCli
-}
-
-func getTestFilterDownload() filter.Download {
-	return filter.Download{
-		URL:     "/downloadURL",
-		Size:    "666",
-		Public:  "/public/download/url",
-		Private: "/private/download/url",
-		Skipped: false,
-	}
-}
-
-func getTestDatasetFilterOutput(isPublished bool, dl *filter.Download) filter.Model {
-	f := filter.Model{IsPublished: isPublished}
-
-	if dl != nil {
-		f.Downloads = map[string]filter.Download{
-			"csv": *dl,
-		}
-	}
-	return f
-}
-
-func TestGetDownloadForDataset(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	Convey("should return error is dataset client get version returns an error", t, func() {
-		datasetCli := erroringDatasetClient(ctrl, testDatasetVersionDownloadParams, testError)
-
-		d := Download{DatasetClient: datasetCli}
-
-		downloads, isPublished, err := d.getDownloadForDatasetVersion(nil, testDatasetVersionDownloadParams)
-
-		So(downloads, ShouldHaveLength, 0)
-		So(isPublished, ShouldBeFalse)
-		So(err, ShouldResemble, testError)
-	})
-
-	Convey("should return published false if dataset state not published", t, func() {
-		datasetDownload := testDatasetDownload()
-		datasetVersion := testDatasetVersion("not published", &datasetDownload)
-		datasetCli := successfulDatasetClient(ctrl, testDatasetVersionDownloadParams, datasetVersion)
-
-		d := Download{
-			DatasetClient: datasetCli,
-		}
-
-		downloads, isPublished, err := d.getDownloadForDatasetVersion(nil, testDatasetVersionDownloadParams)
-
-		So(downloads, ShouldHaveLength, 1)
-		actual := downloads["csv"]
-		So(actual.Skipped, ShouldBeFalse)
-		So(actual.URL, ShouldEqual, datasetDownload.URL)
-		So(actual.Private, ShouldEqual, datasetDownload.Private)
-		So(actual.Public, ShouldEqual, datasetDownload.Public)
-
-		So(isPublished, ShouldBeFalse)
-		So(err, ShouldBeNil)
-	})
-
-	Convey("should return empty downloads if dataset version downloads empty", t, func() {
-		datasetVersion := testDatasetVersion("not published", nil)
-		datasetCli := successfulDatasetClient(ctrl, testDatasetVersionDownloadParams, datasetVersion)
-
-		d := Download{DatasetClient: datasetCli}
-
-		downloads, isPublished, err := d.getDownloadForDatasetVersion(nil, testDatasetVersionDownloadParams)
-
-		So(downloads, ShouldHaveLength, 0)
-		So(isPublished, ShouldBeFalse)
-		So(err, ShouldBeNil)
-	})
-
-	Convey("should return downloads if dataset version downloads not empty", t, func() {
-		datasetDownload := testDatasetDownload()
-		datasetVersion := testDatasetVersion("not published", &datasetDownload)
-		datasetCli := successfulDatasetClient(ctrl, testDatasetVersionDownloadParams, datasetVersion)
-
-		d := Download{DatasetClient: datasetCli}
-
-		downloads, isPublished, err := d.getDownloadForDatasetVersion(nil, testDatasetVersionDownloadParams)
-
-		So(downloads, ShouldHaveLength, 1)
-		actual := downloads["csv"]
-		So(actual.Skipped, ShouldBeFalse)
-		So(actual.URL, ShouldEqual, datasetDownload.URL)
-		So(actual.Private, ShouldEqual, datasetDownload.Private)
-		So(actual.Public, ShouldEqual, datasetDownload.Public)
-
-		So(isPublished, ShouldBeFalse)
-		So(err, ShouldBeNil)
-		So(isPublished, ShouldBeFalse)
-		So(err, ShouldBeNil)
-	})
-
-}
-
-func testDatasetDownload() dataset.Download {
-	return dataset.Download{
-		URL:     "/abc",
-		Size:    "1",
-		Public:  "/public",
-		Private: "/private",
-	}
-}
-
-func testDatasetVersion(state string, dl *dataset.Download) dataset.Version {
-	version := dataset.Version{
-		State: state,
-	}
-
-	if dl != nil {
-		version.Downloads = map[string]dataset.Download{"csv": *dl}
-	}
-
-	return version
-}
-
-func erroringDatasetClient(c *gomock.Controller, p downloadParameters, err error) *mocks.MockDatasetClient {
-	cli := mocks.NewMockDatasetClient(c)
-
-	cli.EXPECT().GetVersion(
-		gomock.Any(),
-		gomock.Eq(p.userAuthToken),
-		gomock.Eq(p.serviceAuthToken),
-		gomock.Eq(p.downloadServiceToken),
-		gomock.Eq(p.collectionID),
-		gomock.Eq(p.datasetID),
-		gomock.Eq(p.edition),
-		gomock.Eq(p.version),
-	).Times(1).Return(dataset.Version{}, err)
-	return cli
-}
-
-func successfulDatasetClient(c *gomock.Controller, p downloadParameters, v dataset.Version) *mocks.MockDatasetClient {
-	cli := mocks.NewMockDatasetClient(c)
-
-	cli.EXPECT().GetVersion(
-		gomock.Any(),
-		gomock.Eq(p.userAuthToken),
-		gomock.Eq(p.serviceAuthToken),
-		gomock.Eq(p.downloadServiceToken),
-		gomock.Eq(p.collectionID),
-		gomock.Eq(p.datasetID),
-		gomock.Eq(p.edition),
-		gomock.Eq(p.version),
-	).Times(1).Return(v, nil)
-	return cli
 }

@@ -1,11 +1,11 @@
-package dataset
+package downloads
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/ONSdigital/dp-api-clients-go/filter"
-	"github.com/ONSdigital/dp-download-service/dataset/mocks"
+	"github.com/ONSdigital/dp-download-service/downloads/mocks"
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -14,11 +14,11 @@ var (
 	testError = errors.New("borked")
 
 	testFilterOutputDownloadParams = Parameters{
-		userAuthToken:        "userAuthToken",
-		serviceAuthToken:     "serviceAuthToken",
-		downloadServiceToken: "downloadServiceToken",
-		collectionID:         "collectionID",
-		filterOutputID:       "filterOutputID",
+		UserAuthToken:        "userAuthToken",
+		ServiceAuthToken:     "serviceAuthToken",
+		DownloadServiceToken: "downloadServiceToken",
+		CollectionID:         "collectionID",
+		FilterOutputID:       "filterOutputID",
 	}
 )
 
@@ -50,7 +50,7 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 		csv, found := downloads.Available["csv"]
 		So(found, ShouldBeTrue)
 
-		So(csv, ShouldResemble, DownloadInfo{
+		So(csv, ShouldResemble, Info{
 			URL:     csvDownload.URL,
 			Size:    csv.Size,
 			Public:  csv.Public,
@@ -76,7 +76,7 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 		csv, found := downloads.Available["csv"]
 		So(found, ShouldBeTrue)
 
-		So(csv, ShouldResemble, DownloadInfo{
+		So(csv, ShouldResemble, Info{
 			URL:     csvDownload.URL,
 			Size:    csv.Size,
 			Public:  csv.Public,
@@ -102,7 +102,7 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 		csv, found := downloads.Available["csv"]
 		So(found, ShouldBeTrue)
 
-		So(csv, ShouldResemble, DownloadInfo{
+		So(csv, ShouldResemble, Info{
 			URL:     csvDownload.URL,
 			Size:    csv.Size,
 			Public:  csv.Public,
@@ -154,11 +154,11 @@ func erroringFilterOutputClient(c *gomock.Controller, p Parameters, err error) *
 
 	filterCli.EXPECT().GetOutput(
 		nil,
-		gomock.Eq(p.userAuthToken),
-		gomock.Eq(p.serviceAuthToken),
-		gomock.Eq(p.downloadServiceToken),
-		gomock.Eq(p.collectionID),
-		gomock.Eq(p.filterOutputID),
+		gomock.Eq(p.UserAuthToken),
+		gomock.Eq(p.ServiceAuthToken),
+		gomock.Eq(p.DownloadServiceToken),
+		gomock.Eq(p.CollectionID),
+		gomock.Eq(p.FilterOutputID),
 	).Times(1).Return(filter.Model{}, err)
 
 	return filterCli
@@ -169,11 +169,11 @@ func successfulFilterOutputClient(c *gomock.Controller, p Parameters, output fil
 
 	filterCli.EXPECT().GetOutput(
 		nil,
-		gomock.Eq(p.userAuthToken),
-		gomock.Eq(p.serviceAuthToken),
-		gomock.Eq(p.downloadServiceToken),
-		gomock.Eq(p.collectionID),
-		gomock.Eq(p.filterOutputID),
+		gomock.Eq(p.UserAuthToken),
+		gomock.Eq(p.ServiceAuthToken),
+		gomock.Eq(p.DownloadServiceToken),
+		gomock.Eq(p.CollectionID),
+		gomock.Eq(p.FilterOutputID),
 	).Times(1).Return(output, nil)
 
 	return filterCli
