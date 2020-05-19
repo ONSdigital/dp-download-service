@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/justinas/alice"
 
 	"github.com/ONSdigital/dp-api-clients-go/health"
@@ -26,6 +27,7 @@ import (
 // Download represents the configuration to run the download service
 type Download struct {
 	datasetDownloads handlers.DatasetDownloads
+	s3Content        handlers.S3Content
 	vaultClient      handlers.VaultClient
 	router           *mux.Router
 	server           *server.Server
@@ -38,7 +40,8 @@ type Download struct {
 func Create(
 	ctx context.Context,
 	cfg config.Config,
-	dl handlers.DatasetDownloads,
+	dc downloads.DatasetClient,
+	fc downloads.FilterClient,
 	s3 handlers.S3Client,
 	vc handlers.VaultClient,
 	zc *health.Client,
@@ -48,9 +51,7 @@ func Create(
 
 	d := handlers.Download{
 		DatasetDownloads: dl,
-		VaultClient:      vc,
-		S3Client:         s3,
-		VaultPath:        cfg.VaultPath,
+		S3Content:        s3c,
 		IsPublishing:     cfg.IsPublishing,
 	}
 
@@ -79,7 +80,7 @@ func Create(
 
 	return Download{
 		datasetDownloads: dl,
-		vaultClient:      vc,
+		s3Content:        s3c,
 		router:           router,
 		server:           httpServer,
 		shutdown:         cfg.GracefulShutdownTimeout,

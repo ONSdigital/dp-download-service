@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 
+	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	s3client "github.com/ONSdigital/dp-s3"
@@ -58,6 +59,8 @@ func main() {
 		FilterCli:  fc,
 	}
 
+	content.New(vc, v)
+
 	// Create Health client for Zebedee only if we are in publishing mode.
 	var zc *health.Client
 	if cfg.IsPublishing {
@@ -87,7 +90,6 @@ func main() {
 		*cfg,
 		dl,
 		s3,
-		vc,
 		zc,
 		&hc,
 	)

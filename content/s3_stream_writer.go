@@ -33,20 +33,20 @@ type S3Client interface {
 	GetWithPSK(key string, psk []byte) (io.ReadCloser, error)
 }
 
-//StreamWriter provides functionality for retrieving content from an S3 bucket. The content is streamed/decrypted and and written to the provided io.Writer
-type StreamWriter struct {
+//S3StreamWriter provides functionality for retrieving content from an S3 bucket. The content is streamed/decrypted and and written to the provided io.Writer
+type S3StreamWriter struct {
 	VaultCli  VaultClient
 	VaultPath string
 	S3Client  S3Client
 }
 
-//New create a new StreamWriter instance.
-func New(vc VaultClient, vp string) *StreamWriter {
-	return &StreamWriter{VaultCli: vc, VaultPath: vp}
+//New create a new S3StreamWriter instance.
+func New(vc VaultClient, vp string) *S3StreamWriter {
+	return &S3StreamWriter{VaultCli: vc, VaultPath: vp}
 }
 
-//WriteContent write the content of specified file to the provided io.Writer.
-func (s StreamWriter) WriteContent(ctx context.Context, filename string, w io.Writer) error {
+//StreamAndWrite decrypt and stream the request file writing the content to the provided io.Writer.
+func (s S3StreamWriter) StreamAndWrite(ctx context.Context, filename string, w io.Writer) error {
 	psk, err := s.getVaultKeyForFile(filename)
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (s StreamWriter) WriteContent(ctx context.Context, filename string, w io.Wr
 	return nil
 }
 
-func (s *StreamWriter) getVaultKeyForFile(filename string) ([]byte, error) {
+func (s *S3StreamWriter) getVaultKeyForFile(filename string) ([]byte, error) {
 	if len(filename) == 0 {
 		return nil, VaultFilenameEmptyErr
 	}

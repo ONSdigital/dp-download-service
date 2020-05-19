@@ -37,9 +37,9 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 		w := writerNeverInvoked(ctrl)
 		vaultCli := vaultClientNeverInvoked(ctrl)
 
-		s := &StreamWriter{VaultCli: vaultCli}
+		s := &S3StreamWriter{VaultCli: vaultCli}
 
-		err := s.WriteContent(nil, "", w)
+		err := s.StreamAndWrite(nil, "", w)
 
 		So(err, ShouldEqual, VaultFilenameEmptyErr)
 	})
@@ -48,12 +48,12 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 		w := writerNeverInvoked(ctrl)
 		vaultCli, expectedErr := vaultClientErrorOnReadKey(ctrl)
 
-		s := &StreamWriter{
+		s := &S3StreamWriter{
 			VaultPath: testVaultPath,
 			VaultCli:  vaultCli,
 		}
 
-		err := s.WriteContent(nil, testFilename, w)
+		err := s.StreamAndWrite(nil, testFilename, w)
 
 		So(err, ShouldEqual, expectedErr)
 	})
@@ -62,12 +62,12 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 		w := writerNeverInvoked(ctrl)
 		vaultCli := vaultClientReturningInvalidHexString(ctrl)
 
-		s := &StreamWriter{
+		s := &S3StreamWriter{
 			VaultPath: testVaultPath,
 			VaultCli:  vaultCli,
 		}
 
-		err := s.WriteContent(nil, testFilename, w)
+		err := s.StreamAndWrite(nil, testFilename, w)
 
 		So(err, ShouldNotBeNil)
 	})
@@ -77,13 +77,13 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 		vaultCli, expectedPSK := vaultClientAndValidKey(ctrl)
 		s3Cli, expectedErr := s3ClientGetWithPSKReturnsError(ctrl, testFilename, expectedPSK)
 
-		s := &StreamWriter{
+		s := &S3StreamWriter{
 			VaultPath: testVaultPath,
 			VaultCli:  vaultCli,
 			S3Client:  s3Cli,
 		}
 
-		err := s.WriteContent(nil, testFilename, w)
+		err := s.StreamAndWrite(nil, testFilename, w)
 
 		So(err, ShouldEqual, expectedErr)
 	})
@@ -94,13 +94,13 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 		s3ReadCloser, expectedErr := s3ReadCloserErroringOnRead(ctrl)
 		s3Cli := s3ClientGetWithPSKReturnsReader(ctrl, testFilename, expectedPSK, s3ReadCloser)
 
-		s := &StreamWriter{
+		s := &S3StreamWriter{
 			VaultPath: testVaultPath,
 			VaultCli:  vaultCli,
 			S3Client:  s3Cli,
 		}
 
-		err := s.WriteContent(nil, testFilename, w)
+		err := s.StreamAndWrite(nil, testFilename, w)
 
 		So(err, ShouldEqual, expectedErr)
 	})
@@ -111,13 +111,13 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 		s3ReadCloser := ioutil.NopCloser(strings.NewReader("1, 2, 3, 4"))
 		s3Cli := s3ClientGetWithPSKReturnsReader(ctrl, testFilename, expectedPSK, s3ReadCloser)
 
-		s := &StreamWriter{
+		s := &S3StreamWriter{
 			VaultPath: testVaultPath,
 			VaultCli:  vaultCli,
 			S3Client:  s3Cli,
 		}
 
-		err := s.WriteContent(nil, testFilename, w)
+		err := s.StreamAndWrite(nil, testFilename, w)
 
 		So(err, ShouldEqual, expectedErr)
 	})
@@ -128,13 +128,13 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 		vaultCli, expectedPSK := vaultClientAndValidKey(ctrl)
 		s3Cli := s3ClientGetWithPSKReturnsReader(ctrl, testFilename, expectedPSK, readCloser)
 
-		s := &StreamWriter{
+		s := &S3StreamWriter{
 			VaultPath: testVaultPath,
 			VaultCli:  vaultCli,
 			S3Client:  s3Cli,
 		}
 
-		err := s.WriteContent(nil, testFilename, writer)
+		err := s.StreamAndWrite(nil, testFilename, writer)
 
 		So(err, ShouldBeNil)
 		So(writer.data, ShouldResemble, []byte("1, 2, 3, 4"))
