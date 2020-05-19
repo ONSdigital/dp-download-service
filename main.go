@@ -5,7 +5,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/ONSdigital/dp-download-service/datasets"
+	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	s3client "github.com/ONSdigital/dp-s3"
 	vault "github.com/ONSdigital/dp-vault"
@@ -53,9 +53,9 @@ func main() {
 	// Create Filter API client.
 	fc := filter.New(cfg.FilterAPIURL)
 
-	downloader := datasets.Downloader{
+	dl := downloads.Downloader{
 		DatasetCli: dc,
-		FilterCli: fc,
+		FilterCli:  fc,
 	}
 
 	// Create Health client for Zebedee only if we are in publishing mode.
@@ -85,8 +85,7 @@ func main() {
 	svc := service.Create(
 		ctx,
 		*cfg,
-		dc,
-		fc,
+		dl,
 		s3,
 		vc,
 		zc,
