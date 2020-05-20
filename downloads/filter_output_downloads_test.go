@@ -28,10 +28,14 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 
 	Convey("should return the error if filter client get output is unsuccessful", t, func() {
 		filterCli := erroringFilterOutputClient(ctrl, testFilterOutputDownloadParams, testError)
+		datasetCli := datasetClientNeverInvoked(ctrl)
 
-		d := Downloader{FilterCli: filterCli}
+		d := Downloader{
+			FilterCli:  filterCli,
+			DatasetCli: datasetCli,
+		}
 
-		downloads, err := d.GetFilterOutputDownloads(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
 
 		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeFalse)
@@ -41,11 +45,16 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 	Convey("should return publish false if dataset not published", t, func() {
 		csvDownload := getTestFilterDownload()
 		filterOutput := getTestDatasetFilterOutput(false, &csvDownload)
+
 		filterCli := successfulFilterOutputClient(ctrl, testFilterOutputDownloadParams, filterOutput)
+		datasetCli := datasetClientNeverInvoked(ctrl)
 
-		d := Downloader{FilterCli: filterCli}
+		d := Downloader{
+			FilterCli:  filterCli,
+			DatasetCli: datasetCli,
+		}
 
-		downloads, err := d.GetFilterOutputDownloads(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
 
 		csv, found := downloads.Available["csv"]
 		So(found, ShouldBeTrue)
@@ -66,11 +75,16 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 	Convey("should return publish false if dataset not published", t, func() {
 		csvDownload := getTestFilterDownload()
 		filterOutput := getTestDatasetFilterOutput(false, &csvDownload)
+
 		filterCli := successfulFilterOutputClient(ctrl, testFilterOutputDownloadParams, filterOutput)
+		datasetCli := datasetClientNeverInvoked(ctrl)
 
-		d := Downloader{FilterCli: filterCli}
+		d := Downloader{
+			FilterCli:  filterCli,
+			DatasetCli: datasetCli,
+		}
 
-		downloads, err := d.GetFilterOutputDownloads(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
 
 		So(downloads.Available, ShouldHaveLength, 1)
 		csv, found := downloads.Available["csv"]
@@ -91,11 +105,16 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 	Convey("should return expected values if downloads is not empty", t, func() {
 		csvDownload := getTestFilterDownload()
 		filterOutput := getTestDatasetFilterOutput(true, &csvDownload)
+
 		filterCli := successfulFilterOutputClient(ctrl, testFilterOutputDownloadParams, filterOutput)
+		datasetCli := datasetClientNeverInvoked(ctrl)
 
-		d := Downloader{FilterCli: filterCli}
+		d := Downloader{
+			FilterCli:  filterCli,
+			DatasetCli: datasetCli,
+		}
 
-		downloads, err := d.GetFilterOutputDownloads(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
 
 		So(downloads.Available, ShouldHaveLength, 1)
 
@@ -116,11 +135,16 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 
 	Convey("should return expected values if downloads is empty", t, func() {
 		filterOutput := getTestDatasetFilterOutput(true, nil)
+
 		filterCli := successfulFilterOutputClient(ctrl, testFilterOutputDownloadParams, filterOutput)
+		datasetCli := datasetClientNeverInvoked(ctrl)
 
-		d := Downloader{FilterCli: filterCli}
+		d := Downloader{
+			FilterCli:  filterCli,
+			DatasetCli: datasetCli,
+		}
 
-		downloads, err := d.GetFilterOutputDownloads(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
 
 		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeTrue)
@@ -175,6 +199,21 @@ func successfulFilterOutputClient(c *gomock.Controller, p Parameters, output fil
 		gomock.Eq(p.CollectionID),
 		gomock.Eq(p.FilterOutputID),
 	).Times(1).Return(output, nil)
+
+	return filterCli
+}
+
+func filterOutputClientNeverInvoked(c *gomock.Controller) *mocks.MockFilterClient {
+	filterCli := mocks.NewMockFilterClient(c)
+
+	filterCli.EXPECT().GetOutput(
+		nil,
+		gomock.Any(),
+		gomock.Any(),
+		gomock.Any(),
+		gomock.Any(),
+		gomock.Any(),
+	).Times(0).Return(filter.Model{}, nil)
 
 	return filterCli
 }

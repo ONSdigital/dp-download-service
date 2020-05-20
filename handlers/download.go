@@ -48,8 +48,7 @@ type S3Content interface {
 }
 
 type DatasetDownloads interface {
-	GetFilterOutputDownloads(ctx context.Context, p downloads.Parameters) (downloads.Model, error)
-	GetDatasetVersionDownloads(ctx context.Context, p downloads.Parameters) (downloads.Model, error)
+	Get(ctx context.Context, p downloads.Parameters) (downloads.Model, error)
 }
 
 // Info represents the configuration for a download handler
@@ -90,39 +89,33 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
 		logData := downloadParametersToLogData(params)
 
-		var downloads downloads.Model
 		var err error
 
-		if len(params.FilterOutputID) > 0 {
-			downloads, err = d.DatasetDownloads.GetFilterOutputDownloads(ctx, params)
-		} else {
-			downloads, err = d.DatasetDownloads.GetDatasetVersionDownloads(ctx, params)
-		}
-
+		datasetDownloads, err := d.DatasetDownloads.Get(ctx, params)
 		if err != nil {
 			setStatusCode(ctx, w, err, logData)
 			return
 		}
 
-		logData["published"] = downloads.IsPublished
+		logData["published"] = datasetDownloads.IsPublished
 		log.Event(req.Context(), "attempting to get download", log.INFO, logData)
 
 		authorised, logData := d.authenticate(req, logData)
 		logData["authorised"] = authorised
 
-		if len(downloads.Available[extension].Public) > 0 && downloads.IsPublished {
-			http.Redirect(w, req, downloads.Available[extension].Public, http.StatusMovedPermanently)
+		if len(datasetDownloads.Available[extension].Public) > 0 && datasetDownloads.IsPublished {
+			http.Redirect(w, req, datasetDownloads.Available[extension].Public, http.StatusMovedPermanently)
 			return
 		}
 
-		if len(downloads.Available[extension].Private) > 0 {
+		if len(datasetDownloads.Available[extension].Private) > 0 {
 
-			logData["private_link"] = downloads.Available[extension].Private
+			logData["private_link"] = datasetDownloads.Available[extension].Private
 			log.Event(req.Context(), "using private link", log.INFO, logData)
 
-			if downloads.IsPublished || authorised {
+			if datasetDownloads.IsPublished || authorised {
 
-				privateFile := downloads.Available[extension].Private
+				privateFile := datasetDownloads.Available[extension].Private
 
 				privateURL, err := url.Parse(privateFile)
 				if err != nil {

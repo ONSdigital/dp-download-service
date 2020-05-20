@@ -26,13 +26,13 @@ import (
 
 // Download represents the configuration to run the download service
 type Download struct {
-	datasetDownloads handlers.DatasetDownloads
-	s3Content        handlers.S3Content
-	vaultClient      handlers.VaultClient
-	router           *mux.Router
-	server           *server.Server
-	shutdown         time.Duration
-	healthCheck      *healthcheck.HealthCheck
+	datasetClient handlers.DatasetClient
+	filterClient  handlers.FilterClient
+	vaultClient   handlers.VaultClient
+	router        *mux.Router
+	server        *server.Server
+	shutdown      time.Duration
+	healthCheck   *healthcheck.HealthCheck
 }
 
 // Create should be called to create a new instance of the download service, with routes correctly initialised.
@@ -40,8 +40,8 @@ type Download struct {
 func Create(
 	ctx context.Context,
 	cfg config.Config,
-	dc downloads.DatasetClient,
-	fc downloads.FilterClient,
+	dc handlers.DatasetClient,
+	fc handlers.FilterClient,
 	s3 handlers.S3Client,
 	vc handlers.VaultClient,
 	zc *health.Client,
@@ -50,9 +50,12 @@ func Create(
 	router := mux.NewRouter()
 
 	d := handlers.Download{
-		DatasetDownloads: dl,
-		S3Content:        s3c,
-		IsPublishing:     cfg.IsPublishing,
+		DatasetClient: dc,
+		VaultClient:   vc,
+		FilterClient:  fc,
+		S3Client:      s3,
+		VaultPath:     cfg.VaultPath,
+		IsPublishing:  cfg.IsPublishing,
 	}
 
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
@@ -79,12 +82,13 @@ func Create(
 	httpServer := server.New(cfg.BindAddr, alice)
 
 	return Download{
-		datasetDownloads: dl,
-		s3Content:        s3c,
-		router:           router,
-		server:           httpServer,
-		shutdown:         cfg.GracefulShutdownTimeout,
-		healthCheck:      hc,
+		filterClient:  fc,
+		datasetClient: dc,
+		vaultClient:   vc,
+		router:        router,
+		server:        httpServer,
+		shutdown:      cfg.GracefulShutdownTimeout,
+		healthCheck:   hc,
 	}
 }
 

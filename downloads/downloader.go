@@ -5,6 +5,7 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
+	"github.com/ONSdigital/log.go/log"
 )
 
 //go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/downloads FilterClient,DatasetClient
@@ -48,8 +49,26 @@ type Downloader struct {
 	DatasetCli DatasetClient
 }
 
-//GetFilterOutputDownloads get the Model for a filter output job.
-func (d Downloader) GetFilterOutputDownloads(ctx context.Context, p Parameters) (Model, error) {
+func (d Downloader) Get(ctx context.Context, p Parameters) (Model, error) {
+	if len(p.FilterOutputID) > 0 {
+		log.Event(ctx, "getting downloads for filter output job", log.INFO, log.Data{
+			"filter_output_id": p.FilterOutputID,
+			"collection_id":    p.CollectionID,
+		})
+		return d.getFilterOutputDownloads(ctx, p)
+	}
+
+	log.Event(ctx, "getting downloads for dataset version", log.INFO, log.Data{
+		"dataset_id":    p.DatasetID,
+		"edition":       p.Edition,
+		"version":       p.Version,
+		"collection_id": p.CollectionID,
+	})
+	return d.getDatasetVersionDownloads(ctx, p)
+}
+
+//getFilterOutputDownloads get the Model for a filter output job.
+func (d Downloader) getFilterOutputDownloads(ctx context.Context, p Parameters) (Model, error) {
 	var downloads Model
 
 	fo, err := d.FilterCli.GetOutput(ctx, p.UserAuthToken, p.ServiceAuthToken, p.DownloadServiceToken, p.CollectionID, p.FilterOutputID)
@@ -70,8 +89,8 @@ func (d Downloader) GetFilterOutputDownloads(ctx context.Context, p Parameters) 
 	return downloads, nil
 }
 
-//GetDatasetVersionDownloads get the downloads for a dataset version
-func (d Downloader) GetDatasetVersionDownloads(ctx context.Context, p Parameters) (Model, error) {
+//getDatasetVersionDownloads get the downloads for a dataset version
+func (d Downloader) getDatasetVersionDownloads(ctx context.Context, p Parameters) (Model, error) {
 	var downloads Model
 
 	version, err := d.DatasetCli.GetVersion(ctx, p.UserAuthToken, p.ServiceAuthToken, p.DownloadServiceToken, p.CollectionID, p.DatasetID, p.Edition, p.Version)

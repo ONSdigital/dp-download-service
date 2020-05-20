@@ -35,34 +35,19 @@ func (m *MockDatasetDownloads) EXPECT() *MockDatasetDownloadsMockRecorder {
 	return m.recorder
 }
 
-// GetDatasetVersionDownloads mocks base method
-func (m *MockDatasetDownloads) GetDatasetVersionDownloads(arg0 context.Context, arg1 downloads.Parameters) (downloads.Model, error) {
+// Get mocks base method
+func (m *MockDatasetDownloads) Get(arg0 context.Context, arg1 downloads.Parameters) (downloads.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDatasetVersionDownloads", arg0, arg1)
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
 	ret0, _ := ret[0].(downloads.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetDatasetVersionDownloads indicates an expected call of GetDatasetVersionDownloads
-func (mr *MockDatasetDownloadsMockRecorder) GetDatasetVersionDownloads(arg0, arg1 interface{}) *gomock.Call {
+// Get indicates an expected call of Get
+func (mr *MockDatasetDownloadsMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDatasetVersionDownloads", reflect.TypeOf((*MockDatasetDownloads)(nil).GetDatasetVersionDownloads), arg0, arg1)
-}
-
-// GetFilterOutputDownloads mocks base method
-func (m *MockDatasetDownloads) GetFilterOutputDownloads(arg0 context.Context, arg1 downloads.Parameters) (downloads.Model, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFilterOutputDownloads", arg0, arg1)
-	ret0, _ := ret[0].(downloads.Model)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetFilterOutputDownloads indicates an expected call of GetFilterOutputDownloads
-func (mr *MockDatasetDownloadsMockRecorder) GetFilterOutputDownloads(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFilterOutputDownloads", reflect.TypeOf((*MockDatasetDownloads)(nil).GetFilterOutputDownloads), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDatasetDownloads)(nil).Get), arg0, arg1)
 }
 
 // MockS3Content is a mock of S3Content interface
