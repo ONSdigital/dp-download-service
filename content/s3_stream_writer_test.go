@@ -151,7 +151,7 @@ func Test_GetVaultKeyForFile(t *testing.T) {
 		vaultCli := mocks.NewMockVaultClient(ctrl)
 		vaultCli.EXPECT().ReadKey(nil, nil).Times(0)
 
-		s := New(vaultCli, "")
+		s := NewStreamWriter(nil, vaultCli, "")
 		psk, err := s.getVaultKeyForFile("")
 
 		So(psk, ShouldBeNil)
@@ -165,7 +165,7 @@ func Test_GetVaultKeyForFile(t *testing.T) {
 
 		vaultCli, expectedErr := vaultClientErrorOnReadKey(ctrl)
 
-		s := New(vaultCli, testVaultPath)
+		s := NewStreamWriter(nil, vaultCli, testVaultPath)
 		psk, err := s.getVaultKeyForFile(testFilename)
 
 		So(psk, ShouldBeNil)
@@ -179,7 +179,7 @@ func Test_GetVaultKeyForFile(t *testing.T) {
 
 		vaultCli := vaultClientReturningInvalidHexString(ctrl)
 
-		s := New(vaultCli, testVaultPath)
+		s := NewStreamWriter(nil, vaultCli, testVaultPath)
 		psk, err := s.getVaultKeyForFile(testFilename)
 
 		So(psk, ShouldBeNil)
@@ -192,7 +192,7 @@ func Test_GetVaultKeyForFile(t *testing.T) {
 
 		vaultCli, keyBytes := vaultClientAndValidKey(ctrl)
 
-		s := New(vaultCli, testVaultPath)
+		s := NewStreamWriter(nil, vaultCli, testVaultPath)
 		psk, err := s.getVaultKeyForFile(testFilename)
 
 		So(psk, ShouldResemble, keyBytes)

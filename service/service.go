@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/justinas/alice"
 
@@ -26,9 +27,9 @@ import (
 
 // Download represents the configuration to run the download service
 type Download struct {
-	datasetClient handlers.DatasetClient
-	filterClient  handlers.FilterClient
-	vaultClient   handlers.VaultClient
+	datasetClient downloads.DatasetClient
+	filterClient  downloads.FilterClient
+	vaultClient   content.VaultClient
 	router        *mux.Router
 	server        *server.Server
 	shutdown      time.Duration
@@ -40,22 +41,26 @@ type Download struct {
 func Create(
 	ctx context.Context,
 	cfg config.Config,
-	dc handlers.DatasetClient,
-	fc handlers.FilterClient,
-	s3 handlers.S3Client,
-	vc handlers.VaultClient,
+	dc downloads.DatasetClient,
+	fc downloads.FilterClient,
+	s3 content.S3Client,
+	vc content.VaultClient,
 	zc *health.Client,
 	hc *healthcheck.HealthCheck) Download {
 
 	router := mux.NewRouter()
 
+	datasetDownloads := downloads.Downloader{
+		FilterCli:  fc,
+		DatasetCli: dc,
+	}
+
+	s3c := content.NewStreamWriter(s3, vc, cfg.VaultPath)
+
 	d := handlers.Download{
-		DatasetClient: dc,
-		VaultClient:   vc,
-		FilterClient:  fc,
-		S3Client:      s3,
-		VaultPath:     cfg.VaultPath,
-		IsPublishing:  cfg.IsPublishing,
+		DatasetDownloads: datasetDownloads,
+		S3Content:        s3c,
+		IsPublishing:     cfg.IsPublishing,
 	}
 
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))

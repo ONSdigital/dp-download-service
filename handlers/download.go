@@ -33,16 +33,6 @@ type IdentityClient interface {
 	CheckRequest(*http.Request, string, string)
 }
 
-// VaultClient is an interface to represent methods called to action upon vault
-type VaultClient interface {
-	ReadKey(path, key string) (string, error)
-}
-
-// S3Client is an interface to represent methods called to retrieve from s3
-type S3Client interface {
-	GetWithPSK(key string, psk []byte) (io.ReadCloser, error)
-}
-
 type S3Content interface {
 	StreamAndWrite(ctx context.Context, filename string, w io.Writer) error
 }
@@ -79,10 +69,11 @@ func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logDat
 	http.Error(w, message, status)
 }
 
-// Do handles the retrieval of a requested file, by first calling the datasetID to see if
-// the version has a public link available and redirecting if so, otherwise it decrypts the private
-// file on the fly (if it is published). Authenticated requests will always allow access to the private,
-// whether or not the version is published.
+// Do handle download dataset file requests. If the dataset is published and a public download link is available then
+// the request is redirected to the existing public link.
+// If the dataset is published but a public link does not exist then the requested file is streamed from the content
+// store and written to response body.
+// Authenticated requests will always allow access to the private, whether or not the version is published.
 func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
@@ -103,7 +94,7 @@ func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) h
 		authorised, logData := d.authenticate(req, logData)
 		logData["authorised"] = authorised
 
-		if len(datasetDownloads.Available[extension].Public) > 0 && datasetDownloads.IsPublished {
+		if datasetDownloads.IsPublicLinkAvailable(extension) {
 			http.Redirect(w, req, datasetDownloads.Available[extension].Public, http.StatusMovedPermanently)
 			return
 		}
@@ -211,3 +202,4 @@ func getCollectionIDFromContext(ctx context.Context) string {
 	}
 	return ""
 }
+

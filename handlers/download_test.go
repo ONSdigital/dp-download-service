@@ -24,54 +24,64 @@ import (
 const (
 	testPublicDownload  = "http://test-public-download.com"
 	testPrivateDownload = "s3://some-bucket/datasets/my-file.csv"
-	testHexEncodedPSK   = "68656C6C6F20776F726C64"
-	testBadEncodedPSK   = "this is not encoded"
-	testPSK             = "hello world"
 	testCsvContent      = "1,2,3,4"
 	florenceTokenHeader = "X-Florence-Token"
 	zebedeeURL          = "http://localhost:8082"
-	vaultKey            = "key"
-	rootVaultPath       = "/secrets/tests/psk"
 )
 
 var (
-	testFilename  = "my-file.csv"
-	testVaultPath = rootVaultPath + "/" + testFilename
-	expectedS3Key = "/datasets/" + testFilename
 	testError     = errors.New("borked")
 
-	downloadWithPublicLink = downloads.Info{
+	downloadWithPublicURL = downloads.Info{
 		URL:     "/downloadURL",
 		Size:    "666",
 		Public:  testPublicDownload,
 		Skipped: false,
 	}
 
-	downloadWithPrivateLink = downloads.Info{
+	downloadWithPrivateURL = downloads.Info{
 		URL:     "/downloadURL",
 		Size:    "666",
 		Private: testPrivateDownload,
 		Skipped: false,
 	}
 
-	publishedDownloadPublicLink = downloads.Model{
-		IsPublished: true,
-		Available:   map[string]downloads.Info{"csv": downloadWithPublicLink},
+	downloadWithNoURLs = downloads.Info{
+		URL:     "/downloadURL",
+		Size:    "666",
+		Skipped: false,
 	}
 
-	publishedDownloadPrivateLink = downloads.Model{
+	downloadWithInvalidPrivateURL = downloads.Info{
+		URL:     "/downloadURL",
+		Size:    "666",
+		Skipped: false,
+		Private: "@£$%^&*()_+",
+	}
+
+	publishedDownloadPublicURL = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]downloads.Info{"csv": downloadWithPrivateLink},
+		Available:   map[string]downloads.Info{"csv": downloadWithPublicURL},
+	}
+
+	publishedDownloadPrivateURL = downloads.Model{
+		IsPublished: true,
+		Available:   map[string]downloads.Info{"csv": downloadWithPrivateURL},
 	}
 
 	unpublishedDownloadPrivateLink = downloads.Model{
 		IsPublished: false,
-		Available:   map[string]downloads.Info{"csv": downloadWithPrivateLink},
+		Available:   map[string]downloads.Info{"csv": downloadWithPrivateURL},
 	}
 
-	publishedDownloadNoFile = downloads.Model{
+	publishedDownloadNoURLs = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]downloads.Info{},
+		Available:   map[string]downloads.Info{"csv": downloadWithNoURLs},
+	}
+
+	publishedDownloadInvalidPrivateURL = downloads.Model{
+		IsPublished: true,
+		Available:   map[string]downloads.Info{"csv": downloadWithInvalidPrivateURL},
 	}
 )
 
@@ -85,27 +95,6 @@ func (e testClientError) Error() string {
 
 func (e testClientError) Code() int {
 	return e.code
-}
-
-type zeroErrReader struct {
-	err error
-}
-
-func (r zeroErrReader) Read(p []byte) (int, error) {
-	return copy(p, []byte{0}), r.err
-}
-
-func (r zeroErrReader) Close() error {
-	return errors.New("couldn't close")
-}
-
-type errWriter struct {
-	http.ResponseWriter
-	err error
-}
-
-func (w errWriter) Write([]byte) (int, error) {
-	return 0, w.err
 }
 
 func TestDownloadDoReturnsRedirect(t *testing.T) {
@@ -122,7 +111,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 
 		params := downloads.Parameters{FilterOutputID: "abcdefg"}
 
-		dl := datasetDownloadsWithPublishedPublicLink(mockCtrl, params)
+		dl := datasetDownloadsReturnsResult(mockCtrl, params, publishedDownloadPublicURL)
 		s3c := s3ContentNeverInvoked(mockCtrl)
 
 		d := Download{
@@ -144,7 +133,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
-		dl := datasetDownloadsWithPublishedPublicLink(mockCtrl, params)
+		dl := datasetDownloadsReturnsResult(mockCtrl, params, publishedDownloadPublicURL)
 		s3c := s3ContentNeverInvoked(mockCtrl)
 
 		d := Download{
@@ -167,14 +156,14 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 	mockServiceAuthToken := ""
 	defer mockCtrl.Finish()
 
-	Convey("Given a private link to the download exists on the dataset api and the dataset is published then the file content is written to the response body", t, func() {
+	Convey("Given a private link to the download exists and the dataset is published then the file content is written to the response body", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
-		dl := datasetDownloadsWithPublishedPrivateLink(mockCtrl, params)
+		dl := datasetDownloadsReturnsResult(mockCtrl, params, publishedDownloadPrivateURL)
 		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testCsvContent)
 
 		d := Download{
@@ -189,14 +178,14 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		So(w.Body.String(), ShouldEqual, testCsvContent)
 	})
 
-	Convey("Given a private link to the download exists on the dataset api and the dataset is associated but is authenticated then the file is streamed in the response body", t, func() {
+	Convey("Given a private link to the download exists and the dataset is associated but is authenticated then the file is streamed in the response body", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
-		dl := datasetDownloadsWithUnpublishedPrivateLink(mockCtrl, params)
+		dl := datasetDownloadsReturnsResult(mockCtrl, params, unpublishedDownloadPrivateLink)
 		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testCsvContent)
 
 		d := Download{
@@ -259,176 +248,99 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		So(w.Code, ShouldEqual, http.StatusNotFound)
 		So(w.Body.String(), ShouldEqual, notFoundMessage+"\n")
 	})
-}
 
-/*
-
-	Convey("Given the filter client returns an error then the download client returns this back to the caller", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/filter-outputs/abcdefg.csv", nil)
+	Convey("Should return HTTP status internal server error if the dataset downloader return an error", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		params := downloads.Parameters{FilterOutputID: "abcdefg"}
-		testErr := errors.New("filter client error")
+		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
-		dl := mocks.NewMockDatasetDownloads(mockCtrl)
-		dl.EXPECT().getFilterOutputDownloads(gomock.Any(), params).Return(downloads.Model{}, testErr)
+		dl := datasetDownloadsReturningError(mockCtrl, params, testError)
+		s3C := s3ContentNeverInvoked(mockCtrl)
 
-		d := Download{DatasetDownloads: dl}
+		d := Download{
+			DatasetDownloads: dl,
+			S3Content:        s3C,
+		}
 
-		r.HandleFunc("/downloads/filter-outputs/{filterOutputID}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
 		So(w.Body.String(), ShouldEqual, internalServerMessage+"\n")
 	})
 
-	Convey("Given the vault client returns an error then the download status returns an internal server error", t, func() {
+	Convey("Should return HTTP status internal server error if s3 content returns an unexpected error", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
-		dl := mocks.NewMockDatasetDownloads(mockCtrl)
-		dl.EXPECT().getDatasetVersionDownloads(gomock.Any(), params).Return(publishedDownloadPrivateLink, nil)
-
-		vc := mocks.NewMockVaultClient(mockCtrl)
-		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return("", errors.New("vault client error"))
+		dl := datasetDownloadsReturnsResult(mockCtrl, params, publishedDownloadPrivateURL)
+		s3C := s3ContentReturnsAnError(mockCtrl, testError)
 
 		d := Download{
 			DatasetDownloads: dl,
-			VaultClient:      vc,
-			VaultPath:        rootVaultPath,
+			S3Content:        s3C,
 		}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
+		So(w.Body.String(), ShouldEqual, internalServerMessage+"\n")
 	})
 
-	Convey("Given the vault client returns a non hex encoded psk then an internal server error is returned by the download service", t, func() {
+	Convey("Should return HTTP status not found if dataset downloads has no public or private links", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
-		dl := mocks.NewMockDatasetDownloads(mockCtrl)
-		dl.EXPECT().getDatasetVersionDownloads(gomock.Any(), params).Return(publishedDownloadPrivateLink, nil)
-
-		vc := mocks.NewMockVaultClient(mockCtrl)
-		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testBadEncodedPSK, nil)
+		dl := datasetDownloadsReturnsResult(mockCtrl, params, publishedDownloadNoURLs)
+		s3C := s3ContentNeverInvoked(mockCtrl)
 
 		d := Download{
 			DatasetDownloads: dl,
-			VaultClient:      vc,
-			VaultPath:        rootVaultPath,
+			S3Content:        s3C,
 		}
-
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
-		r.ServeHTTP(w, req)
-
-		So(w.Code, ShouldEqual, http.StatusInternalServerError)
-	})
-
-	Convey("Given the s3 client returns an error, then an internal server error is returned by the download service", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
-		w := httptest.NewRecorder()
-		r := mux.NewRouter()
-
-		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
-
-		dl := mocks.NewMockDatasetDownloads(mockCtrl)
-		dl.EXPECT().getDatasetVersionDownloads(gomock.Any(), params).Return(publishedDownloadPrivateLink, nil)
-
-		vc := mocks.NewMockVaultClient(mockCtrl)
-		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
-
-		s3c := mocks.NewMockS3Client(mockCtrl)
-		s3c.EXPECT().GetWithPSK(expectedS3Key, []byte(testPSK)).Return(nil, errors.New("s3 client error"))
-
-		d := Download{
-			DatasetDownloads: dl,
-			VaultClient:      vc,
-			S3Client:         s3c,
-			VaultPath:        rootVaultPath,
-		}
-
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
-		r.ServeHTTP(w, req)
-
-		So(w.Code, ShouldEqual, http.StatusInternalServerError)
-	})
-
-	Convey("Given the s3 client cannot copy the file contents, then the download service returns an internal server error", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
-		w := httptest.NewRecorder()
-		r := mux.NewRouter()
-
-		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
-
-		dl := mocks.NewMockDatasetDownloads(mockCtrl)
-		dl.EXPECT().getDatasetVersionDownloads(gomock.Any(), params).Return(publishedDownloadPrivateLink, nil)
-
-		vc := mocks.NewMockVaultClient(mockCtrl)
-		vc.EXPECT().ReadKey(testVaultPath, vaultKey).Return(testHexEncodedPSK, nil)
-
-		er, ew := errors.New("readError"), errors.New("writeError")
-		rdr := zeroErrReader{err: er}
-		wtr := errWriter{w, ew}
-
-		s3c := mocks.NewMockS3Client(mockCtrl)
-		s3c.EXPECT().GetWithPSK(expectedS3Key, []byte(testPSK)).Return(rdr, nil)
-
-		d := Download{
-			DatasetDownloads: dl,
-			VaultClient:      vc,
-			S3Client:         s3c,
-			VaultPath:        rootVaultPath,
-		}
-
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
-		r.ServeHTTP(wtr, req)
-
-		So(w.Code, ShouldEqual, http.StatusInternalServerError)
-	})
-
-	Convey("Given there is no file available from the dataset api then the download service returns a not found status", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
-		w := httptest.NewRecorder()
-		r := mux.NewRouter()
-
-		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
-
-		dl := mocks.NewMockDatasetDownloads(mockCtrl)
-		dl.EXPECT().getDatasetVersionDownloads(gomock.Any(), params).Return(publishedDownloadNoFile, nil)
-
-		d := Download{DatasetDownloads: dl}
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
+		So(w.Body.String(), ShouldEqual, notFoundMessage+"\n")
 	})
-}*/
 
-func datasetDownloadsWithPublishedPublicLink(c *gomock.Controller, p downloads.Parameters) *mocks.MockDatasetDownloads {
-	dl := mocks.NewMockDatasetDownloads(c)
-	dl.EXPECT().Get(gomock.Any(), p).Return(publishedDownloadPublicLink, nil)
-	return dl
+	Convey("Should return HTTP status internal server error if dataset downloads has an an invalid private URL", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
+		w := httptest.NewRecorder()
+		r := mux.NewRouter()
+
+		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
+
+		dl := datasetDownloadsReturnsResult(mockCtrl, params, publishedDownloadInvalidPrivateURL)
+		s3C := s3ContentNeverInvoked(mockCtrl)
+
+		d := Download{
+			DatasetDownloads: dl,
+			S3Content:        s3C,
+		}
+
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
+		r.ServeHTTP(w, req)
+
+		So(w.Code, ShouldEqual, http.StatusInternalServerError)
+		So(w.Body.String(), ShouldEqual, internalServerMessage+"\n")
+	})
 }
 
-func datasetDownloadsWithPublishedPrivateLink(c *gomock.Controller, p downloads.Parameters) *mocks.MockDatasetDownloads {
+func datasetDownloadsReturnsResult(c *gomock.Controller, p downloads.Parameters, result downloads.Model) *mocks.MockDatasetDownloads {
 	dl := mocks.NewMockDatasetDownloads(c)
-	dl.EXPECT().Get(gomock.Any(), p).Return(publishedDownloadPrivateLink, nil)
-	return dl
-}
-
-func datasetDownloadsWithUnpublishedPrivateLink(c *gomock.Controller, p downloads.Parameters) *mocks.MockDatasetDownloads {
-	dl := mocks.NewMockDatasetDownloads(c)
-	dl.EXPECT().Get(gomock.Any(), p).Return(unpublishedDownloadPrivateLink, nil)
+	dl.EXPECT().Get(gomock.Any(), p).Return(result, nil)
 	return dl
 }
 
@@ -455,5 +367,14 @@ func s3ContentWriterSuccessfullyWritesToResponse(c *gomock.Controller, w io.Writ
 		Do(func(ctx context.Context, filename string, w io.Writer) {
 			w.Write([]byte(expectedBody))
 		})
+	return s3C
+}
+
+func s3ContentReturnsAnError(c *gomock.Controller, err error) *mocks.MockS3Content {
+	s3C := mocks.NewMockS3Content(c)
+	s3C.EXPECT().
+		StreamAndWrite(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(err)
+
 	return s3C
 }

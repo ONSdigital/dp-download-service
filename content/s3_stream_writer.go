@@ -40,9 +40,13 @@ type S3StreamWriter struct {
 	S3Client  S3Client
 }
 
-//New create a new S3StreamWriter instance.
-func New(vc VaultClient, vp string) *S3StreamWriter {
-	return &S3StreamWriter{VaultCli: vc, VaultPath: vp}
+//NewStreamWriter create a new S3StreamWriter instance.
+func NewStreamWriter(s3c S3Client, vc VaultClient, vp string) *S3StreamWriter {
+	return &S3StreamWriter{
+		S3Client:  s3c,
+		VaultCli:  vc,
+		VaultPath: vp,
+	}
 }
 
 //StreamAndWrite decrypt and stream the request file writing the content to the provided io.Writer.

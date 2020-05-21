@@ -117,3 +117,8 @@ func (d Downloader) getDatasetVersionDownloads(ctx context.Context, p Parameters
 
 	return downloads, nil
 }
+
+// IsPublicLinkAvailable return true if public URI for the requested extension is available and the dataset is published
+func (m Model) IsPublicLinkAvailable(extension string) bool {
+	return len(m.Available[extension].Public) > 0 && m.IsPublished
+}
