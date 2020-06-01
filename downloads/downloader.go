@@ -42,6 +42,10 @@ type Parameters struct {
 	DatasetID            string
 	Edition              string
 	Version              string
+	ImageID              string
+	Variant              string
+	Name                 string
+	Ext                  string
 }
 
 type Downloader struct {

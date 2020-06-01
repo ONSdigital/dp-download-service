@@ -30,7 +30,7 @@ const (
 )
 
 var (
-	testError     = errors.New("borked")
+	testError = errors.New("borked")
 
 	downloadWithPublicURL = downloads.Info{
 		URL:     "/downloadURL",
@@ -119,7 +119,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 			S3Content:        s3c,
 		}
 
-		r.HandleFunc("/downloads/filter-outputs/{filterOutputID}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/downloads/filter-outputs/{filterOutputID}.csv", d.DoDataset("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusMovedPermanently)
@@ -141,7 +141,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 			S3Content:        s3c,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.DoDataset("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusMovedPermanently)
@@ -171,7 +171,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			S3Content:        s3C,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.DoDataset("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusOK)
@@ -209,7 +209,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 		chain := alice.New(identity.HandlerForHTTPClient(idClient)).Then(r)
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.DoDataset("csv", mockServiceAuthToken, mockDownloadToken))
 		req.Header.Set(florenceTokenHeader, "Florence")
 
 		chain.ServeHTTP(w, req)
@@ -242,7 +242,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			S3Content:        s3C,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.DoDataset("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
@@ -264,7 +264,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			S3Content:        s3C,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.DoDataset("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
@@ -286,7 +286,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			S3Content:        s3C,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.DoDataset("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
@@ -308,7 +308,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			S3Content:        s3C,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.DoDataset("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
@@ -330,11 +330,30 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			S3Content:        s3C,
 		}
 
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.Do("csv", mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.DoDataset("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
 		So(w.Body.String(), ShouldEqual, internalServerMessage+"\n")
+	})
+}
+
+func TestDownloadImage(t *testing.T) {
+	t.Parallel()
+	mockDownloadToken := ""
+	mockServiceAuthToken := ""
+
+	Convey("Image endpoint accessible", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:28000/images/myImageID/myImageVariant/myImage.png", nil)
+		w := httptest.NewRecorder()
+		r := mux.NewRouter()
+
+		d := Download{}
+
+		r.HandleFunc("/images/{imageID}/{variant}/{name}.{ext}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
+		r.ServeHTTP(w, req)
+
+		So(w.Code, ShouldEqual, http.StatusOK)
 	})
 }
 

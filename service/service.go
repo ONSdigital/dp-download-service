@@ -63,11 +63,12 @@ func Create(
 		IsPublishing:     cfg.IsPublishing,
 	}
 
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.Do("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.Do("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.Do("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.Do("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.DoDataset("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.DoDataset("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.DoDataset("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoDataset("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoDataset("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/images/{imageID}/{variant}/{name}.{ext}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.HandleFunc("/health", hc.Handler)
 
 	// Create new middleware chain with whitelisted handler for /health endpoint

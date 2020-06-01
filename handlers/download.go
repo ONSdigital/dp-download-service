@@ -69,12 +69,23 @@ func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logDat
 	http.Error(w, message, status)
 }
 
-// Do handle download dataset file requests. If the dataset is published and a public download link is available then
+// DoImage handle download image file requests.
+func (d Download) DoImage(serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
+	// router.Path("/images/{id}/{variant}/{name}.{ext}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
+		logData := downloadParametersToLogData(params)
+		log.Event(ctx, "download image request", log.INFO, logData)
+	}
+}
+
+// DoDataset handle download dataset file requests. If the dataset is published and a public download link is available then
 // the request is redirected to the existing public link.
 // If the dataset is published but a public link does not exist then the requested file is streamed from the content
 // store and written to response body.
 // Authenticated requests will always allow access to the private, whether or not the version is published.
-func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
+func (d Download) DoDataset(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
@@ -145,6 +156,10 @@ func getDownloadParameters(req *http.Request, serviceAuthToken, downloadServiceT
 		DatasetID:            vars["datasetID"],
 		Edition:              vars["edition"],
 		Version:              vars["version"],
+		ImageID:              vars["imageID"],
+		Variant:              vars["variant"],
+		Name:                 vars["name"],
+		Ext:                  vars["ext"],
 	}
 }
 
@@ -165,6 +180,18 @@ func downloadParametersToLogData(p downloads.Parameters) log.Data {
 	}
 	if len(p.Version) > 0 {
 		logData["version"] = p.Version
+	}
+	if len(p.ImageID) > 0 {
+		logData["imageID"] = p.ImageID
+	}
+	if len(p.Variant) > 0 {
+		logData["variant"] = p.Variant
+	}
+	if len(p.Name) > 0 {
+		logData["name"] = p.Name
+	}
+	if len(p.Ext) > 0 {
+		logData["ext"] = p.Ext
 	}
 
 	return logData
@@ -202,4 +229,3 @@ func getCollectionIDFromContext(ctx context.Context) string {
 	}
 	return ""
 }
-
