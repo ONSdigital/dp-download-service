@@ -33,7 +33,7 @@ func TestGetDownloadForDataset(t *testing.T) {
 			FilterCli:  filterCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams)
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion)
 
 		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeFalse)
@@ -52,10 +52,10 @@ func TestGetDownloadForDataset(t *testing.T) {
 			FilterCli:  filterCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams)
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion)
 
 		So(downloads.Available, ShouldHaveLength, 1)
-		actual, found := downloads.Available["csv"]
+		actual, found := downloads.Available["csv"][VariantDefault]
 		So(found, ShouldBeTrue)
 
 		So(actual.Skipped, ShouldBeFalse)
@@ -78,7 +78,7 @@ func TestGetDownloadForDataset(t *testing.T) {
 			FilterCli:  filterCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams)
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion)
 
 		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeFalse)
@@ -97,10 +97,10 @@ func TestGetDownloadForDataset(t *testing.T) {
 			FilterCli:  filterCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams)
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion)
 
 		So(downloads.Available, ShouldHaveLength, 1)
-		actual, found := downloads.Available["csv"]
+		actual, found := downloads.Available["csv"][VariantDefault]
 		So(found, ShouldBeTrue)
 		So(actual.Skipped, ShouldBeFalse)
 		So(actual.URL, ShouldEqual, datasetDownload.URL)

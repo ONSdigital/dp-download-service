@@ -29,6 +29,7 @@ import (
 type Download struct {
 	datasetClient downloads.DatasetClient
 	filterClient  downloads.FilterClient
+	imageClient   downloads.ImageClient
 	vaultClient   content.VaultClient
 	router        *mux.Router
 	server        *server.Server
@@ -43,6 +44,7 @@ func Create(
 	cfg config.Config,
 	dc downloads.DatasetClient,
 	fc downloads.FilterClient,
+	ic downloads.ImageClient,
 	s3 content.S3Client,
 	vc content.VaultClient,
 	zc *health.Client,
@@ -50,24 +52,25 @@ func Create(
 
 	router := mux.NewRouter()
 
-	datasetDownloads := downloads.Downloader{
+	downloader := downloads.Downloader{
 		FilterCli:  fc,
 		DatasetCli: dc,
+		ImageCli:   ic,
 	}
 
 	s3c := content.NewStreamWriter(s3, vc, cfg.VaultPath)
 
 	d := handlers.Download{
-		DatasetDownloads: datasetDownloads,
-		S3Content:        s3c,
-		IsPublishing:     cfg.IsPublishing,
+		Downloader:   downloader,
+		S3Content:    s3c,
+		IsPublishing: cfg.IsPublishing,
 	}
 
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.DoDataset("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.DoDataset("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.DoDataset("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoDataset("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoDataset("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.DoDatasetVersion("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.DoDatasetVersion("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.DoDatasetVersion("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoFilterOutput("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/images/{imageID}/{variant}/{name}.{ext}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.HandleFunc("/health", hc.Handler)
 
@@ -89,6 +92,7 @@ func Create(
 
 	return Download{
 		filterClient:  fc,
+		imageClient:   ic,
 		datasetClient: dc,
 		vaultClient:   vc,
 		router:        router,

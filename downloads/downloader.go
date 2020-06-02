@@ -2,9 +2,11 @@ package downloads
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
+	"github.com/ONSdigital/dp-api-clients-go/image"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -20,11 +22,32 @@ type DatasetClient interface {
 	GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string) (m dataset.Version, err error)
 }
 
+// ImageClient is an interface to represent methods called to action on the image api
+type ImageClient interface {
+	GetImage(ctx context.Context, imageID string) (m image.Image, err error)
+}
+
+// VariantDefault is the value used by downloads that define a single variant (e.g. datasets)
+const VariantDefault = "default"
+
+// FileType - iota enum of possible file types that can be download
+type FileType int
+
+// Possible values for a FileType of a download. It can only be one of the following:
+const (
+	TypeDatasetVersion FileType = iota
+	TypeFilterOutput
+	TypeImage
+)
+
+// Model is a struct that contains all the required information to download a file.
+// Available is a map of available downloads, where the outer key corresponds to the file extension, and the inner key corresponds to a variant
 type Model struct {
-	Available   map[string]Info
+	Available   map[string]map[string]Info
 	IsPublished bool
 }
 
+// Info contains the necessary information for a particular download
 type Info struct {
 	URL     string `json:"href"`
 	Size    string `json:"size"`
@@ -33,6 +56,7 @@ type Info struct {
 	Skipped bool   `json:"skipped,omitempty"`
 }
 
+// Parameters is the union of required paramters to perform all downloads
 type Parameters struct {
 	UserAuthToken        string
 	ServiceAuthToken     string
@@ -48,13 +72,27 @@ type Parameters struct {
 	Ext                  string
 }
 
+// Downloader is a struct that contains the clients to request metadata about the downloads
 type Downloader struct {
 	FilterCli  FilterClient
 	DatasetCli DatasetClient
+	ImageCli   ImageClient
 }
 
-func (d Downloader) Get(ctx context.Context, p Parameters) (Model, error) {
-	if len(p.FilterOutputID) > 0 {
+// Get requests the required metadata using a client depending on the provided paramters
+func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType) (Model, error) {
+
+	if fileType == TypeImage {
+		log.Event(ctx, "getting image downloads", log.INFO, log.Data{
+			"image_id": p.ImageID,
+			"variant":  p.Variant,
+			"name":     p.Name,
+			"ext":      p.Ext,
+		})
+		return d.getImageDownloads(ctx, p)
+	}
+
+	if fileType == TypeFilterOutput {
 		log.Event(ctx, "getting downloads for filter output job", log.INFO, log.Data{
 			"filter_output_id": p.FilterOutputID,
 			"collection_id":    p.CollectionID,
@@ -80,17 +118,16 @@ func (d Downloader) getFilterOutputDownloads(ctx context.Context, p Parameters) 
 		return downloads, err
 	}
 
-	mapping := make(map[string]Info)
+	available := make(map[string]map[string]Info)
 	for k, v := range fo.Downloads {
-		mapping[k] = Info(v)
+		available[k] = make(map[string]Info)
+		available[k][VariantDefault] = Info(v)
 	}
 
-	downloads = Model{
+	return Model{
 		IsPublished: fo.IsPublished,
-		Available:   mapping,
-	}
-
-	return downloads, nil
+		Available:   available,
+	}, nil
 }
 
 //getDatasetVersionDownloads get the downloads for a dataset version
@@ -102,8 +139,9 @@ func (d Downloader) getDatasetVersionDownloads(ctx context.Context, p Parameters
 		return downloads, err
 	}
 
-	available := make(map[string]Info)
+	available := make(map[string]map[string]Info)
 	for k, v := range version.Downloads {
+		available[k] = make(map[string]Info)
 		datasetDownloadWithSkipped := Info{
 			URL:     v.URL,
 			Size:    v.Size,
@@ -111,18 +149,45 @@ func (d Downloader) getDatasetVersionDownloads(ctx context.Context, p Parameters
 			Private: v.Private,
 			Skipped: false,
 		}
-		available[k] = datasetDownloadWithSkipped
+		available[k][VariantDefault] = datasetDownloadWithSkipped
 	}
 
-	downloads = Model{
+	return Model{
 		IsPublished: "published" == version.State,
 		Available:   available,
-	}
-
-	return downloads, nil
+	}, nil
 }
 
-// IsPublicLinkAvailable return true if public URI for the requested extension is available and the dataset is published
-func (m Model) IsPublicLinkAvailable(extension string) bool {
-	return len(m.Available[extension].Public) > 0 && m.IsPublished
+// getImageDownloads get the downloads for an image
+func (d Downloader) getImageDownloads(ctx context.Context, p Parameters) (Model, error) {
+	var downloads Model
+
+	image, err := d.ImageCli.GetImage(ctx, p.ImageID)
+	if err != nil {
+		return downloads, err
+	}
+
+	available := make(map[string]map[string]Info)
+	for ext, extVal := range image.Downloads {
+		available[ext] = make(map[string]Info)
+		for variant, variantVal := range extVal {
+			available[ext][variant] = Info{
+				URL:     variantVal.Href,
+				Size:    strconv.Itoa(variantVal.Size),
+				Public:  variantVal.Public,
+				Private: variantVal.Private,
+				Skipped: false,
+			}
+		}
+	}
+
+	return Model{
+		IsPublished: "published" == image.State,
+		Available:   available,
+	}, nil
+}
+
+// IsPublicLinkAvailable return true if public URI for the requested extension is available and the object is published
+func (m Model) IsPublicLinkAvailable(extension, variant string) bool {
+	return len(m.Available[extension][variant].Public) > 0 && m.IsPublished
 }

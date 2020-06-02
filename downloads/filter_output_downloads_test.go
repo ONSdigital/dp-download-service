@@ -35,7 +35,7 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			DatasetCli: datasetCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
 
 		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeFalse)
@@ -54,9 +54,9 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			DatasetCli: datasetCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
 
-		csv, found := downloads.Available["csv"]
+		csv, found := downloads.Available["csv"][VariantDefault]
 		So(found, ShouldBeTrue)
 
 		So(csv, ShouldResemble, Info{
@@ -84,10 +84,10 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			DatasetCli: datasetCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
 
 		So(downloads.Available, ShouldHaveLength, 1)
-		csv, found := downloads.Available["csv"]
+		csv, found := downloads.Available["csv"][VariantDefault]
 		So(found, ShouldBeTrue)
 
 		So(csv, ShouldResemble, Info{
@@ -114,11 +114,11 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			DatasetCli: datasetCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
 
 		So(downloads.Available, ShouldHaveLength, 1)
 
-		csv, found := downloads.Available["csv"]
+		csv, found := downloads.Available["csv"][VariantDefault]
 		So(found, ShouldBeTrue)
 
 		So(csv, ShouldResemble, Info{
@@ -144,7 +144,7 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			DatasetCli: datasetCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
 
 		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeTrue)

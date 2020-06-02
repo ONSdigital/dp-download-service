@@ -14,7 +14,7 @@ import (
 )
 
 // mockgen is prefixing the imports within the mock file with the vendor directory 'github.com/ONSdigital/dp-download-service/vendor/'
-//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/handlers DatasetDownloads,S3Content
+//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/handlers Downloader,S3Content
 //go:generate sed -i "" -e s!\([[:space:]]\"\)github.com/ONSdigital/dp-download-service/vendor/!\1! mocks/mocks.go
 
 const (
@@ -33,17 +33,19 @@ type IdentityClient interface {
 	CheckRequest(*http.Request, string, string)
 }
 
+// S3Content is an interface to represent methods called to action on S3
 type S3Content interface {
 	StreamAndWrite(ctx context.Context, filename string, w io.Writer) error
 }
 
-type DatasetDownloads interface {
-	Get(ctx context.Context, p downloads.Parameters) (downloads.Model, error)
+// Downloader is an interface to represent methods called to obtain the download metadata for any possible download type (dataset, image, etc)
+type Downloader interface {
+	Get(ctx context.Context, p downloads.Parameters, fileType downloads.FileType) (downloads.Model, error)
 }
 
-// Info represents the configuration for a download handler
+// Download represents the configuration for a download handler
 type Download struct {
-	DatasetDownloads     DatasetDownloads
+	Downloader           Downloader
 	S3Content            S3Content
 	ServiceAuthToken     string
 	DownloadServiceToken string
@@ -69,79 +71,89 @@ func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logDat
 	http.Error(w, message, status)
 }
 
-// DoImage handle download image file requests.
+// DoImage handles download image file requests.
 func (d Download) DoImage(serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
-	// router.Path("/images/{id}/{variant}/{name}.{ext}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	return func(w http.ResponseWriter, req *http.Request) {
-		ctx := req.Context()
 		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
-		logData := downloadParametersToLogData(params)
-		log.Event(ctx, "download image request", log.INFO, logData)
+		d.do(w, req, downloads.TypeImage, params, params.Ext, params.Variant, serviceAuthToken, downloadServiceToken)
 	}
 }
 
-// DoDataset handle download dataset file requests. If the dataset is published and a public download link is available then
+// DoDatasetVersion handles dataset version file download requests.
+func (d Download) DoDatasetVersion(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
+		d.do(w, req, downloads.TypeDatasetVersion, params, extension, downloads.VariantDefault, serviceAuthToken, downloadServiceToken)
+	}
+}
+
+// DoFilterOutput handles filter outpout download requests.
+func (d Download) DoFilterOutput(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
+		d.do(w, req, downloads.TypeFilterOutput, params, extension, downloads.VariantDefault, serviceAuthToken, downloadServiceToken)
+	}
+}
+
+// do handles download requests for any possible provided file type. If the object is published and a public download link is available then
 // the request is redirected to the existing public link.
-// If the dataset is published but a public link does not exist then the requested file is streamed from the content
+// If the object is published but a public link does not exist then the requested file is streamed from the content
 // store and written to response body.
 // Authenticated requests will always allow access to the private, whether or not the version is published.
-func (d Download) DoDataset(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		ctx := req.Context()
-		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
-		logData := downloadParametersToLogData(params)
+func (d Download) do(w http.ResponseWriter, req *http.Request, fileType downloads.FileType, params downloads.Parameters, extension, variant, serviceAuthToken, downloadServiceToken string) {
+	ctx := req.Context()
+	logData := downloadParametersToLogData(params)
 
-		var err error
+	var err error
 
-		datasetDownloads, err := d.DatasetDownloads.Get(ctx, params)
-		if err != nil {
-			setStatusCode(ctx, w, err, logData)
-			return
-		}
+	datasetDownloads, err := d.Downloader.Get(ctx, params, fileType)
+	if err != nil {
+		setStatusCode(ctx, w, err, logData)
+		return
+	}
 
-		logData["published"] = datasetDownloads.IsPublished
-		log.Event(req.Context(), "attempting to get download", log.INFO, logData)
+	logData["published"] = datasetDownloads.IsPublished
+	log.Event(req.Context(), "attempting to get download", log.INFO, logData)
 
-		authorised, logData := d.authenticate(req, logData)
-		logData["authorised"] = authorised
+	authorised, logData := d.authenticate(req, logData)
+	logData["authorised"] = authorised
 
-		if datasetDownloads.IsPublicLinkAvailable(extension) {
-			http.Redirect(w, req, datasetDownloads.Available[extension].Public, http.StatusMovedPermanently)
-			return
-		}
+	if datasetDownloads.IsPublicLinkAvailable(extension, variant) {
+		http.Redirect(w, req, datasetDownloads.Available[extension][variant].Public, http.StatusMovedPermanently)
+		return
+	}
 
-		if len(datasetDownloads.Available[extension].Private) > 0 {
+	if len(datasetDownloads.Available[extension][variant].Private) > 0 {
 
-			logData["private_link"] = datasetDownloads.Available[extension].Private
-			log.Event(req.Context(), "using private link", log.INFO, logData)
+		logData["private_link"] = datasetDownloads.Available[extension][variant].Private
+		log.Event(req.Context(), "using private link", log.INFO, logData)
 
-			if datasetDownloads.IsPublished || authorised {
+		if datasetDownloads.IsPublished || authorised {
 
-				privateFile := datasetDownloads.Available[extension].Private
+			privateFile := datasetDownloads.Available[extension][variant].Private
 
-				privateURL, err := url.Parse(privateFile)
-				if err != nil {
-					setStatusCode(ctx, w, err, logData)
-					return
-				}
-
-				filename := privateURL.Path
-				logData["filename"] = filename
-
-				err = d.S3Content.StreamAndWrite(ctx, filename, w)
-				if err != nil {
-					setStatusCode(ctx, w, err, logData)
-					return
-				}
-
-				log.Event(ctx, "download content successfully written to response", log.INFO, logData)
+			privateURL, err := url.Parse(privateFile)
+			if err != nil {
+				setStatusCode(ctx, w, err, logData)
 				return
 			}
-		}
 
-		log.Event(ctx, "no public or private link found", log.ERROR, logData)
-		http.Error(w, notFoundMessage, http.StatusNotFound)
+			filename := privateURL.Path
+			logData["filename"] = filename
+
+			err = d.S3Content.StreamAndWrite(ctx, filename, w)
+			if err != nil {
+				setStatusCode(ctx, w, err, logData)
+				return
+			}
+
+			log.Event(ctx, "download content successfully written to response", log.INFO, logData)
+			return
+		}
 	}
+
+	log.Event(ctx, "no public or private link found", log.ERROR, logData)
+	http.Error(w, notFoundMessage, http.StatusNotFound)
 }
 
 func getDownloadParameters(req *http.Request, serviceAuthToken, downloadServiceToken string) downloads.Parameters {
