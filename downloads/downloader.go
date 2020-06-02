@@ -10,7 +10,7 @@ import (
 	"github.com/ONSdigital/log.go/log"
 )
 
-//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/downloads FilterClient,DatasetClient
+//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/downloads FilterClient,DatasetClient,ImageClient
 
 // FilterClient is an interface to represent methods called to action on the filter api
 type FilterClient interface {
