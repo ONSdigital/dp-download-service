@@ -113,16 +113,16 @@ func (m *MockImageClient) EXPECT() *MockImageClientMockRecorder {
 }
 
 // GetImage mocks base method
-func (m *MockImageClient) GetImage(arg0 context.Context, arg1 string) (image.Image, error) {
+func (m *MockImageClient) GetImage(arg0 context.Context, arg1, arg2, arg3, arg4 string) (image.Image, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetImage", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetImage", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(image.Image)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetImage indicates an expected call of GetImage
-func (mr *MockImageClientMockRecorder) GetImage(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockImageClientMockRecorder) GetImage(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImage", reflect.TypeOf((*MockImageClient)(nil).GetImage), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImage", reflect.TypeOf((*MockImageClient)(nil).GetImage), arg0, arg1, arg2, arg3, arg4)
 }

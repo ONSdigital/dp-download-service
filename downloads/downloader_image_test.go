@@ -12,10 +12,13 @@ import (
 )
 
 const (
-	testImageID = "myImageID"
-	testVariant = "1280x720"
-	testName    = "myImageName"
-	testExt     = "png"
+	testUserAuthToken    = "userAuthToken"
+	testServiceAuthToken = "serviceAuthToken"
+	testCollectionID     = "collectionID"
+	testImageID          = "myImageID"
+	testVariant          = "1280x720"
+	testName             = "myImageName"
+	testExt              = "png"
 )
 
 var (
@@ -165,6 +168,9 @@ func erroringImageClient(c *gomock.Controller, p Parameters, err error) *mocks.M
 
 	imgCli.EXPECT().GetImage(
 		nil,
+		gomock.Eq(p.UserAuthToken),
+		gomock.Eq(p.ServiceAuthToken),
+		gomock.Eq(p.CollectionID),
 		gomock.Eq(p.ImageID),
 	).Times(1).Return(image.Image{}, err)
 
@@ -176,6 +182,9 @@ func successfulImageClient(c *gomock.Controller, p Parameters, img image.Image) 
 
 	imgCli.EXPECT().GetImage(
 		nil,
+		gomock.Eq(p.UserAuthToken),
+		gomock.Eq(p.ServiceAuthToken),
+		gomock.Eq(p.CollectionID),
 		gomock.Eq(p.ImageID),
 	).Times(1).Return(img, nil)
 
@@ -187,6 +196,9 @@ func imageClientNeverInvoked(c *gomock.Controller) *mocks.MockImageClient {
 
 	imgCli.EXPECT().GetImage(
 		nil,
+		gomock.Any(),
+		gomock.Any(),
+		gomock.Any(),
 		gomock.Any(),
 	).Times(0).Return(image.Image{}, nil)
 

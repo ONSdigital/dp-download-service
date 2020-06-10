@@ -24,7 +24,7 @@ type DatasetClient interface {
 
 // ImageClient is an interface to represent methods called to action on the image api
 type ImageClient interface {
-	GetImage(ctx context.Context, imageID string) (m image.Image, err error)
+	GetImage(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string) (m image.Image, err error)
 }
 
 // VariantDefault is the value used by downloads that define a single variant (e.g. datasets)
@@ -162,7 +162,7 @@ func (d Downloader) getDatasetVersionDownloads(ctx context.Context, p Parameters
 func (d Downloader) getImageDownloads(ctx context.Context, p Parameters) (Model, error) {
 	var downloads Model
 
-	image, err := d.ImageCli.GetImage(ctx, p.ImageID)
+	image, err := d.ImageCli.GetImage(ctx, p.UserAuthToken, p.ServiceAuthToken, p.CollectionID, p.ImageID)
 	if err != nil {
 		return downloads, err
 	}
