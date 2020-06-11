@@ -2,8 +2,8 @@ cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/ONSdigital/dp-api-clients-go v1.1.0/go.mod h1:9lqor0I7caCnRWr04gU/r7x5dqxgoODob8L48q+cE4E=
-github.com/ONSdigital/dp-api-clients-go v1.11.1-0.20200610132403-b60b48e247ca h1:+mWEmTILpieBMu6Wlb/C7HibtsbDSMUvTy18xtzHswk=
-github.com/ONSdigital/dp-api-clients-go v1.11.1-0.20200610132403-b60b48e247ca/go.mod h1:pLIrakQgoa+W23OodCaSI8RHOYaEnxd4kb1bk5LWXtw=
+github.com/ONSdigital/dp-api-clients-go v1.12.0 h1:fkNGyioI9v4M/LochPXJMwF/Rts4agnH3emxIH8sxkQ=
+github.com/ONSdigital/dp-api-clients-go v1.12.0/go.mod h1:pLIrakQgoa+W23OodCaSI8RHOYaEnxd4kb1bk5LWXtw=
 github.com/ONSdigital/dp-frontend-models v1.1.0/go.mod h1:TT96P7Mi69N3Tc/jFNdbjiwG4GAaMjP26HLotFQ6BPw=
 github.com/ONSdigital/dp-healthcheck v0.0.0-20200131122546-9db6d3f0494e/go.mod h1:zighxZ/0m5u7zo0eAr8XFlA+Dz2ic7A1vna6YXvhCjQ=
 github.com/ONSdigital/dp-healthcheck v1.0.0 h1:bySQU8kQRs4n3WbgH8QtVwCJLqG9ri722saATjvNNfc=
