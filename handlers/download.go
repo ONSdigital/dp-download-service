@@ -2,22 +2,19 @@ package handlers
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"io"
 	"net/http"
 	"net/url"
-	"path/filepath"
 
-	"github.com/ONSdigital/dp-api-clients-go/dataset"
-	"github.com/ONSdigital/dp-api-clients-go/filter"
+	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
 )
 
 // mockgen is prefixing the imports within the mock file with the vendor directory 'github.com/ONSdigital/dp-download-service/vendor/'
-//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/handlers DatasetClient,VaultClient,S3Client,FilterClient
+//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/handlers DatasetDownloads,S3Content
 //go:generate sed -i "" -e s!\([[:space:]]\"\)github.com/ONSdigital/dp-download-service/vendor/!\1! mocks/mocks.go
 
 const (
@@ -31,200 +28,146 @@ type ClientError interface {
 	Code() int
 }
 
-// DatasetClient is an interface to represent methods called to action on the dataset api
-type DatasetClient interface {
-	GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string) (m dataset.Version, err error)
-}
-
-// FilterClient is an interface to represent methods called to action on the filter api
-type FilterClient interface {
-	GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID string) (m filter.Model, err error)
-}
-
 // IdentityClient is an interface to represent methods called to action on the identity api
 type IdentityClient interface {
 	CheckRequest(*http.Request, string, string)
 }
 
-// VaultClient is an interface to represent methods called to action upon vault
-type VaultClient interface {
-	ReadKey(path, key string) (string, error)
+type S3Content interface {
+	StreamAndWrite(ctx context.Context, filename string, w io.Writer) error
 }
 
-// S3Client is an interface to represent methods called to retrieve from s3
-type S3Client interface {
-	GetWithPSK(key string, psk []byte) (io.ReadCloser, error)
+type DatasetDownloads interface {
+	Get(ctx context.Context, p downloads.Parameters) (downloads.Model, error)
 }
 
-type download struct {
-	URL     string `json:"href"`
-	Size    string `json:"size"`
-	Public  string `json:"public,omitempty"`
-	Private string `json:"private,omitempty"`
-	Skipped bool   `json:"skipped,omitempty"`
-}
-
-// Download represents the configuration for a download handler
+// Info represents the configuration for a download handler
 type Download struct {
-	DatasetClient        DatasetClient
-	VaultClient          VaultClient
-	FilterClient         FilterClient
-	S3Client             S3Client
+	DatasetDownloads     DatasetDownloads
+	S3Content            S3Content
 	ServiceAuthToken     string
 	DownloadServiceToken string
 	SecretKey            string
-	VaultPath            string
 	IsPublishing         bool
 }
 
-func setStatusCode(req *http.Request, w http.ResponseWriter, err error, logData log.Data) {
+func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logData log.Data) {
 	status := http.StatusInternalServerError
 	message := internalServerMessage
-	if err, ok := err.(ClientError); ok {
-		status = err.Code()
+
+	var cliErr ClientError
+	if errors.As(err, &cliErr) {
+		status = cliErr.Code()
 	}
+
 	logData["setting_response_status"] = status
 	logData["error"] = err.Error()
-	log.Event(req.Context(), "setting status code for an error", log.INFO, logData)
+	log.Event(ctx, "setting status code for an error", log.INFO, logData)
 	if status == http.StatusNotFound {
 		message = notFoundMessage
 	}
 	http.Error(w, message, status)
 }
 
-// Do handles the retrieval of a requested file, by first calling the datasetID to see if
-// the version has a public link available and redirecting if so, otherwise it decrypts the private
-// file on the fly (if it is published). Authenticated requests will always allow access to the private,
-// whether or not the version is published.
+// Do handle download dataset file requests. If the dataset is published and a public download link is available then
+// the request is redirected to the existing public link.
+// If the dataset is published but a public link does not exist then the requested file is streamed from the content
+// store and written to response body.
+// Authenticated requests will always allow access to the private, whether or not the version is published.
 func (d Download) Do(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		vars := mux.Vars(req)
-		datasetID := vars["datasetID"]
-		edition := vars["edition"]
-		version := vars["version"]
-		filterOutputID := vars["filterOutputID"]
+		ctx := req.Context()
+		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
+		logData := downloadParametersToLogData(params)
 
-		logData := log.Data{}
-		published := false
-		downloads := make(map[string]download)
-		userAuthToken := getUserAccessTokenFromContext(req.Context())
-		collectionID := getCollectionIDFromContext(req.Context())
+		var err error
 
-		if len(filterOutputID) > 0 {
-			logData = log.Data{
-				"filter_output_id": filterOutputID,
-				"type":             extension,
-			}
-
-			fo, err := d.FilterClient.GetOutput(req.Context(), userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID)
-			if err != nil {
-				setStatusCode(req, w, err, logData)
-				return
-			}
-
-			published = fo.IsPublished
-
-			for k, v := range fo.Downloads {
-				downloads[k] = download(v)
-			}
-
-		} else {
-			logData = log.Data{
-				"dataset_id": datasetID,
-				"edition":    edition,
-				"version":    version,
-				"type":       extension,
-			}
-
-			v, err := d.DatasetClient.GetVersion(req.Context(), userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version)
-			if err != nil {
-				setStatusCode(req, w, err, logData)
-				return
-			}
-
-			published = v.State == "published"
-
-			for k, v := range v.Downloads {
-				datasetDownloadWithSkipped := download{
-					URL:     v.URL,
-					Size:    v.Size,
-					Public:  v.Public,
-					Private: v.Private,
-					Skipped: false,
-				}
-				downloads[k] = datasetDownloadWithSkipped
-			}
+		datasetDownloads, err := d.DatasetDownloads.Get(ctx, params)
+		if err != nil {
+			setStatusCode(ctx, w, err, logData)
+			return
 		}
 
-		logData["published"] = published
+		logData["published"] = datasetDownloads.IsPublished
 		log.Event(req.Context(), "attempting to get download", log.INFO, logData)
 
 		authorised, logData := d.authenticate(req, logData)
 		logData["authorised"] = authorised
 
-		if len(downloads[extension].Public) > 0 && published {
-			http.Redirect(w, req, downloads[extension].Public, http.StatusMovedPermanently)
+		if datasetDownloads.IsPublicLinkAvailable(extension) {
+			http.Redirect(w, req, datasetDownloads.Available[extension].Public, http.StatusMovedPermanently)
 			return
 		}
 
-		if len(downloads[extension].Private) > 0 {
+		if len(datasetDownloads.Available[extension].Private) > 0 {
 
-			logData["private_link"] = downloads[extension].Private
+			logData["private_link"] = datasetDownloads.Available[extension].Private
 			log.Event(req.Context(), "using private link", log.INFO, logData)
 
-			if published || authorised {
+			if datasetDownloads.IsPublished || authorised {
 
-				privateFile := downloads[extension].Private
+				privateFile := datasetDownloads.Available[extension].Private
 
 				privateURL, err := url.Parse(privateFile)
 				if err != nil {
-					setStatusCode(req, w, err, logData)
+					setStatusCode(ctx, w, err, logData)
 					return
 				}
 
 				filename := privateURL.Path
 				logData["filename"] = filename
 
-				vaultPath := d.VaultPath + "/" + filepath.Base(filename)
-				vaultKey := "key"
-				logData["vaultPath"] = vaultPath
-
-				log.Event(req.Context(), "getting download key from vault", log.INFO, logData)
-				pskStr, err := d.VaultClient.ReadKey(vaultPath, vaultKey)
+				err = d.S3Content.StreamAndWrite(ctx, filename, w)
 				if err != nil {
-					setStatusCode(req, w, err, logData)
-					return
-				}
-				psk, err := hex.DecodeString(pskStr)
-				if err != nil {
-					setStatusCode(req, w, err, logData)
+					setStatusCode(ctx, w, err, logData)
 					return
 				}
 
-				log.Event(req.Context(), "getting file from s3", log.INFO, logData)
-				s3Reader, err := d.S3Client.GetWithPSK(filename, psk)
-				if err != nil {
-					setStatusCode(req, w, err, logData)
-					return
-				}
-
-				defer func() {
-					if err := s3Reader.Close(); err != nil {
-						log.Event(req.Context(), "error closing body", log.ERROR, log.Error(err))
-					}
-				}()
-
-				if _, err := io.Copy(w, s3Reader); err != nil {
-					setStatusCode(req, w, err, logData)
-				}
-
+				log.Event(ctx, "download content successfully written to response", log.INFO, logData)
 				return
 			}
 		}
 
-		log.Event(req.Context(), "no public or private link found", log.ERROR, logData)
+		log.Event(ctx, "no public or private link found", log.ERROR, logData)
 		http.Error(w, notFoundMessage, http.StatusNotFound)
 	}
+}
+
+func getDownloadParameters(req *http.Request, serviceAuthToken, downloadServiceToken string) downloads.Parameters {
+	vars := mux.Vars(req)
+
+	return downloads.Parameters{
+		UserAuthToken:        getUserAccessTokenFromContext(req.Context()),
+		ServiceAuthToken:     serviceAuthToken,
+		DownloadServiceToken: downloadServiceToken,
+		CollectionID:         getCollectionIDFromContext(req.Context()),
+		FilterOutputID:       vars["filterOutputID"],
+		DatasetID:            vars["datasetID"],
+		Edition:              vars["edition"],
+		Version:              vars["version"],
+	}
+}
+
+func downloadParametersToLogData(p downloads.Parameters) log.Data {
+	logData := log.Data{}
+
+	if len(p.CollectionID) > 0 {
+		logData["collection_id"] = p.CollectionID
+	}
+	if len(p.FilterOutputID) > 0 {
+		logData["filter_output_id"] = p.FilterOutputID
+	}
+	if len(p.DatasetID) > 0 {
+		logData["dataset_id"] = p.DatasetID
+	}
+	if len(p.Edition) > 0 {
+		logData["edition"] = p.Edition
+	}
+	if len(p.Version) > 0 {
+		logData["version"] = p.Version
+	}
+
+	return logData
 }
 
 func (d Download) authenticate(r *http.Request, logData map[string]interface{}) (bool, map[string]interface{}) {
@@ -259,3 +202,4 @@ func getCollectionIDFromContext(ctx context.Context) string {
 	}
 	return ""
 }
+
