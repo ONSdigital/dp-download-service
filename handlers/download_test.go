@@ -14,6 +14,7 @@ import (
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/handlers/mocks"
+	dpnethandlers "github.com/ONSdigital/dp-net/handlers"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/golang/mock/gomock"
@@ -30,6 +31,10 @@ const (
 	testPrivatePngS3Key       = "/datasets/my-image.png"
 	florenceTokenHeader       = "X-Florence-Token"
 	zebedeeURL                = "http://localhost:8082"
+	testUserToken             = "UserToken"
+	testServiceToken          = "ServiceToken"
+	testDownloadServiceToken  = "DownloadServiceToken"
+	testCollectionID          = "CollectionID"
 )
 
 var (
@@ -139,6 +144,40 @@ func (e testClientError) Error() string {
 
 func (e testClientError) Code() int {
 	return e.code
+}
+
+func TestGetDownloadParameters(t *testing.T) {
+	t.Parallel()
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	Convey("Given a request with UserAccess and collectionID context values", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:28000/generic_request", nil)
+		req = req.WithContext(context.WithValue(req.Context(), dpnethandlers.UserAccess.Context(), testUserToken))
+		req = req.WithContext(context.WithValue(req.Context(), dpnethandlers.CollectionID.Context(), testCollectionID))
+
+		Convey("then GetDownloadParameters extracts the values correctly", func() {
+			params := GetDownloadParameters(req, testServiceToken, testDownloadServiceToken)
+			So(params, ShouldResemble, downloads.Parameters{
+				UserAuthToken:        testUserToken,
+				ServiceAuthToken:     testServiceToken,
+				DownloadServiceToken: testDownloadServiceToken,
+				CollectionID:         testCollectionID,
+			})
+		})
+	})
+
+	Convey("Given a request without any context value", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:28000/generic_request", nil)
+
+		Convey("then GetDownloadParameters does not extract values from the context", func() {
+			params := GetDownloadParameters(req, testServiceToken, testDownloadServiceToken)
+			So(params, ShouldResemble, downloads.Parameters{
+				ServiceAuthToken:     testServiceToken,
+				DownloadServiceToken: testDownloadServiceToken,
+			})
+		})
+	})
 }
 
 func TestDownloadDoReturnsRedirect(t *testing.T) {
@@ -308,10 +347,11 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 	Convey("Given a private link to the image download exists and the image is published then the file content is written to the response body", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
+		req = req.WithContext(context.WithValue(req.Context(), dpnethandlers.UserAccess.Context(), testUserToken))
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Name: "myImage", Ext: "png"}
+		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Name: "myImage", Ext: "png", UserAuthToken: testUserToken}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeImage, publishedImageDownloadPrivateURL)
 		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivatePngS3Key, testImageContent)
@@ -330,10 +370,11 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 	Convey("Given a private link to the image download exists and the image is not published and user is authenticated then the file is streamed in the response body", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
+		req = req.WithContext(context.WithValue(req.Context(), dpnethandlers.UserAccess.Context(), testUserToken))
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Name: "myImage", Ext: "png"}
+		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Name: "myImage", Ext: "png", UserAuthToken: testUserToken}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeImage, unpublishedImageDownloadPrivateLink)
 		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivatePngS3Key, testImageContent)

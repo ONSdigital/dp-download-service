@@ -75,7 +75,7 @@ func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logDat
 // DoImage handles download image file requests.
 func (d Download) DoImage(serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
+		params := GetDownloadParameters(req, serviceAuthToken, downloadServiceToken)
 		d.do(w, req, downloads.TypeImage, params, params.Ext, params.Variant)
 	}
 }
@@ -83,7 +83,7 @@ func (d Download) DoImage(serviceAuthToken, downloadServiceToken string) http.Ha
 // DoDatasetVersion handles dataset version file download requests.
 func (d Download) DoDatasetVersion(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
+		params := GetDownloadParameters(req, serviceAuthToken, downloadServiceToken)
 		d.do(w, req, downloads.TypeDatasetVersion, params, extension, downloads.VariantDefault)
 	}
 }
@@ -91,7 +91,7 @@ func (d Download) DoDatasetVersion(extension, serviceAuthToken, downloadServiceT
 // DoFilterOutput handles filter outpout download requests.
 func (d Download) DoFilterOutput(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
+		params := GetDownloadParameters(req, serviceAuthToken, downloadServiceToken)
 		d.do(w, req, downloads.TypeFilterOutput, params, extension, downloads.VariantDefault)
 	}
 }
@@ -157,7 +157,7 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 	http.Error(w, notFoundMessage, http.StatusNotFound)
 }
 
-func getDownloadParameters(req *http.Request, serviceAuthToken, downloadServiceToken string) downloads.Parameters {
+func GetDownloadParameters(req *http.Request, serviceAuthToken, downloadServiceToken string) downloads.Parameters {
 	vars := mux.Vars(req)
 
 	return downloads.Parameters{
