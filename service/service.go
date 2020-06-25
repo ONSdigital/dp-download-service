@@ -17,6 +17,7 @@ import (
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/handlers"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dpnethandlers "github.com/ONSdigital/dp-net/handlers"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/log.go/log"
@@ -81,7 +82,9 @@ func Create(
 	if cfg.IsPublishing {
 		log.Event(ctx, "private endpoints are enabled. using identity middleware", log.INFO)
 		identityHandler := identity.HandlerForHTTPClient(clientsidentity.NewAPIClient(zc.Client, cfg.ZebedeeURL))
-		middlewareChain = middlewareChain.Append(identityHandler)
+		middlewareChain = middlewareChain.Append(identityHandler).
+			Append(dpnethandlers.CheckHeader(dpnethandlers.UserAccess)).
+			Append(dpnethandlers.CheckHeader(dpnethandlers.CollectionID))
 	} else {
 		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))
 		middlewareChain = middlewareChain.Append(corsHandler)

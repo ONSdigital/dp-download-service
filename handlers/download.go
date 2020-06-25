@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	"github.com/ONSdigital/dp-download-service/downloads"
+	dpnethandlers "github.com/ONSdigital/dp-net/handlers"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
@@ -75,7 +76,7 @@ func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logDat
 func (d Download) DoImage(serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
-		d.do(w, req, downloads.TypeImage, params, params.Ext, params.Variant, serviceAuthToken, downloadServiceToken)
+		d.do(w, req, downloads.TypeImage, params, params.Ext, params.Variant)
 	}
 }
 
@@ -83,7 +84,7 @@ func (d Download) DoImage(serviceAuthToken, downloadServiceToken string) http.Ha
 func (d Download) DoDatasetVersion(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
-		d.do(w, req, downloads.TypeDatasetVersion, params, extension, downloads.VariantDefault, serviceAuthToken, downloadServiceToken)
+		d.do(w, req, downloads.TypeDatasetVersion, params, extension, downloads.VariantDefault)
 	}
 }
 
@@ -91,7 +92,7 @@ func (d Download) DoDatasetVersion(extension, serviceAuthToken, downloadServiceT
 func (d Download) DoFilterOutput(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		params := getDownloadParameters(req, serviceAuthToken, downloadServiceToken)
-		d.do(w, req, downloads.TypeFilterOutput, params, extension, downloads.VariantDefault, serviceAuthToken, downloadServiceToken)
+		d.do(w, req, downloads.TypeFilterOutput, params, extension, downloads.VariantDefault)
 	}
 }
 
@@ -100,7 +101,7 @@ func (d Download) DoFilterOutput(extension, serviceAuthToken, downloadServiceTok
 // If the object is published but a public link does not exist then the requested file is streamed from the content
 // store and written to response body.
 // Authenticated requests will always allow access to the private, whether or not the version is published.
-func (d Download) do(w http.ResponseWriter, req *http.Request, fileType downloads.FileType, params downloads.Parameters, extension, variant, serviceAuthToken, downloadServiceToken string) {
+func (d Download) do(w http.ResponseWriter, req *http.Request, fileType downloads.FileType, params downloads.Parameters, extension, variant string) {
 	ctx := req.Context()
 	logData := downloadParametersToLogData(params)
 
@@ -221,8 +222,8 @@ func (d Download) authenticate(r *http.Request, logData map[string]interface{}) 
 }
 
 func getUserAccessTokenFromContext(ctx context.Context) string {
-	if ctx.Value(common.FlorenceIdentityKey) != nil {
-		accessToken, ok := ctx.Value(common.FlorenceIdentityKey).(string)
+	if ctx.Value(dpnethandlers.UserAccess.Context()) != nil {
+		accessToken, ok := ctx.Value(dpnethandlers.UserAccess.Context()).(string)
 		if !ok {
 			log.Event(ctx, "access token error", log.ERROR, log.Error(errors.New("error casting access token context value to string")))
 		}
@@ -232,8 +233,8 @@ func getUserAccessTokenFromContext(ctx context.Context) string {
 }
 
 func getCollectionIDFromContext(ctx context.Context) string {
-	if ctx.Value(common.CollectionIDHeaderKey) != nil {
-		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
+	if ctx.Value(dpnethandlers.CollectionID.Context()) != nil {
+		collectionID, ok := ctx.Value(dpnethandlers.CollectionID.Context()).(string)
 		if !ok {
 			log.Event(ctx, "collection id error", log.ERROR, log.Error(errors.New("error casting collection ID context value to string")))
 		}
