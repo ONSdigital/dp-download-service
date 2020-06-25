@@ -14,8 +14,9 @@ import (
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/handlers/mocks"
-	dpnethandlers "github.com/ONSdigital/dp-net/handlers"
-	rchttp "github.com/ONSdigital/dp-rchttp"
+	dphandlers "github.com/ONSdigital/dp-net/handlers"
+
+	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
@@ -153,8 +154,8 @@ func TestGetDownloadParameters(t *testing.T) {
 
 	Convey("Given a request with UserAccess and collectionID context values", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/generic_request", nil)
-		req = req.WithContext(context.WithValue(req.Context(), dpnethandlers.UserAccess.Context(), testUserToken))
-		req = req.WithContext(context.WithValue(req.Context(), dpnethandlers.CollectionID.Context(), testCollectionID))
+		req = req.WithContext(context.WithValue(req.Context(), dphandlers.UserAccess.Context(), testUserToken))
+		req = req.WithContext(context.WithValue(req.Context(), dphandlers.CollectionID.Context(), testCollectionID))
 
 		Convey("then GetDownloadParameters extracts the values correctly", func() {
 			params := GetDownloadParameters(req, testServiceToken, testDownloadServiceToken)
@@ -307,6 +308,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 	Convey("Given a private link to the dataset download exists and the dataset is associated and user is authenticated then the file is streamed in the response body", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
+		req = req.WithContext(context.WithValue(req.Context(), dphttp.CallerIdentityKey, "me"))
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
@@ -321,7 +323,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			IsPublishing: true,
 		}
 
-		httpClient := &rchttp.ClienterMock{
+		httpClient := &dphttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				readCloser := ioutil.NopCloser(strings.NewReader(`{"identifier": "me"}`))
@@ -347,7 +349,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 	Convey("Given a private link to the image download exists and the image is published then the file content is written to the response body", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
-		req = req.WithContext(context.WithValue(req.Context(), dpnethandlers.UserAccess.Context(), testUserToken))
+		req = req.WithContext(context.WithValue(req.Context(), dphandlers.UserAccess.Context(), testUserToken))
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
@@ -370,7 +372,8 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 	Convey("Given a private link to the image download exists and the image is not published and user is authenticated then the file is streamed in the response body", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
-		req = req.WithContext(context.WithValue(req.Context(), dpnethandlers.UserAccess.Context(), testUserToken))
+		req = req.WithContext(context.WithValue(req.Context(), dphandlers.UserAccess.Context(), testUserToken))
+		req = req.WithContext(context.WithValue(req.Context(), dphttp.CallerIdentityKey, "me"))
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
@@ -385,7 +388,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 			IsPublishing: true,
 		}
 
-		httpClient := &rchttp.ClienterMock{
+		httpClient := &dphttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				readCloser := ioutil.NopCloser(strings.NewReader(`{"identifier": "me"}`))

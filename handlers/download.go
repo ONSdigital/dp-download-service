@@ -8,8 +8,9 @@ import (
 	"net/url"
 
 	"github.com/ONSdigital/dp-download-service/downloads"
-	dpnethandlers "github.com/ONSdigital/dp-net/handlers"
-	"github.com/ONSdigital/go-ns/common"
+	dphandlers "github.com/ONSdigital/dp-net/handlers"
+
+	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
 )
@@ -157,6 +158,8 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 	http.Error(w, notFoundMessage, http.StatusNotFound)
 }
 
+// GetDownloadParameters extracts the query parameters and context values for the provided request,
+// then returns a struct with all the available parameters, including the explicitly provided service and downloadService tokens
 func GetDownloadParameters(req *http.Request, serviceAuthToken, downloadServiceToken string) downloads.Parameters {
 	vars := mux.Vars(req)
 
@@ -214,7 +217,7 @@ func (d Download) authenticate(r *http.Request, logData map[string]interface{}) 
 	var authorised bool
 
 	if d.IsPublishing {
-		authorised = common.IsCallerPresent(r.Context())
+		authorised = dphttp.IsCallerPresent(r.Context())
 	}
 
 	logData["authenticated"] = authorised
@@ -222,8 +225,8 @@ func (d Download) authenticate(r *http.Request, logData map[string]interface{}) 
 }
 
 func getUserAccessTokenFromContext(ctx context.Context) string {
-	if ctx.Value(dpnethandlers.UserAccess.Context()) != nil {
-		accessToken, ok := ctx.Value(dpnethandlers.UserAccess.Context()).(string)
+	if ctx.Value(dphandlers.UserAccess.Context()) != nil {
+		accessToken, ok := ctx.Value(dphandlers.UserAccess.Context()).(string)
 		if !ok {
 			log.Event(ctx, "access token error", log.ERROR, log.Error(errors.New("error casting access token context value to string")))
 		}
@@ -233,8 +236,8 @@ func getUserAccessTokenFromContext(ctx context.Context) string {
 }
 
 func getCollectionIDFromContext(ctx context.Context) string {
-	if ctx.Value(dpnethandlers.CollectionID.Context()) != nil {
-		collectionID, ok := ctx.Value(dpnethandlers.CollectionID.Context()).(string)
+	if ctx.Value(dphandlers.CollectionID.Context()) != nil {
+		collectionID, ok := ctx.Value(dphandlers.CollectionID.Context()).(string)
 		if !ok {
 			log.Event(ctx, "collection id error", log.ERROR, log.Error(errors.New("error casting collection ID context value to string")))
 		}

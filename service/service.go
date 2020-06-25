@@ -17,9 +17,9 @@ import (
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/handlers"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dpnethandlers "github.com/ONSdigital/dp-net/handlers"
+	dphandlers "github.com/ONSdigital/dp-net/handlers"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/identity"
-	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
 
@@ -33,7 +33,7 @@ type Download struct {
 	imageClient   downloads.ImageClient
 	vaultClient   content.VaultClient
 	router        *mux.Router
-	server        *server.Server
+	server        *dphttp.Server
 	shutdown      time.Duration
 	healthCheck   *healthcheck.HealthCheck
 }
@@ -82,16 +82,17 @@ func Create(
 	if cfg.IsPublishing {
 		log.Event(ctx, "private endpoints are enabled. using identity middleware", log.INFO)
 		identityHandler := identity.HandlerForHTTPClient(clientsidentity.NewAPIClient(zc.Client, cfg.ZebedeeURL))
-		middlewareChain = middlewareChain.Append(identityHandler).
-			Append(dpnethandlers.CheckHeader(dpnethandlers.UserAccess)).
-			Append(dpnethandlers.CheckHeader(dpnethandlers.CollectionID))
+		middlewareChain = middlewareChain.Append(identityHandler)
 	} else {
 		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))
 		middlewareChain = middlewareChain.Append(corsHandler)
 	}
 
-	alice := middlewareChain.Then(router)
-	httpServer := server.New(cfg.BindAddr, alice)
+	r := middlewareChain.
+		Append(dphandlers.CheckHeader(dphandlers.UserAccess)).
+		Append(dphandlers.CheckHeader(dphandlers.CollectionID)).
+		Then(router)
+	httpServer := dphttp.NewServer(cfg.BindAddr, r)
 
 	return Download{
 		filterClient:  fc,
