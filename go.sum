@@ -14,8 +14,8 @@ github.com/ONSdigital/dp-mocking v0.0.0-20190905163309-fee2702ad1b9 h1:+WXVfTDyW
 github.com/ONSdigital/dp-mocking v0.0.0-20190905163309-fee2702ad1b9/go.mod h1:BcIRgitUju//qgNePRBmNjATarTtynAgc0yV29VpLEk=
 github.com/ONSdigital/dp-net v1.0.2 h1:gVqTTchAmD4bj2C5592tiYc9NqrcMWnSVUGJ6jNHn40=
 github.com/ONSdigital/dp-net v1.0.2/go.mod h1:wDVhk2pYosQ1q6PXxuFIRYhYk2XX5+1CeRRnXpSczPY=
-github.com/ONSdigital/dp-net v1.0.4-0.20200602082001-ec3e3e8c2ecb h1:BvgrMv7UgHnVwmf+zwGq7elbptwpF13zJtN67Tn1aJo=
-github.com/ONSdigital/dp-net v1.0.4-0.20200602082001-ec3e3e8c2ecb/go.mod h1:wDVhk2pYosQ1q6PXxuFIRYhYk2XX5+1CeRRnXpSczPY=
+github.com/ONSdigital/dp-net v1.0.4 h1:wqu2YnCFc0L70wBiJygkWqyP8te6xMzwgpO5UMxlOdM=
+github.com/ONSdigital/dp-net v1.0.4/go.mod h1:wDVhk2pYosQ1q6PXxuFIRYhYk2XX5+1CeRRnXpSczPY=
 github.com/ONSdigital/dp-rchttp v0.0.0-20190919143000-bb5699e6fd59/go.mod h1:KkW68U3FPuivW4ogi9L8CPKNj9ZxGko4qcUY7KoAAkQ=
 github.com/ONSdigital/dp-rchttp v0.0.0-20200114090501-463a529590e8 h1:MWIHCr/ud5ur9elhfvKtSjMJInqf3iUY8F4J27qGQPA=
 github.com/ONSdigital/dp-rchttp v0.0.0-20200114090501-463a529590e8/go.mod h1:821jZtK0oBsV8hjIkNr8vhAWuv0FxJBPJuAHa2B70Gk=

@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/ONSdigital/dp-api-clients-go v1.14.0
 	github.com/ONSdigital/dp-healthcheck v1.0.4
-	github.com/ONSdigital/dp-net v1.0.4-0.20200602082001-ec3e3e8c2ecb
+	github.com/ONSdigital/dp-net v1.0.4
 	github.com/ONSdigital/dp-rchttp v1.0.0 // indirect
 	github.com/ONSdigital/dp-s3 v1.5.0
 	github.com/ONSdigital/dp-vault v1.1.1
