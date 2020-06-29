@@ -3,7 +3,7 @@ module github.com/ONSdigital/dp-download-service
 go 1.13
 
 require (
-	github.com/ONSdigital/dp-api-clients-go v1.14.0
+	github.com/ONSdigital/dp-api-clients-go v1.15.0
 	github.com/ONSdigital/dp-healthcheck v1.0.4
 	github.com/ONSdigital/dp-net v1.0.4
 	github.com/ONSdigital/dp-rchttp v1.0.0 // indirect

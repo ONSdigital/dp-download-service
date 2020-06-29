@@ -47,38 +47,20 @@ var (
 // generate download Info with provided public URL
 func infoWithPublicURL(publicDownload string) downloads.Info {
 	return downloads.Info{
-		URL:     "/downloadURL",
-		Size:    "666",
-		Public:  publicDownload,
-		Skipped: false,
+		Public: publicDownload,
 	}
 }
 
 // generate download Info with provided private S3 key
 func infoWithPrivateURL(privateS3Key string) downloads.Info {
 	return downloads.Info{
-		URL:     "/downloadURL",
-		Size:    "666",
 		Private: fmt.Sprintf(testPrivateDownloadFmt, privateS3Key),
-		Skipped: false,
-	}
-}
-
-// generate download Info with no URL
-func infoWithNoURLs() downloads.Info {
-	return downloads.Info{
-		URL:     "/downloadURL",
-		Size:    "666",
-		Skipped: false,
 	}
 }
 
 // generate download Info with an invalid private URL
 func infoWithInvalidPrivateURL() downloads.Info {
 	return downloads.Info{
-		URL:     "/downloadURL",
-		Size:    "666",
-		Skipped: false,
 		Private: "@£$%^&*()_+",
 	}
 }
@@ -86,52 +68,52 @@ func infoWithInvalidPrivateURL() downloads.Info {
 var (
 	publishedDatasetDownloadPublicURL = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]map[string]downloads.Info{"csv": {downloads.VariantDefault: infoWithPublicURL(testPublicDatasetDownload)}},
+		Available:   map[string]downloads.Info{"csv": infoWithPublicURL(testPublicDatasetDownload)},
 	}
 
 	publishedImageDownloadPublicURL = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]map[string]downloads.Info{"png": {"1280x720": infoWithPublicURL(testPublicImageDownload)}},
+		Available:   map[string]downloads.Info{"1280x720": infoWithPublicURL(testPublicImageDownload)},
 	}
 
 	publishedDatasetDownloadPrivateURL = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]map[string]downloads.Info{"csv": {downloads.VariantDefault: infoWithPrivateURL(testPrivateCsvS3Key)}},
+		Available:   map[string]downloads.Info{"csv": infoWithPrivateURL(testPrivateCsvS3Key)},
 	}
 
 	publishedImageDownloadPrivateURL = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]map[string]downloads.Info{"png": {"1280x720": infoWithPrivateURL(testPrivatePngS3Key)}},
+		Available:   map[string]downloads.Info{"1280x720": infoWithPrivateURL(testPrivatePngS3Key)},
 	}
 
 	unpublishedDatasetDownloadPrivateLink = downloads.Model{
 		IsPublished: false,
-		Available:   map[string]map[string]downloads.Info{"csv": {downloads.VariantDefault: infoWithPrivateURL(testPrivateCsvS3Key)}},
+		Available:   map[string]downloads.Info{"csv": infoWithPrivateURL(testPrivateCsvS3Key)},
 	}
 
 	unpublishedImageDownloadPrivateLink = downloads.Model{
 		IsPublished: false,
-		Available:   map[string]map[string]downloads.Info{"png": {"1280x720": infoWithPrivateURL(testPrivatePngS3Key)}},
+		Available:   map[string]downloads.Info{"1280x720": infoWithPrivateURL(testPrivatePngS3Key)},
 	}
 
 	publishedDatasetDownloadNoURLs = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]map[string]downloads.Info{"csv": {downloads.VariantDefault: infoWithNoURLs()}},
+		Available:   map[string]downloads.Info{"csv": {}},
 	}
 
 	publishedImageDownloadNoURLs = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]map[string]downloads.Info{"png": {"1280x720": infoWithNoURLs()}},
+		Available:   map[string]downloads.Info{"1280x720": {}},
 	}
 
 	publishedDatasetDownloadInvalidPrivateURL = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]map[string]downloads.Info{"csv": {downloads.VariantDefault: infoWithInvalidPrivateURL()}},
+		Available:   map[string]downloads.Info{"csv": infoWithInvalidPrivateURL()},
 	}
 
 	publishedImageDownloadInvalidPrivateURL = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]map[string]downloads.Info{"png": {"1280x720": infoWithInvalidPrivateURL()}},
+		Available:   map[string]downloads.Info{"1280x720": infoWithInvalidPrivateURL()},
 	}
 )
 

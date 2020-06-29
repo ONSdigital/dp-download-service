@@ -2,7 +2,6 @@ package downloads
 
 import (
 	"errors"
-	"strconv"
 	"testing"
 
 	"github.com/ONSdigital/dp-api-clients-go/image"
@@ -55,7 +54,7 @@ func TestGetDownloadsForImage(t *testing.T) {
 	})
 
 	Convey("should return publish false if image not published", t, func() {
-		imgDownload := getTestImageDownload()
+		imgDownload := getTestImageDownload(false)
 		image := getTestImage(false, &imgDownload)
 
 		imgCli := successfulImageClient(ctrl, testImageDownloadParams, image)
@@ -71,15 +70,12 @@ func TestGetDownloadsForImage(t *testing.T) {
 		downloads, err := d.Get(nil, testImageDownloadParams, TypeImage)
 
 		So(downloads.Available, ShouldHaveLength, 1)
-		img, found := downloads.Available[testExt][testVariant]
+		img, found := downloads.Available[testVariant]
 		So(found, ShouldBeTrue)
 
 		So(img, ShouldResemble, Info{
-			URL:     imgDownload.Href,
-			Size:    strconv.Itoa(imgDownload.Size),
-			Public:  imgDownload.Public,
+			Public:  imgDownload.Href,
 			Private: imgDownload.Private,
-			Skipped: false,
 		})
 
 		So(downloads.IsPublished, ShouldBeFalse)
@@ -87,7 +83,7 @@ func TestGetDownloadsForImage(t *testing.T) {
 	})
 
 	Convey("should return expected values if downloads is not empty", t, func() {
-		imgDownload := getTestImageDownload()
+		imgDownload := getTestImageDownload(true)
 		img := getTestImage(true, &imgDownload)
 
 		imgCli := successfulImageClient(ctrl, testImageDownloadParams, img)
@@ -104,15 +100,12 @@ func TestGetDownloadsForImage(t *testing.T) {
 
 		So(downloads.Available, ShouldHaveLength, 1)
 
-		csv, found := downloads.Available[testExt][testVariant]
+		csv, found := downloads.Available[testVariant]
 		So(found, ShouldBeTrue)
 
 		So(csv, ShouldResemble, Info{
-			URL:     imgDownload.Href,
-			Size:    strconv.Itoa(imgDownload.Size),
-			Public:  imgDownload.Public,
+			Public:  imgDownload.Href,
 			Private: imgDownload.Private,
-			Skipped: false,
 		})
 
 		So(downloads.IsPublished, ShouldBeTrue)
@@ -140,11 +133,11 @@ func TestGetDownloadsForImage(t *testing.T) {
 	})
 }
 
-func getTestImageDownload() image.ImageDownload {
+func getTestImageDownload(isPublic bool) image.ImageDownload {
 	return image.ImageDownload{
 		Href:    "/downloadURL",
 		Size:    666,
-		Public:  "/public/download/url",
+		Public:  isPublic,
 		Private: "/private/download/url",
 	}
 }
@@ -156,8 +149,8 @@ func getTestImage(isPublished bool, dl *image.ImageDownload) image.Image {
 	}
 
 	if dl != nil {
-		i.Downloads = map[string]map[string]image.ImageDownload{
-			testExt: {testVariant: *dl},
+		i.Downloads = map[string]image.ImageDownload{
+			testVariant: *dl,
 		}
 	}
 	return i

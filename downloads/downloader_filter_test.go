@@ -61,15 +61,12 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
 
 		So(downloads.Available, ShouldHaveLength, 1)
-		csv, found := downloads.Available["csv"][VariantDefault]
+		csv, found := downloads.Available["csv"]
 		So(found, ShouldBeTrue)
 
 		So(csv, ShouldResemble, Info{
-			URL:     csvDownload.URL,
-			Size:    csvDownload.Size,
 			Public:  csvDownload.Public,
 			Private: csvDownload.Private,
-			Skipped: csvDownload.Skipped,
 		})
 
 		So(downloads.IsPublished, ShouldBeFalse)
@@ -94,15 +91,12 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 
 		So(downloads.Available, ShouldHaveLength, 1)
 
-		csv, found := downloads.Available["csv"][VariantDefault]
+		csv, found := downloads.Available["csv"]
 		So(found, ShouldBeTrue)
 
 		So(csv, ShouldResemble, Info{
-			URL:     csvDownload.URL,
-			Size:    csvDownload.Size,
 			Public:  csvDownload.Public,
 			Private: csvDownload.Private,
-			Skipped: csvDownload.Skipped,
 		})
 
 		So(downloads.IsPublished, ShouldBeTrue)

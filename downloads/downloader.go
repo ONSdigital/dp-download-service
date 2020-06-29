@@ -2,7 +2,6 @@ package downloads
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
@@ -27,9 +26,6 @@ type ImageClient interface {
 	GetImage(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string) (m image.Image, err error)
 }
 
-// VariantDefault is the value used by downloads that define a single variant (e.g. datasets)
-const VariantDefault = "default"
-
 // FileType - iota enum of possible file types that can be download
 type FileType int
 
@@ -41,19 +37,16 @@ const (
 )
 
 // Model is a struct that contains all the required information to download a file.
-// Available is a map of available downloads, where the outer key corresponds to the file extension, and the inner key corresponds to a variant
+// Available is a map of available downloads for the model.
 type Model struct {
-	Available   map[string]map[string]Info
+	Available   map[string]Info
 	IsPublished bool
 }
 
-// Info contains the necessary information for a particular download
+// Info contains the public and private URLs to download file, of a generic type (filter, dataset version, image, ...)
 type Info struct {
-	URL     string `json:"href"`
-	Size    string `json:"size"`
-	Public  string `json:"public,omitempty"`
-	Private string `json:"private,omitempty"`
-	Skipped bool   `json:"skipped,omitempty"`
+	Public  string
+	Private string
 }
 
 // Parameters is the union of required paramters to perform all downloads
@@ -118,12 +111,16 @@ func (d Downloader) getFilterOutputDownloads(ctx context.Context, p Parameters) 
 		return downloads, err
 	}
 
-	available := make(map[string]map[string]Info)
+	// map filter outputs to Info structs
+	available := make(map[string]Info)
 	for k, v := range fo.Downloads {
-		available[k] = make(map[string]Info)
-		available[k][VariantDefault] = Info(v)
+		available[k] = Info{
+			Private: v.Private,
+			Public:  v.Public,
+		}
 	}
 
+	// The filter output will be considered published (available for public downloads), when it is in 'published' state.
 	return Model{
 		IsPublished: fo.IsPublished,
 		Available:   available,
@@ -139,19 +136,16 @@ func (d Downloader) getDatasetVersionDownloads(ctx context.Context, p Parameters
 		return downloads, err
 	}
 
-	available := make(map[string]map[string]Info)
+	// map dataset version to Info structs
+	available := make(map[string]Info)
 	for k, v := range version.Downloads {
-		available[k] = make(map[string]Info)
-		datasetDownloadWithSkipped := Info{
-			URL:     v.URL,
-			Size:    v.Size,
+		available[k] = Info{
 			Public:  v.Public,
 			Private: v.Private,
-			Skipped: false,
 		}
-		available[k][VariantDefault] = datasetDownloadWithSkipped
 	}
 
+	// The dataset will be considered published (available for public downloads), when it is in 'published' state.
 	return Model{
 		IsPublished: "published" == version.State,
 		Available:   available,
@@ -167,27 +161,23 @@ func (d Downloader) getImageDownloads(ctx context.Context, p Parameters) (Model,
 		return downloads, err
 	}
 
-	available := make(map[string]map[string]Info)
-	for ext, extVal := range image.Downloads {
-		available[ext] = make(map[string]Info)
-		for variant, variantVal := range extVal {
-			available[ext][variant] = Info{
-				URL:     variantVal.Href,
-				Size:    strconv.Itoa(variantVal.Size),
-				Public:  variantVal.Public,
-				Private: variantVal.Private,
-				Skipped: false,
-			}
+	// map image downloads to map of Info structs, assumign Href is the public URL when the image is published or completed
+	available := make(map[string]Info)
+	for k, v := range image.Downloads {
+		available[k] = Info{
+			Public:  v.Href,
+			Private: v.Private,
 		}
 	}
 
+	// The image will be considered published (available for public downloads), when it is in 'published' or 'completed' state.
 	return Model{
-		IsPublished: "published" == image.State,
+		IsPublished: ("published" == image.State || "completed" == image.State),
 		Available:   available,
 	}, nil
 }
 
 // IsPublicLinkAvailable return true if public URI for the requested extension is available and the object is published
-func (m Model) IsPublicLinkAvailable(extension, variant string) bool {
-	return len(m.Available[extension][variant].Public) > 0 && m.IsPublished
+func (m Model) IsPublicLinkAvailable(variant string) bool {
+	return len(m.Available[variant].Public) > 0 && m.IsPublished
 }
