@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"github.com/ONSdigital/go-ns/common"
 	"io"
 	"net/http"
 	"net/url"
@@ -10,7 +11,6 @@ import (
 	"github.com/ONSdigital/dp-download-service/downloads"
 	dphandlers "github.com/ONSdigital/dp-net/handlers"
 
-	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
 )
@@ -217,7 +217,7 @@ func (d Download) authenticate(r *http.Request, logData map[string]interface{}) 
 	var authorised bool
 
 	if d.IsPublishing {
-		authorised = dphttp.IsCallerPresent(r.Context())
+		authorised = common.IsCallerPresent(r.Context())
 	}
 
 	logData["authenticated"] = authorised
