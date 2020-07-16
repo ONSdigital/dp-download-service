@@ -17,8 +17,9 @@ import (
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/handlers"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dphandlers "github.com/ONSdigital/dp-net/handlers"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/identity"
-	"github.com/ONSdigital/go-ns/server"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
 
@@ -29,9 +30,10 @@ import (
 type Download struct {
 	datasetClient downloads.DatasetClient
 	filterClient  downloads.FilterClient
+	imageClient   downloads.ImageClient
 	vaultClient   content.VaultClient
 	router        *mux.Router
-	server        *server.Server
+	server        *dphttp.Server
 	shutdown      time.Duration
 	healthCheck   *healthcheck.HealthCheck
 }
@@ -43,6 +45,7 @@ func Create(
 	cfg config.Config,
 	dc downloads.DatasetClient,
 	fc downloads.FilterClient,
+	ic downloads.ImageClient,
 	s3 content.S3Client,
 	vc content.VaultClient,
 	zc *health.Client,
@@ -50,24 +53,26 @@ func Create(
 
 	router := mux.NewRouter()
 
-	datasetDownloads := downloads.Downloader{
+	downloader := downloads.Downloader{
 		FilterCli:  fc,
 		DatasetCli: dc,
+		ImageCli:   ic,
 	}
 
 	s3c := content.NewStreamWriter(s3, vc, cfg.VaultPath)
 
 	d := handlers.Download{
-		DatasetDownloads: datasetDownloads,
-		S3Content:        s3c,
-		IsPublishing:     cfg.IsPublishing,
+		Downloader:   downloader,
+		S3Content:    s3c,
+		IsPublishing: cfg.IsPublishing,
 	}
 
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.Do("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.Do("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.Do("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.Do("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.Do("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.DoDatasetVersion("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.DoDatasetVersion("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.DoDatasetVersion("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoFilterOutput("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/images/{imageID}/{variant}/{name}.{ext}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.HandleFunc("/health", hc.Handler)
 
 	// Create new middleware chain with whitelisted handler for /health endpoint
@@ -83,11 +88,15 @@ func Create(
 		middlewareChain = middlewareChain.Append(corsHandler)
 	}
 
-	alice := middlewareChain.Then(router)
-	httpServer := server.New(cfg.BindAddr, alice)
+	r := middlewareChain.
+		Append(dphandlers.CheckHeader(dphandlers.UserAccess)).
+		Append(dphandlers.CheckHeader(dphandlers.CollectionID)).
+		Then(router)
+	httpServer := dphttp.NewServer(cfg.BindAddr, r)
 
 	return Download{
 		filterClient:  fc,
+		imageClient:   ic,
 		datasetClient: dc,
 		vaultClient:   vc,
 		router:        router,

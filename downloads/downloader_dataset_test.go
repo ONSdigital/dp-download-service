@@ -1,6 +1,7 @@
 package downloads
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
@@ -10,6 +11,7 @@ import (
 )
 
 var (
+	testErrDataset                   = errors.New("borked dataset")
 	testDatasetVersionDownloadParams = Parameters{
 		UserAuthToken:        "userAuthToken",
 		ServiceAuthToken:     "serviceAuthToken",
@@ -25,19 +27,21 @@ func TestGetDownloadForDataset(t *testing.T) {
 	defer ctrl.Finish()
 
 	Convey("should return error is dataset client get version returns an error", t, func() {
-		datasetCli := erroringDatasetClient(ctrl, testDatasetVersionDownloadParams, testError)
+		datasetCli := erroringDatasetClient(ctrl, testDatasetVersionDownloadParams, testErrDataset)
 		filterCli := filterOutputClientNeverInvoked(ctrl)
+		imgCli := imageClientNeverInvoked(ctrl)
 
 		d := Downloader{
 			DatasetCli: datasetCli,
 			FilterCli:  filterCli,
+			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams)
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion)
 
 		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeFalse)
-		So(err, ShouldResemble, testError)
+		So(err, ShouldResemble, testErrDataset)
 	})
 
 	Convey("should return published false if dataset state not published", t, func() {
@@ -46,22 +50,24 @@ func TestGetDownloadForDataset(t *testing.T) {
 
 		datasetCli := successfulDatasetClient(ctrl, testDatasetVersionDownloadParams, datasetVersion)
 		filterCli := filterOutputClientNeverInvoked(ctrl)
+		imgCli := imageClientNeverInvoked(ctrl)
 
 		d := Downloader{
 			DatasetCli: datasetCli,
 			FilterCli:  filterCli,
+			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams)
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion)
 
 		So(downloads.Available, ShouldHaveLength, 1)
 		actual, found := downloads.Available["csv"]
 		So(found, ShouldBeTrue)
 
-		So(actual.Skipped, ShouldBeFalse)
-		So(actual.URL, ShouldEqual, datasetDownload.URL)
-		So(actual.Private, ShouldEqual, datasetDownload.Private)
-		So(actual.Public, ShouldEqual, datasetDownload.Public)
+		So(actual, ShouldResemble, Info{
+			Public:  datasetDownload.Public,
+			Private: datasetDownload.Private,
+		})
 
 		So(downloads.IsPublished, ShouldBeFalse)
 		So(err, ShouldBeNil)
@@ -72,13 +78,15 @@ func TestGetDownloadForDataset(t *testing.T) {
 
 		datasetCli := successfulDatasetClient(ctrl, testDatasetVersionDownloadParams, datasetVersion)
 		filterCli := filterOutputClientNeverInvoked(ctrl)
+		imgCli := imageClientNeverInvoked(ctrl)
 
 		d := Downloader{
 			DatasetCli: datasetCli,
 			FilterCli:  filterCli,
+			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams)
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion)
 
 		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeFalse)
@@ -91,21 +99,25 @@ func TestGetDownloadForDataset(t *testing.T) {
 
 		datasetCli := successfulDatasetClient(ctrl, testDatasetVersionDownloadParams, datasetVersion)
 		filterCli := filterOutputClientNeverInvoked(ctrl)
+		imgCli := imageClientNeverInvoked(ctrl)
 
 		d := Downloader{
 			DatasetCli: datasetCli,
 			FilterCli:  filterCli,
+			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams)
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion)
 
 		So(downloads.Available, ShouldHaveLength, 1)
+
 		actual, found := downloads.Available["csv"]
 		So(found, ShouldBeTrue)
-		So(actual.Skipped, ShouldBeFalse)
-		So(actual.URL, ShouldEqual, datasetDownload.URL)
-		So(actual.Private, ShouldEqual, datasetDownload.Private)
-		So(actual.Public, ShouldEqual, datasetDownload.Public)
+
+		So(actual, ShouldResemble, Info{
+			Public:  datasetDownload.Public,
+			Private: datasetDownload.Private,
+		})
 
 		So(downloads.IsPublished, ShouldBeFalse)
 		So(err, ShouldBeNil)

@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	testError = errors.New("borked")
+	testErrFilter = errors.New("borked filter")
 
 	testFilterOutputDownloadParams = Parameters{
 		UserAuthToken:        "userAuthToken",
@@ -27,19 +27,21 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 	defer ctrl.Finish()
 
 	Convey("should return the error if filter client get output is unsuccessful", t, func() {
-		filterCli := erroringFilterOutputClient(ctrl, testFilterOutputDownloadParams, testError)
+		filterCli := erroringFilterOutputClient(ctrl, testFilterOutputDownloadParams, testErrFilter)
 		datasetCli := datasetClientNeverInvoked(ctrl)
+		imgCli := imageClientNeverInvoked(ctrl)
 
 		d := Downloader{
-			FilterCli:  filterCli,
 			DatasetCli: datasetCli,
+			FilterCli:  filterCli,
+			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
 
 		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeFalse)
-		So(err, ShouldResemble, testError)
+		So(err, ShouldResemble, testErrFilter)
 	})
 
 	Convey("should return publish false if dataset not published", t, func() {
@@ -48,54 +50,23 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 
 		filterCli := successfulFilterOutputClient(ctrl, testFilterOutputDownloadParams, filterOutput)
 		datasetCli := datasetClientNeverInvoked(ctrl)
+		imgCli := imageClientNeverInvoked(ctrl)
 
 		d := Downloader{
-			FilterCli:  filterCli,
 			DatasetCli: datasetCli,
+			FilterCli:  filterCli,
+			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
-
-		csv, found := downloads.Available["csv"]
-		So(found, ShouldBeTrue)
-
-		So(csv, ShouldResemble, Info{
-			URL:     csvDownload.URL,
-			Size:    csv.Size,
-			Public:  csv.Public,
-			Private: csv.Private,
-			Skipped: csv.Skipped,
-		})
-
-		So(downloads.Available, ShouldHaveLength, 1)
-		So(downloads.IsPublished, ShouldBeFalse)
-		So(err, ShouldBeNil)
-	})
-
-	Convey("should return publish false if dataset not published", t, func() {
-		csvDownload := getTestFilterDownload()
-		filterOutput := getTestDatasetFilterOutput(false, &csvDownload)
-
-		filterCli := successfulFilterOutputClient(ctrl, testFilterOutputDownloadParams, filterOutput)
-		datasetCli := datasetClientNeverInvoked(ctrl)
-
-		d := Downloader{
-			FilterCli:  filterCli,
-			DatasetCli: datasetCli,
-		}
-
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
 
 		So(downloads.Available, ShouldHaveLength, 1)
 		csv, found := downloads.Available["csv"]
 		So(found, ShouldBeTrue)
 
 		So(csv, ShouldResemble, Info{
-			URL:     csvDownload.URL,
-			Size:    csv.Size,
-			Public:  csv.Public,
-			Private: csv.Private,
-			Skipped: csv.Skipped,
+			Public:  csvDownload.Public,
+			Private: csvDownload.Private,
 		})
 
 		So(downloads.IsPublished, ShouldBeFalse)
@@ -108,13 +79,15 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 
 		filterCli := successfulFilterOutputClient(ctrl, testFilterOutputDownloadParams, filterOutput)
 		datasetCli := datasetClientNeverInvoked(ctrl)
+		imgCli := imageClientNeverInvoked(ctrl)
 
 		d := Downloader{
-			FilterCli:  filterCli,
 			DatasetCli: datasetCli,
+			FilterCli:  filterCli,
+			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
 
 		So(downloads.Available, ShouldHaveLength, 1)
 
@@ -122,11 +95,8 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 		So(found, ShouldBeTrue)
 
 		So(csv, ShouldResemble, Info{
-			URL:     csvDownload.URL,
-			Size:    csv.Size,
-			Public:  csv.Public,
-			Private: csv.Private,
-			Skipped: csv.Skipped,
+			Public:  csvDownload.Public,
+			Private: csvDownload.Private,
 		})
 
 		So(downloads.IsPublished, ShouldBeTrue)
@@ -138,13 +108,15 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 
 		filterCli := successfulFilterOutputClient(ctrl, testFilterOutputDownloadParams, filterOutput)
 		datasetCli := datasetClientNeverInvoked(ctrl)
+		imgCli := imageClientNeverInvoked(ctrl)
 
 		d := Downloader{
-			FilterCli:  filterCli,
 			DatasetCli: datasetCli,
+			FilterCli:  filterCli,
+			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
 
 		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeTrue)
