@@ -17,10 +17,10 @@ var (
 
 //go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/content VaultClient,Writer,S3Client,S3ReadCloser
 
-// aliased to allow mockgen to create a mock impl for the tests
+// Writer is an io.Writer alias to allow mockgen to create a mock impl for the tests
 type Writer io.Writer
 
-// aliased to allow mockgen to create a mock impl for the tests
+// S3ReadCloser is an io.ReadCloser alias to allow mockgen to create a mock impl for the tests
 type S3ReadCloser io.ReadCloser
 
 // VaultClient is an interface to represent methods called to action upon vault
@@ -30,7 +30,7 @@ type VaultClient interface {
 
 // S3Client is an interface to represent methods called to retrieve from s3
 type S3Client interface {
-	GetWithPSK(key string, psk []byte) (io.ReadCloser, error)
+	GetWithPSK(key string, psk []byte) (io.ReadCloser, *int64, error)
 }
 
 //S3StreamWriter provides functionality for retrieving content from an S3 bucket. The content is streamed/decrypted and and written to the provided io.Writer
@@ -56,7 +56,7 @@ func (s S3StreamWriter) StreamAndWrite(ctx context.Context, filename string, w i
 		return err
 	}
 
-	s3ReadCloser, err := s.S3Client.GetWithPSK(filename, psk)
+	s3ReadCloser, _, err := s.S3Client.GetWithPSK(filename, psk)
 	if err != nil {
 		return err
 	}

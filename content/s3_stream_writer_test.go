@@ -235,13 +235,13 @@ func vaultClientAndValidKey(ctrl *gomock.Controller) (*mocks.MockVaultClient, []
 
 func s3ClientGetWithPSKReturnsError(ctrl *gomock.Controller, key string, psk []byte) (*mocks.MockS3Client, error) {
 	cli := mocks.NewMockS3Client(ctrl)
-	cli.EXPECT().GetWithPSK(key, psk).Times(1).Return(nil, testErr)
+	cli.EXPECT().GetWithPSK(key, psk).Times(1).Return(nil, nil, testErr)
 	return cli, testErr
 }
 
 func s3ClientGetWithPSKReturnsReader(ctrl *gomock.Controller, key string, psk []byte, r S3ReadCloser) *mocks.MockS3Client {
 	cli := mocks.NewMockS3Client(ctrl)
-	cli.EXPECT().GetWithPSK(key, psk).Times(1).Return(r, nil)
+	cli.EXPECT().GetWithPSK(key, psk).Times(1).Return(r, nil, nil)
 	return cli
 }
 

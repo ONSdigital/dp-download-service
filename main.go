@@ -12,6 +12,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-api-clients-go/image"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/log.go/log"
@@ -52,6 +53,9 @@ func main() {
 	// Create Filter API client.
 	fc := filter.New(cfg.FilterAPIURL)
 
+	// Create Image API client.
+	ic := image.NewAPIClient(cfg.ImageAPIURL)
+
 	// Create Health client for Zebedee only if we are in publishing mode.
 	var zc *health.Client
 	if cfg.IsPublishing {
@@ -71,7 +75,7 @@ func main() {
 		os.Exit(1)
 	}
 	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
-	if err = registerCheckers(ctx, &hc, cfg.IsPublishing, dc, vc, fc, zc, s3); err != nil {
+	if err = registerCheckers(ctx, &hc, cfg.IsPublishing, dc, vc, fc, ic, zc, s3); err != nil {
 		os.Exit(1)
 	}
 
@@ -81,6 +85,7 @@ func main() {
 		*cfg,
 		dc,
 		fc,
+		ic,
 		s3,
 		vc,
 		zc,
@@ -95,6 +100,7 @@ func registerCheckers(ctx context.Context, hc *healthcheck.HealthCheck, isPublis
 	dc *dataset.Client,
 	vc *vault.Client,
 	fc *filter.Client,
+	ic *image.Client,
 	zc *health.Client,
 	s3 *s3client.S3) error {
 
@@ -113,6 +119,11 @@ func registerCheckers(ctx context.Context, hc *healthcheck.HealthCheck, isPublis
 	if err := hc.AddCheck("Filter API", fc.Checker); err != nil {
 		hasErrors = true
 		log.Event(ctx, "error adding check for filter api", log.ERROR, log.Error(err))
+	}
+
+	if err := hc.AddCheck("Image API", ic.Checker); err != nil {
+		hasErrors = true
+		log.Event(ctx, "error adding check for image api", log.ERROR, log.Error(err))
 	}
 
 	if isPublishing {

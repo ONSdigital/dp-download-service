@@ -110,12 +110,13 @@ func (m *MockS3Client) EXPECT() *MockS3ClientMockRecorder {
 }
 
 // GetWithPSK mocks base method
-func (m *MockS3Client) GetWithPSK(arg0 string, arg1 []byte) (io.ReadCloser, error) {
+func (m *MockS3Client) GetWithPSK(arg0 string, arg1 []byte) (io.ReadCloser, *int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetWithPSK", arg0, arg1)
 	ret0, _ := ret[0].(io.ReadCloser)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(*int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetWithPSK indicates an expected call of GetWithPSK

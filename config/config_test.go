@@ -17,6 +17,7 @@ func getConfigEnv() map[string]string {
 		"DOWNLOAD_SERVICE_TOKEN":       os.Getenv("DOWNLOAD_SERVICE_TOKEN"),
 		"DATASET_AUTH_TOKEN":           os.Getenv("DATASET_AUTH_TOKEN"),
 		"FILTER_API_URL":               os.Getenv("FILTER_API_URL"),
+		"IMAGE_API_URL":                os.Getenv("IMAGE_API_URL"),
 		"GRACEFUL_SHUTDOWN_TIMEOUT":    os.Getenv("GRACEFUL_SHUTDOWN_TIMEOUT"),
 		"HEALTHCHECK_INTERVAL":         os.Getenv("HEALTHCHECK_INTERVAL"),
 		"HEALTHCHECK_CRITICAL_TIMEOUT": os.Getenv("HEALTHCHECK_CRITICAL_TIMEOUT"),
@@ -61,6 +62,7 @@ func TestSpec(t *testing.T) {
 				So(cfg.DatasetAuthToken, ShouldEqual, "FD0108EA-825D-411C-9B1D-41EF7727F465")
 				So(cfg.DownloadServiceToken, ShouldEqual, "QB0108EZ-825D-412C-9B1D-41EF7747F462")
 				So(cfg.FilterAPIURL, ShouldEqual, "http://localhost:22100")
+				So(cfg.ImageAPIURL, ShouldEqual, "http://localhost:24700")
 				So(cfg.GracefulShutdownTimeout, ShouldEqual, 5*time.Second)
 				So(cfg.HealthCheckInterval, ShouldEqual, 30*time.Second)
 				So(cfg.HealthCheckCriticalTimeout, ShouldEqual, 90*time.Second)
