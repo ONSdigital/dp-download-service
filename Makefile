@@ -21,22 +21,32 @@ BUILD_TIME=$(shell date +%s)
 GIT_COMMIT=$(shell git rev-parse HEAD)
 VERSION ?= $(shell git tag --points-at HEAD | grep ^v | head -n 1)
 
+.PHONY: all
+all: audit test build
+
+.PHONY: audit
+audit:
+	nancy go.sum
+
+.PHONY: build
 build:
 	@mkdir -p $(BUILD_ARCH)/$(BIN_DIR)
 	go build -o $(BUILD_ARCH)/$(BIN_DIR)/$(MAIN) -ldflags="-X 'main.BuildTime=$(BUILD_TIME)' -X 'main.GitCommit=$(GIT_COMMIT)' -X 'main.Version=$(VERSION)'"
 
+.PHONY: debug
 debug: build
 	HUMAN_LOG=1 VAULT_TOKEN=$(APP_TOKEN) VAULT_ADDR=$(VAULT_ADDR) go run -ldflags="-X 'main.BuildTime=$(BUILD_TIME)' -X 'main.GitCommit=$(GIT_COMMIT)' -X 'main.Version=$(VERSION)'" -race main.go
 
+.PHONY: acceptance
 acceptance:
 	HUMAN_LOG=1 VAULT_TOKEN=$(APP_TOKEN) VAULT_ADDR=$(VAULT_ADDR) go run main.go
 
+.PHONY: test
 test:
 	go test -cover $(shell go list ./... | grep -v /vendor/)
 
+.PHONY: vault
 vault:
 	@echo "$(VAULT_POLICY)"
 	@echo "$(TOKEN_INFO)"
 	@echo "$(APP_TOKEN)"
-
-.PHONY: vault debug build test
