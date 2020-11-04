@@ -262,28 +262,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.DoDatasetVersion("csv", mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
-		So(w.Code, ShouldEqual, http.StatusOK)
-		So(w.Body.Bytes(), ShouldResemble, testCsvContent)
-	})
-
-	Convey("Given a private link to the dataset download exists and the dataset is published then the file content is written to the response body", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
-		w := httptest.NewRecorder()
-		r := mux.NewRouter()
-
-		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
-
-		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeDatasetVersion, publishedDatasetDownloadPrivateURL)
-		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivateCsvS3Key, testCsvContent)
-
-		d := Download{
-			Downloader: dl,
-			S3Content:  s3C,
-		}
-
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.DoDatasetVersion("csv", mockServiceAuthToken, mockDownloadToken))
-		r.ServeHTTP(w, req)
-
+		So(w.Header().Get("Content-Disposition"), ShouldEqual, "attachment; filename=my-dataset.csv")
 		So(w.Code, ShouldEqual, http.StatusOK)
 		So(w.Body.Bytes(), ShouldResemble, testCsvContent)
 	})
@@ -325,6 +304,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 		chain.ServeHTTP(w, req)
 
+		So(w.Header().Get("Content-Disposition"), ShouldEqual, "attachment; filename=my-dataset.csv")
 		So(w.Code, ShouldEqual, http.StatusOK)
 		So(w.Body.Bytes(), ShouldResemble, testCsvContent)
 	})
