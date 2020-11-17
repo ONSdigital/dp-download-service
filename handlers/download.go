@@ -3,10 +3,12 @@ package handlers
 import (
 	"context"
 	"errors"
-	"github.com/ONSdigital/go-ns/common"
 	"io"
 	"net/http"
 	"net/url"
+	"path"
+
+	"github.com/ONSdigital/go-ns/common"
 
 	"github.com/ONSdigital/dp-download-service/downloads"
 	dphandlers "github.com/ONSdigital/dp-net/handlers"
@@ -142,6 +144,8 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 
 			filename := privateURL.Path
 			logData["filename"] = filename
+
+			w.Header().Set("Content-Disposition", "attachment; filename="+path.Base(filename))
 
 			err = d.S3Content.StreamAndWrite(ctx, filename, w)
 			if err != nil {
