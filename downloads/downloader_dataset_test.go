@@ -10,6 +10,15 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+const (
+	testCSVPublicUrl        = "http://public.localhost/public/filename.csv"
+	testCSVPrivateUrl       = "http://private.localhost/private/filename.csv"
+	testCSVPrivateFilename  = "filename.csv"
+	testCSVPrivateS3Path    = "/private/filename.csv"
+	testCSVPrivateVaultPath = "/filename.csv"
+	testBadPrivateURL       = "@£$%^&*()_+"
+)
+
 var (
 	testErrDataset                   = errors.New("borked dataset")
 	testDatasetVersionDownloadParams = Parameters{
@@ -37,11 +46,38 @@ func TestGetDownloadForDataset(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion)
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion, "")
 
-		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeFalse)
+		So(downloads.Public, ShouldBeBlank)
+		So(downloads.PrivateFilename, ShouldBeBlank)
+		So(downloads.PrivateS3Path, ShouldBeBlank)
+		So(downloads.PrivateVaultPath, ShouldBeBlank)
 		So(err, ShouldResemble, testErrDataset)
+	})
+
+	Convey("should return error if privateURL is invalid", t, func() {
+		datasetDownload := testDatasetDownloadBadURL()
+		datasetVersion := testDatasetVersion("not published", &datasetDownload)
+
+		datasetCli := successfulDatasetClient(ctrl, testDatasetVersionDownloadParams, datasetVersion)
+		filterCli := filterOutputClientNeverInvoked(ctrl)
+		imgCli := imageClientNeverInvoked(ctrl)
+
+		d := Downloader{
+			DatasetCli: datasetCli,
+			FilterCli:  filterCli,
+			ImageCli:   imgCli,
+		}
+
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion, "csv")
+
+		So(downloads.IsPublished, ShouldBeFalse)
+		So(downloads.Public, ShouldBeBlank)
+		So(downloads.PrivateFilename, ShouldBeBlank)
+		So(downloads.PrivateS3Path, ShouldBeBlank)
+		So(downloads.PrivateVaultPath, ShouldBeBlank)
+		So(err, ShouldNotBeNil)
 	})
 
 	Convey("should return published false if dataset state not published", t, func() {
@@ -58,18 +94,13 @@ func TestGetDownloadForDataset(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion)
-
-		So(downloads.Available, ShouldHaveLength, 1)
-		actual, found := downloads.Available["csv"]
-		So(found, ShouldBeTrue)
-
-		So(actual, ShouldResemble, Info{
-			Public:  datasetDownload.Public,
-			Private: datasetDownload.Private,
-		})
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion, "csv")
 
 		So(downloads.IsPublished, ShouldBeFalse)
+		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
+		So(downloads.PrivateFilename, ShouldResemble, testCSVPrivateFilename)
+		So(downloads.PrivateS3Path, ShouldResemble, testCSVPrivateS3Path)
+		So(downloads.PrivateVaultPath, ShouldResemble, testCSVPrivateVaultPath)
 		So(err, ShouldBeNil)
 	})
 
@@ -86,10 +117,13 @@ func TestGetDownloadForDataset(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion)
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion, "csv")
 
-		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeFalse)
+		So(downloads.Public, ShouldBeBlank)
+		So(downloads.PrivateFilename, ShouldBeBlank)
+		So(downloads.PrivateS3Path, ShouldBeBlank)
+		So(downloads.PrivateVaultPath, ShouldBeBlank)
 		So(err, ShouldBeNil)
 	})
 
@@ -107,19 +141,13 @@ func TestGetDownloadForDataset(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion)
-
-		So(downloads.Available, ShouldHaveLength, 1)
-
-		actual, found := downloads.Available["csv"]
-		So(found, ShouldBeTrue)
-
-		So(actual, ShouldResemble, Info{
-			Public:  datasetDownload.Public,
-			Private: datasetDownload.Private,
-		})
+		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion, "csv")
 
 		So(downloads.IsPublished, ShouldBeFalse)
+		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
+		So(downloads.PrivateFilename, ShouldResemble, testCSVPrivateFilename)
+		So(downloads.PrivateS3Path, ShouldResemble, testCSVPrivateS3Path)
+		So(downloads.PrivateVaultPath, ShouldResemble, testCSVPrivateVaultPath)
 		So(err, ShouldBeNil)
 	})
 }
@@ -144,8 +172,17 @@ func testDatasetDownload() dataset.Download {
 	return dataset.Download{
 		URL:     "/abc",
 		Size:    "1",
-		Public:  "/public",
-		Private: "/private",
+		Public:  testCSVPublicUrl,
+		Private: testCSVPrivateUrl,
+	}
+}
+
+func testDatasetDownloadBadURL() dataset.Download {
+	return dataset.Download{
+		URL:     "/abc",
+		Size:    "1",
+		Public:  testCSVPublicUrl,
+		Private: testBadPrivateURL,
 	}
 }
 

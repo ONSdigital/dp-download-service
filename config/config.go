@@ -37,7 +37,7 @@ func Get() (*Config, error) {
 	}
 
 	cfg = &Config{
-		BindAddr:                   ":23600",
+		BindAddr:                   "localhost:23600",
 		AwsRegion:                  "eu-west-1",
 		BucketName:                 "csv-exported",
 		DatasetAPIURL:              "http://localhost:22000",

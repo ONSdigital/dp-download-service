@@ -19,7 +19,6 @@ import (
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphandlers "github.com/ONSdigital/dp-net/handlers"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
 
@@ -72,7 +71,7 @@ func Create(
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.DoDatasetVersion("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoFilterOutput("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/images/{imageID}/{variant}/{name}.{ext}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.HandleFunc("/health", hc.Handler)
 
 	// Create new middleware chain with whitelisted handler for /health endpoint
@@ -81,7 +80,7 @@ func Create(
 	// For non-whitelisted endpoints, do identityHandler or corsHandler
 	if cfg.IsPublishing {
 		log.Event(ctx, "private endpoints are enabled. using identity middleware", log.INFO)
-		identityHandler := identity.HandlerForHTTPClient(clientsidentity.NewAPIClient(zc.Client, cfg.ZebedeeURL))
+		identityHandler := dphandlers.IdentityWithHTTPClient(clientsidentity.NewWithHealthClient(zc))
 		middlewareChain = middlewareChain.Append(identityHandler)
 	} else {
 		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))

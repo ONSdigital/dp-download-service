@@ -2,6 +2,9 @@ package downloads
 
 import (
 	"context"
+	"fmt"
+	"net/url"
+	"path/filepath"
 
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
@@ -23,7 +26,7 @@ type DatasetClient interface {
 
 // ImageClient is an interface to represent methods called to action on the image api
 type ImageClient interface {
-	GetImage(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string) (m image.Image, err error)
+	GetDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (m image.ImageDownload, err error)
 }
 
 // FileType - iota enum of possible file types that can be download
@@ -37,16 +40,12 @@ const (
 )
 
 // Model is a struct that contains all the required information to download a file.
-// Available is a map of available downloads for the model.
 type Model struct {
-	Available   map[string]Info
-	IsPublished bool
-}
-
-// Info contains the public and private URLs to download file, of a generic type (filter, dataset version, image, ...)
-type Info struct {
-	Public  string
-	Private string
+	IsPublished      bool
+	Public           string
+	PrivateS3Path    string
+	PrivateVaultPath string
+	PrivateFilename  string
 }
 
 // Parameters is the union of required paramters to perform all downloads
@@ -61,8 +60,7 @@ type Parameters struct {
 	Version              string
 	ImageID              string
 	Variant              string
-	Name                 string
-	Ext                  string
+	Filename             string
 }
 
 // Downloader is a struct that contains the clients to request metadata about the downloads
@@ -73,16 +71,15 @@ type Downloader struct {
 }
 
 // Get requests the required metadata using a client depending on the provided paramters
-func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType) (Model, error) {
+func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType, variant string) (Model, error) {
 
 	if fileType == TypeImage {
 		log.Event(ctx, "getting image downloads", log.INFO, log.Data{
 			"image_id": p.ImageID,
 			"variant":  p.Variant,
-			"name":     p.Name,
-			"ext":      p.Ext,
+			"filename": p.Filename,
 		})
-		return d.getImageDownloads(ctx, p)
+		return d.getImageDownload(ctx, p, variant)
 	}
 
 	if fileType == TypeFilterOutput {
@@ -90,7 +87,7 @@ func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType) (M
 			"filter_output_id": p.FilterOutputID,
 			"collection_id":    p.CollectionID,
 		})
-		return d.getFilterOutputDownloads(ctx, p)
+		return d.getFilterOutputDownload(ctx, p, variant)
 	}
 
 	log.Event(ctx, "getting downloads for dataset version", log.INFO, log.Data{
@@ -99,11 +96,11 @@ func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType) (M
 		"version":       p.Version,
 		"collection_id": p.CollectionID,
 	})
-	return d.getDatasetVersionDownloads(ctx, p)
+	return d.getDatasetVersionDownload(ctx, p, variant)
 }
 
-//getFilterOutputDownloads get the Model for a filter output job.
-func (d Downloader) getFilterOutputDownloads(ctx context.Context, p Parameters) (Model, error) {
+//getFilterOutputDownload gets the Model for a filter output job.
+func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, variant string) (Model, error) {
 	var downloads Model
 
 	fo, err := d.FilterCli.GetOutput(ctx, p.UserAuthToken, p.ServiceAuthToken, p.DownloadServiceToken, p.CollectionID, p.FilterOutputID)
@@ -111,24 +108,28 @@ func (d Downloader) getFilterOutputDownloads(ctx context.Context, p Parameters) 
 		return downloads, err
 	}
 
-	// map filter outputs to Info structs
-	available := make(map[string]Info)
-	for k, v := range fo.Downloads {
-		available[k] = Info{
-			Private: v.Private,
-			Public:  v.Public,
-		}
+	model := Model{
+		IsPublished: fo.IsPublished,
 	}
 
-	// The filter output will be considered published (available for public downloads), when it is in 'published' state.
-	return Model{
-		IsPublished: fo.IsPublished,
-		Available:   available,
-	}, nil
+	v, ok := fo.Downloads[variant]
+	if ok {
+		// The filter output will be considered published (available for public downloads), when it is in 'published' state.
+		model.Public = v.Public
+		s3Path, filename, err := parseURL(v.Private)
+		if err != nil {
+			return downloads, err
+		}
+		model.PrivateS3Path = s3Path
+		model.PrivateVaultPath = "/" + filename
+		model.PrivateFilename = filename
+	}
+
+	return model, nil
 }
 
-//getDatasetVersionDownloads get the downloads for a dataset version
-func (d Downloader) getDatasetVersionDownloads(ctx context.Context, p Parameters) (Model, error) {
+//getDatasetVersionDownload gets the Model for a dataset version
+func (d Downloader) getDatasetVersionDownload(ctx context.Context, p Parameters, variant string) (Model, error) {
 	var downloads Model
 
 	version, err := d.DatasetCli.GetVersion(ctx, p.UserAuthToken, p.ServiceAuthToken, p.DownloadServiceToken, p.CollectionID, p.DatasetID, p.Edition, p.Version)
@@ -136,48 +137,61 @@ func (d Downloader) getDatasetVersionDownloads(ctx context.Context, p Parameters
 		return downloads, err
 	}
 
-	// map dataset version to Info structs
-	available := make(map[string]Info)
-	for k, v := range version.Downloads {
-		available[k] = Info{
-			Public:  v.Public,
-			Private: v.Private,
-		}
+	model := Model{
+		IsPublished: "published" == version.State,
 	}
 
-	// The dataset will be considered published (available for public downloads), when it is in 'published' state.
-	return Model{
-		IsPublished: "published" == version.State,
-		Available:   available,
-	}, nil
+	v, ok := version.Downloads[variant]
+	if ok {
+		// The dataset will be considered published (available for public downloads), when it is in 'published' state.
+		model.Public = v.Public
+		s3Path, filename, err := parseURL(v.Private)
+		if err != nil {
+			return downloads, err
+		}
+		model.PrivateS3Path = s3Path
+		model.PrivateVaultPath = "/" + filename
+		model.PrivateFilename = filename
+	}
+
+	return model, nil
 }
 
-// getImageDownloads get the downloads for an image
-func (d Downloader) getImageDownloads(ctx context.Context, p Parameters) (Model, error) {
+// getImageDownload gets the Model for an image
+func (d Downloader) getImageDownload(ctx context.Context, p Parameters, variant string) (Model, error) {
 	var downloads Model
 
-	image, err := d.ImageCli.GetImage(ctx, p.UserAuthToken, p.ServiceAuthToken, p.CollectionID, p.ImageID)
+	imageVariant, err := d.ImageCli.GetDownloadVariant(ctx, p.UserAuthToken, p.ServiceAuthToken, p.CollectionID, p.ImageID, variant)
 	if err != nil {
 		return downloads, err
 	}
 
-	// map image downloads to map of Info structs, assumign Href is the public URL when the image is published or completed
-	available := make(map[string]Info)
-	for k, v := range image.Downloads {
-		available[k] = Info{
-			Public:  v.Href,
-			Private: v.Private,
-		}
+	privatePath := fmt.Sprintf("/images/%s/%s", p.ImageID, p.Variant)
+	downloads = Model{
+		// The variant will be considered published (available for public downloads), when it is in 'published' or 'completed' state.
+		IsPublished:      ("published" == imageVariant.State || "completed" == imageVariant.State),
+		PrivateVaultPath: privatePath,
+		PrivateS3Path:    privatePath,
+		PrivateFilename:  p.Filename,
+	}
+	if imageVariant.State == "completed" {
+		downloads.Public = imageVariant.Href
 	}
 
-	// The image will be considered published (available for public downloads), when it is in 'published' or 'completed' state.
-	return Model{
-		IsPublished: ("published" == image.State || "completed" == image.State),
-		Available:   available,
-	}, nil
+	return downloads, nil
 }
 
 // IsPublicLinkAvailable return true if public URI for the requested extension is available and the object is published
-func (m Model) IsPublicLinkAvailable(variant string) bool {
-	return len(m.Available[variant].Public) > 0 && m.IsPublished
+func (m Model) IsPublicLinkAvailable() bool {
+	return len(m.Public) > 0 && m.IsPublished
+}
+
+func parseURL(urlString string) (path string, filename string, err error) {
+	url, err := url.Parse(urlString)
+	if err != nil {
+		return
+	}
+	path = url.Path
+	filename = filepath.Base(url.Path)
+	return
 }

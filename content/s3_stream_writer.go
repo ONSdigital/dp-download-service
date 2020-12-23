@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
-	"path/filepath"
 
 	"github.com/ONSdigital/log.go/log"
 )
@@ -50,13 +49,13 @@ func NewStreamWriter(s3c S3Client, vc VaultClient, vp string) *S3StreamWriter {
 }
 
 //StreamAndWrite decrypt and stream the request file writing the content to the provided io.Writer.
-func (s S3StreamWriter) StreamAndWrite(ctx context.Context, filename string, w io.Writer) error {
-	psk, err := s.getVaultKeyForFile(filename)
+func (s S3StreamWriter) StreamAndWrite(ctx context.Context, s3Path string, vaultPath string, w io.Writer) error {
+	psk, err := s.getVaultKeyForFile(vaultPath)
 	if err != nil {
 		return err
 	}
 
-	s3ReadCloser, _, err := s.S3Client.GetWithPSK(filename, psk)
+	s3ReadCloser, _, err := s.S3Client.GetWithPSK(s3Path, psk)
 	if err != nil {
 		return err
 	}
@@ -71,12 +70,12 @@ func (s S3StreamWriter) StreamAndWrite(ctx context.Context, filename string, w i
 	return nil
 }
 
-func (s *S3StreamWriter) getVaultKeyForFile(filename string) ([]byte, error) {
-	if len(filename) == 0 {
+func (s *S3StreamWriter) getVaultKeyForFile(secretPath string) ([]byte, error) {
+	if len(secretPath) == 0 {
 		return nil, VaultFilenameEmptyErr
 	}
 
-	vp := s.VaultPath + "/" + filepath.Base(filename)
+	vp := s.VaultPath + secretPath
 	pskStr, err := s.VaultCli.ReadKey(vp, vaultKey)
 	if err != nil {
 		return nil, err

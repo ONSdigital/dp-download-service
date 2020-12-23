@@ -14,10 +14,10 @@ import (
 )
 
 var (
-	testVaultPath  = "wibble"
-	testFilename   = "1234567890.csv"
-	testS3Filename = "wibble/1234567890.csv"
-	testErr        = errors.New("bork")
+	testVaultPath    = "secrets"
+	testVaultKeyPath = "/wibblevault/1234567890.csv"
+	testS3Path       = "/wibble/1234567890.csv"
+	testErr          = errors.New("bork")
 )
 
 type StubWriter struct {
@@ -33,13 +33,13 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	Convey("should return expected error if filename is empty", t, func() {
+	Convey("should return expected error if s3 and vault paths are empty", t, func() {
 		w := writerNeverInvoked(ctrl)
 		vaultCli := vaultClientNeverInvoked(ctrl)
 
 		s := &S3StreamWriter{VaultCli: vaultCli}
 
-		err := s.StreamAndWrite(nil, "", w)
+		err := s.StreamAndWrite(nil, "", "", w)
 
 		So(err, ShouldEqual, VaultFilenameEmptyErr)
 	})
@@ -53,7 +53,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 			VaultCli:  vaultCli,
 		}
 
-		err := s.StreamAndWrite(nil, testFilename, w)
+		err := s.StreamAndWrite(nil, testS3Path, testVaultKeyPath, w)
 
 		So(err, ShouldEqual, expectedErr)
 	})
@@ -67,7 +67,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 			VaultCli:  vaultCli,
 		}
 
-		err := s.StreamAndWrite(nil, testFilename, w)
+		err := s.StreamAndWrite(nil, testS3Path, testVaultKeyPath, w)
 
 		So(err, ShouldNotBeNil)
 	})
@@ -75,7 +75,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 	Convey("should return expected error if s3 client GetWithPSK returns an error", t, func() {
 		w := writerNeverInvoked(ctrl)
 		vaultCli, expectedPSK := vaultClientAndValidKey(ctrl)
-		s3Cli, expectedErr := s3ClientGetWithPSKReturnsError(ctrl, testFilename, expectedPSK)
+		s3Cli, expectedErr := s3ClientGetWithPSKReturnsError(ctrl, testS3Path, expectedPSK)
 
 		s := &S3StreamWriter{
 			VaultPath: testVaultPath,
@@ -83,7 +83,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 			S3Client:  s3Cli,
 		}
 
-		err := s.StreamAndWrite(nil, testFilename, w)
+		err := s.StreamAndWrite(nil, testS3Path, testVaultKeyPath, w)
 
 		So(err, ShouldEqual, expectedErr)
 	})
@@ -92,7 +92,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 		w := writerNeverInvoked(ctrl)
 		vaultCli, expectedPSK := vaultClientAndValidKey(ctrl)
 		s3ReadCloser, expectedErr := s3ReadCloserErroringOnRead(ctrl)
-		s3Cli := s3ClientGetWithPSKReturnsReader(ctrl, testFilename, expectedPSK, s3ReadCloser)
+		s3Cli := s3ClientGetWithPSKReturnsReader(ctrl, testS3Path, expectedPSK, s3ReadCloser)
 
 		s := &S3StreamWriter{
 			VaultPath: testVaultPath,
@@ -100,7 +100,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 			S3Client:  s3Cli,
 		}
 
-		err := s.StreamAndWrite(nil, testFilename, w)
+		err := s.StreamAndWrite(nil, testS3Path, testVaultKeyPath, w)
 
 		So(err, ShouldEqual, expectedErr)
 	})
@@ -109,7 +109,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 		w, expectedErr := writerReturningErrorOnWrite(ctrl)
 		vaultCli, expectedPSK := vaultClientAndValidKey(ctrl)
 		s3ReadCloser := ioutil.NopCloser(strings.NewReader("1, 2, 3, 4"))
-		s3Cli := s3ClientGetWithPSKReturnsReader(ctrl, testFilename, expectedPSK, s3ReadCloser)
+		s3Cli := s3ClientGetWithPSKReturnsReader(ctrl, testS3Path, expectedPSK, s3ReadCloser)
 
 		s := &S3StreamWriter{
 			VaultPath: testVaultPath,
@@ -117,7 +117,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 			S3Client:  s3Cli,
 		}
 
-		err := s.StreamAndWrite(nil, testFilename, w)
+		err := s.StreamAndWrite(nil, testS3Path, testVaultKeyPath, w)
 
 		So(err, ShouldEqual, expectedErr)
 	})
@@ -126,7 +126,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 		readCloser := ioutil.NopCloser(strings.NewReader("1, 2, 3, 4"))
 		writer := &StubWriter{}
 		vaultCli, expectedPSK := vaultClientAndValidKey(ctrl)
-		s3Cli := s3ClientGetWithPSKReturnsReader(ctrl, testFilename, expectedPSK, readCloser)
+		s3Cli := s3ClientGetWithPSKReturnsReader(ctrl, testS3Path, expectedPSK, readCloser)
 
 		s := &S3StreamWriter{
 			VaultPath: testVaultPath,
@@ -134,7 +134,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 			S3Client:  s3Cli,
 		}
 
-		err := s.StreamAndWrite(nil, testFilename, writer)
+		err := s.StreamAndWrite(nil, testS3Path, testVaultKeyPath, writer)
 
 		So(err, ShouldBeNil)
 		So(writer.data, ShouldResemble, []byte("1, 2, 3, 4"))
@@ -166,7 +166,7 @@ func Test_GetVaultKeyForFile(t *testing.T) {
 		vaultCli, expectedErr := vaultClientErrorOnReadKey(ctrl)
 
 		s := NewStreamWriter(nil, vaultCli, testVaultPath)
-		psk, err := s.getVaultKeyForFile(testFilename)
+		psk, err := s.getVaultKeyForFile(testVaultKeyPath)
 
 		So(psk, ShouldBeNil)
 		So(err, ShouldNotBeNil)
@@ -180,7 +180,7 @@ func Test_GetVaultKeyForFile(t *testing.T) {
 		vaultCli := vaultClientReturningInvalidHexString(ctrl)
 
 		s := NewStreamWriter(nil, vaultCli, testVaultPath)
-		psk, err := s.getVaultKeyForFile(testFilename)
+		psk, err := s.getVaultKeyForFile(testVaultKeyPath)
 
 		So(psk, ShouldBeNil)
 		So(err, ShouldNotBeNil)
@@ -193,7 +193,7 @@ func Test_GetVaultKeyForFile(t *testing.T) {
 		vaultCli, keyBytes := vaultClientAndValidKey(ctrl)
 
 		s := NewStreamWriter(nil, vaultCli, testVaultPath)
-		psk, err := s.getVaultKeyForFile(testFilename)
+		psk, err := s.getVaultKeyForFile(testVaultKeyPath)
 
 		So(psk, ShouldResemble, keyBytes)
 		So(err, ShouldBeNil)
@@ -208,21 +208,21 @@ func vaultClientNeverInvoked(ctrl *gomock.Controller) *mocks.MockVaultClient {
 }
 
 func vaultClientErrorOnReadKey(ctrl *gomock.Controller) (*mocks.MockVaultClient, error) {
-	vp := filepath.Join(testVaultPath, testFilename)
+	vp := filepath.Join(testVaultPath, testVaultKeyPath)
 	vaultCli := mocks.NewMockVaultClient(ctrl)
 	vaultCli.EXPECT().ReadKey(vp, vaultKey).Return("", testErr).Times(1)
 	return vaultCli, testErr
 }
 
 func vaultClientReturningInvalidHexString(ctrl *gomock.Controller) *mocks.MockVaultClient {
-	vp := filepath.Join(testVaultPath, testFilename)
+	vp := filepath.Join(testVaultPath, testVaultKeyPath)
 	vaultCli := mocks.NewMockVaultClient(ctrl)
 	vaultCli.EXPECT().ReadKey(vp, vaultKey).Return("Master of puppets is pulling your strings", nil).Times(1)
 	return vaultCli
 }
 
 func vaultClientAndValidKey(ctrl *gomock.Controller) (*mocks.MockVaultClient, []byte) {
-	vp := filepath.Join(testVaultPath, testFilename)
+	vp := filepath.Join(testVaultPath, testVaultKeyPath)
 	vaultCli := mocks.NewMockVaultClient(ctrl)
 
 	key := "one two three four"

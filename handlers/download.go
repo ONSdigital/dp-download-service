@@ -5,21 +5,15 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
-	"path"
-
-	"github.com/ONSdigital/go-ns/common"
 
 	"github.com/ONSdigital/dp-download-service/downloads"
 	dphandlers "github.com/ONSdigital/dp-net/handlers"
-
+	"github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
 )
 
-// mockgen is prefixing the imports within the mock file with the vendor directory 'github.com/ONSdigital/dp-download-service/vendor/'
 //go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/handlers Downloader,S3Content
-//go:generate sed -i "" -e s!\([[:space:]]\"\)github.com/ONSdigital/dp-download-service/vendor/!\1! mocks/mocks.go
 
 const (
 	notFoundMessage       = "resource not found"
@@ -39,12 +33,12 @@ type IdentityClient interface {
 
 // S3Content is an interface to represent methods called to action on S3
 type S3Content interface {
-	StreamAndWrite(ctx context.Context, filename string, w io.Writer) error
+	StreamAndWrite(ctx context.Context, s3Path string, vaultPath string, w io.Writer) error
 }
 
 // Downloader is an interface to represent methods called to obtain the download metadata for any possible download type (dataset, image, etc)
 type Downloader interface {
-	Get(ctx context.Context, p downloads.Parameters, fileType downloads.FileType) (downloads.Model, error)
+	Get(ctx context.Context, p downloads.Parameters, fileType downloads.FileType, variant string) (downloads.Model, error)
 }
 
 // Download represents the configuration for a download handler
@@ -110,7 +104,7 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 
 	var err error
 
-	fileDownloads, err := d.Downloader.Get(ctx, params, fileType)
+	fileDownloads, err := d.Downloader.Get(ctx, params, fileType, variant)
 	if err != nil {
 		setStatusCode(ctx, w, err, logData)
 		return
@@ -122,32 +116,25 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 	authorised, logData := d.authenticate(req, logData)
 	logData["authorised"] = authorised
 
-	if fileDownloads.IsPublicLinkAvailable(variant) {
-		http.Redirect(w, req, fileDownloads.Available[variant].Public, http.StatusMovedPermanently)
+	if fileDownloads.IsPublicLinkAvailable() {
+		http.Redirect(w, req, fileDownloads.Public, http.StatusMovedPermanently)
 		return
 	}
 
-	if len(fileDownloads.Available[variant].Private) > 0 {
+	if len(fileDownloads.PrivateS3Path) > 0 {
+		s3Path := fileDownloads.PrivateS3Path
+		vaultPath := fileDownloads.PrivateVaultPath
+		filename := fileDownloads.PrivateFilename
 
-		logData["private_link"] = fileDownloads.Available[variant].Private
+		logData["private_s3_path"] = s3Path
+		logData["private_vault_path"] = vaultPath
+		logData["private_filename"] = filename
 		log.Event(req.Context(), "using private link", log.INFO, logData)
 
 		if fileDownloads.IsPublished || authorised {
+			w.Header().Set("Content-Disposition", "attachment; filename="+filename)
 
-			privateFile := fileDownloads.Available[variant].Private
-
-			privateURL, err := url.Parse(privateFile)
-			if err != nil {
-				setStatusCode(ctx, w, err, logData)
-				return
-			}
-
-			filename := privateURL.Path
-			logData["filename"] = filename
-
-			w.Header().Set("Content-Disposition", "attachment; filename="+path.Base(filename))
-
-			err = d.S3Content.StreamAndWrite(ctx, filename, w)
+			err = d.S3Content.StreamAndWrite(ctx, s3Path, vaultPath, w)
 			if err != nil {
 				setStatusCode(ctx, w, err, logData)
 				return
@@ -178,8 +165,7 @@ func GetDownloadParameters(req *http.Request, serviceAuthToken, downloadServiceT
 		Version:              vars["version"],
 		ImageID:              vars["imageID"],
 		Variant:              vars["variant"],
-		Name:                 vars["name"],
-		Ext:                  vars["ext"],
+		Filename:             vars["filename"],
 	}
 }
 
@@ -207,11 +193,8 @@ func downloadParametersToLogData(p downloads.Parameters) log.Data {
 	if len(p.Variant) > 0 {
 		logData["variant"] = p.Variant
 	}
-	if len(p.Name) > 0 {
-		logData["name"] = p.Name
-	}
-	if len(p.Ext) > 0 {
-		logData["ext"] = p.Ext
+	if len(p.Filename) > 0 {
+		logData["filename"] = p.Filename
 	}
 
 	return logData
@@ -221,7 +204,7 @@ func (d Download) authenticate(r *http.Request, logData map[string]interface{}) 
 	var authorised bool
 
 	if d.IsPublishing {
-		authorised = common.IsCallerPresent(r.Context())
+		authorised = request.IsCallerPresent(r.Context())
 	}
 
 	logData["authenticated"] = authorised
