@@ -58,7 +58,7 @@ func Create(
 		ImageCli:   ic,
 	}
 
-	s3c := content.NewStreamWriter(s3, vc, cfg.VaultPath)
+	s3c := content.NewStreamWriter(s3, vc, cfg.VaultPath, cfg.EncryptionDisabled)
 
 	d := handlers.Download{
 		Downloader:   downloader,

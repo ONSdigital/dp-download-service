@@ -36,6 +36,24 @@ parameters:
     in: path
     required: true
     type: string
+  imageID:
+    name: imageID
+    description: "The unique identifier for an image."
+    in: path
+    required: true
+    type: string
+  variant:
+    name: variant
+    description: "The variant of an image to download"
+    in: path
+    required: true
+    type: string
+  filename:
+    name: filename
+    description: "The filename of the file to download"
+    in: path
+    required: true
+    type: string
 securityDefinitions:
   FlorenceAPIKey:
     name: X-Florence-Token
@@ -131,7 +149,30 @@ paths:
           $ref: '#/responses/NotFoundError'
         500:
           $ref: '#/responses/InternalError'
-  
+  /images/{imageID}/{variant}/{filename}:
+    get:
+      tags:
+        - "Public"
+      summary: "Download an image variant"
+      description: "Request a download of a specific variant of an image as created by the image importer"
+      parameters:
+        - $ref: '#/parameters/imageID'
+        - $ref: '#/parameters/variant'
+        - $ref: '#/parameters/filename'
+      produces:
+        - "image/png"
+      responses:
+        200:
+          $ref: '#/responses/StreamedResponse'
+        301:
+          $ref: '#/responses/RequestRedirect'
+        400:
+          $ref: '#/responses/InvalidRequestError'
+        404:
+          $ref: '#/responses/NotFoundError'
+        500:
+          $ref: '#/responses/InternalError'
+
 responses:
   InvalidRequestError:
     description: "Failed to process the request due to invalid request."
