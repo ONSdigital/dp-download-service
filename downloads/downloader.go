@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
@@ -121,7 +122,7 @@ func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, v
 			return downloads, err
 		}
 		model.PrivateS3Path = s3Path
-		model.PrivateVaultPath = "/" + filename
+		model.PrivateVaultPath = filename
 		model.PrivateFilename = filename
 	}
 
@@ -150,7 +151,7 @@ func (d Downloader) getDatasetVersionDownload(ctx context.Context, p Parameters,
 			return downloads, err
 		}
 		model.PrivateS3Path = s3Path
-		model.PrivateVaultPath = "/" + filename
+		model.PrivateVaultPath = filename
 		model.PrivateFilename = filename
 	}
 
@@ -166,7 +167,7 @@ func (d Downloader) getImageDownload(ctx context.Context, p Parameters, variant 
 		return downloads, err
 	}
 
-	privatePath := fmt.Sprintf("/images/%s/%s", p.ImageID, p.Variant)
+	privatePath := fmt.Sprintf("images/%s/%s", p.ImageID, p.Variant)
 	downloads = Model{
 		// The variant will be considered published (available for public downloads), when it is in 'published' or 'completed' state.
 		IsPublished:      ("published" == imageVariant.State || "completed" == imageVariant.State),
@@ -191,7 +192,7 @@ func parseURL(urlString string) (path string, filename string, err error) {
 	if err != nil {
 		return
 	}
-	path = url.Path
+	path = strings.TrimLeft(url.Path, "/") // TODO remove leading slash
 	filename = filepath.Base(url.Path)
 	return
 }

@@ -15,8 +15,8 @@ import (
 
 var (
 	testVaultPath    = "secrets"
-	testVaultKeyPath = "/wibblevault/1234567890.csv"
-	testS3Path       = "/wibble/1234567890.csv"
+	testVaultKeyPath = "wibblevault/1234567890.csv"
+	testS3Path       = "wibble/1234567890.csv"
 	testErr          = errors.New("bork")
 )
 

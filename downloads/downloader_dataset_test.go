@@ -14,8 +14,8 @@ const (
 	testCSVPublicUrl        = "http://public.localhost/public/filename.csv"
 	testCSVPrivateUrl       = "http://private.localhost/private/filename.csv"
 	testCSVPrivateFilename  = "filename.csv"
-	testCSVPrivateS3Path    = "/private/filename.csv"
-	testCSVPrivateVaultPath = "/filename.csv"
+	testCSVPrivateS3Path    = "private/filename.csv"
+	testCSVPrivateVaultPath = "filename.csv"
 	testBadPrivateURL       = "@£$%^&*()_+"
 )
 

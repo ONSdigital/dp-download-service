@@ -18,8 +18,8 @@ const (
 	testImagePublicUrl        = "http://public.localhost/images/myImageID/myVariant/myImageName.png"
 	testImagePrivateUrl       = "http://private.localhost/images/myImageID/myVariant/myImageName.png"
 	testImagePrivateFilename  = "myImageName.png"
-	testImagePrivateS3Path    = "/images/myImageID/myVariant"
-	testImagePrivateVaultPath = "/images/myImageID/myVariant"
+	testImagePrivateS3Path    = "images/myImageID/myVariant"
+	testImagePrivateVaultPath = "images/myImageID/myVariant"
 )
 
 var (

@@ -86,7 +86,7 @@ func (s *S3StreamWriter) getVaultKeyForFile(secretPath string) ([]byte, error) {
 		return nil, VaultFilenameEmptyErr
 	}
 
-	vp := s.VaultPath + secretPath
+	vp := s.VaultPath + "/" + secretPath
 	pskStr, err := s.VaultCli.ReadKey(vp, vaultKey)
 	if err != nil {
 		return nil, err
