@@ -192,7 +192,7 @@ func parseURL(urlString string) (path string, filename string, err error) {
 	if err != nil {
 		return
 	}
-	path = strings.TrimLeft(url.Path, "/") // TODO remove leading slash
+	path = strings.TrimLeft(url.Path, "/")
 	filename = filepath.Base(url.Path)
 	return
 }
