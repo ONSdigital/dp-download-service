@@ -15,5 +15,8 @@ inputs:
 outputs:
   - name: build
 
+caches:
+  - path: go/
+
 run:
   path: dp-download-service/ci/scripts/build.sh

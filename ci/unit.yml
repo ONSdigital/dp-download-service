@@ -12,5 +12,8 @@ inputs:
   - name: dp-download-service
     path: dp-download-service
 
+caches:
+  - path: go/
+
 run:
   path: dp-download-service/ci/scripts/unit.sh
