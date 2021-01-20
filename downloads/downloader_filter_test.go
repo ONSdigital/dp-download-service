@@ -37,11 +37,38 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
 
-		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeFalse)
+		So(downloads.Public, ShouldBeBlank)
+		So(downloads.PrivateFilename, ShouldBeBlank)
+		So(downloads.PrivateS3Path, ShouldBeBlank)
+		So(downloads.PrivateVaultPath, ShouldBeBlank)
 		So(err, ShouldResemble, testErrFilter)
+	})
+
+	Convey("should return error if privateURL is invalid", t, func() {
+		csvDownload := getTestFilterDownloadBadURL()
+		filterOutput := getTestDatasetFilterOutput(false, &csvDownload)
+
+		filterCli := successfulFilterOutputClient(ctrl, testFilterOutputDownloadParams, filterOutput)
+		datasetCli := datasetClientNeverInvoked(ctrl)
+		imgCli := imageClientNeverInvoked(ctrl)
+
+		d := Downloader{
+			DatasetCli: datasetCli,
+			FilterCli:  filterCli,
+			ImageCli:   imgCli,
+		}
+
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
+
+		So(downloads.IsPublished, ShouldBeFalse)
+		So(downloads.Public, ShouldBeBlank)
+		So(downloads.PrivateFilename, ShouldBeBlank)
+		So(downloads.PrivateS3Path, ShouldBeBlank)
+		So(downloads.PrivateVaultPath, ShouldBeBlank)
+		So(err, ShouldNotBeNil)
 	})
 
 	Convey("should return publish false if dataset not published", t, func() {
@@ -58,18 +85,13 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
-
-		So(downloads.Available, ShouldHaveLength, 1)
-		csv, found := downloads.Available["csv"]
-		So(found, ShouldBeTrue)
-
-		So(csv, ShouldResemble, Info{
-			Public:  csvDownload.Public,
-			Private: csvDownload.Private,
-		})
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
 
 		So(downloads.IsPublished, ShouldBeFalse)
+		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
+		So(downloads.PrivateFilename, ShouldResemble, testCSVPrivateFilename)
+		So(downloads.PrivateS3Path, ShouldResemble, testCSVPrivateS3Path)
+		So(downloads.PrivateVaultPath, ShouldResemble, testCSVPrivateVaultPath)
 		So(err, ShouldBeNil)
 	})
 
@@ -87,19 +109,13 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
-
-		So(downloads.Available, ShouldHaveLength, 1)
-
-		csv, found := downloads.Available["csv"]
-		So(found, ShouldBeTrue)
-
-		So(csv, ShouldResemble, Info{
-			Public:  csvDownload.Public,
-			Private: csvDownload.Private,
-		})
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
 
 		So(downloads.IsPublished, ShouldBeTrue)
+		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
+		So(downloads.PrivateFilename, ShouldResemble, testCSVPrivateFilename)
+		So(downloads.PrivateS3Path, ShouldResemble, testCSVPrivateS3Path)
+		So(downloads.PrivateVaultPath, ShouldResemble, testCSVPrivateVaultPath)
 		So(err, ShouldBeNil)
 	})
 
@@ -116,10 +132,13 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput)
+		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
 
-		So(downloads.Available, ShouldHaveLength, 0)
 		So(downloads.IsPublished, ShouldBeTrue)
+		So(downloads.Public, ShouldBeBlank)
+		So(downloads.PrivateFilename, ShouldBeBlank)
+		So(downloads.PrivateS3Path, ShouldBeBlank)
+		So(downloads.PrivateVaultPath, ShouldBeBlank)
 		So(err, ShouldBeNil)
 	})
 }
@@ -128,8 +147,18 @@ func getTestFilterDownload() filter.Download {
 	return filter.Download{
 		URL:     "/downloadURL",
 		Size:    "666",
-		Public:  "/public/download/url",
-		Private: "/private/download/url",
+		Public:  testCSVPublicUrl,
+		Private: testCSVPrivateUrl,
+		Skipped: false,
+	}
+}
+
+func getTestFilterDownloadBadURL() filter.Download {
+	return filter.Download{
+		URL:     "/downloadURL",
+		Size:    "666",
+		Public:  testCSVPublicUrl,
+		Private: testBadPrivateURL,
 		Skipped: false,
 	}
 }

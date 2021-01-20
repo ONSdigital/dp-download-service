@@ -6,11 +6,14 @@ image_resource:
   type: docker-image
   source:
     repository: golang
-    tag: 1.13.8
+    tag: 1.15.6
 
 inputs:
   - name: dp-download-service
     path: dp-download-service
+
+caches:
+  - path: go/
 
 run:
   path: dp-download-service/ci/scripts/unit.sh

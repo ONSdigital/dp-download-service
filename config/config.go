@@ -26,6 +26,7 @@ type Config struct {
 	VaultPath                  string        `envconfig:"VAULT_PATH"`
 	ZebedeeURL                 string        `envconfig:"ZEBEDEE_URL"`
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
+	EncryptionDisabled         bool          `envconfig:"ENCRYPTION_DISABLED"`
 }
 
 var cfg *Config
@@ -37,7 +38,7 @@ func Get() (*Config, error) {
 	}
 
 	cfg = &Config{
-		BindAddr:                   ":23600",
+		BindAddr:                   "localhost:23600",
 		AwsRegion:                  "eu-west-1",
 		BucketName:                 "csv-exported",
 		DatasetAPIURL:              "http://localhost:22000",
@@ -54,6 +55,7 @@ func Get() (*Config, error) {
 		VaultPath:                  "secret/shared/psk",
 		ZebedeeURL:                 "http://localhost:8082",
 		IsPublishing:               true,
+		EncryptionDisabled:         false,
 	}
 
 	if err := envconfig.Process("", cfg); err != nil {

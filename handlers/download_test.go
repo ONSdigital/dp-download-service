@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -11,13 +10,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ONSdigital/dp-api-clients-go/health"
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/handlers/mocks"
 	dphandlers "github.com/ONSdigital/dp-net/handlers"
-
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/go-ns/identity"
+	"github.com/ONSdigital/dp-net/request"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
@@ -27,11 +26,12 @@ import (
 const (
 	testPublicDatasetDownload = "http://test-public-dataset-download.com"
 	testPublicImageDownload   = "http://test-public-image-download.com"
-	testPrivateDownloadFmt    = "s3://some-bucket%s"
-	testPrivateCsvS3Key       = "/datasets/my-dataset.csv"
-	testPrivatePngS3Key       = "/datasets/my-image.png"
+	testPrivateCsvFilename    = "my-dataset.csv"
+	testPrivateCsvS3Path      = "/datasets/my-dataset.csv"
+	testPrivateCsvVaultPath   = "/my-dataset.csv"
+	testPrivatePngFilename    = "my-image.png"
+	testPrivatePngPath        = "/images/123/original"
 	florenceTokenHeader       = "X-Florence-Token"
-	zebedeeURL                = "http://localhost:8082"
 	testUserToken             = "UserToken"
 	testServiceToken          = "ServiceToken"
 	testDownloadServiceToken  = "DownloadServiceToken"
@@ -44,76 +44,51 @@ var (
 	testImageContent = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
 )
 
-// generate download Info with provided public URL
-func infoWithPublicURL(publicDownload string) downloads.Info {
-	return downloads.Info{
-		Public: publicDownload,
-	}
-}
-
-// generate download Info with provided private S3 key
-func infoWithPrivateURL(privateS3Key string) downloads.Info {
-	return downloads.Info{
-		Private: fmt.Sprintf(testPrivateDownloadFmt, privateS3Key),
-	}
-}
-
-// generate download Info with an invalid private URL
-func infoWithInvalidPrivateURL() downloads.Info {
-	return downloads.Info{
-		Private: "@£$%^&*()_+",
-	}
-}
-
 var (
 	publishedDatasetDownloadPublicURL = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]downloads.Info{"csv": infoWithPublicURL(testPublicDatasetDownload)},
+		Public:      testPublicDatasetDownload,
 	}
 
 	publishedImageDownloadPublicURL = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]downloads.Info{"1280x720": infoWithPublicURL(testPublicImageDownload)},
+		Public:      testPublicImageDownload,
 	}
 
 	publishedDatasetDownloadPrivateURL = downloads.Model{
-		IsPublished: true,
-		Available:   map[string]downloads.Info{"csv": infoWithPrivateURL(testPrivateCsvS3Key)},
+		IsPublished:      true,
+		PrivateFilename:  testPrivateCsvFilename,
+		PrivateS3Path:    testPrivateCsvS3Path,
+		PrivateVaultPath: testPrivateCsvVaultPath,
 	}
 
 	publishedImageDownloadPrivateURL = downloads.Model{
-		IsPublished: true,
-		Available:   map[string]downloads.Info{"1280x720": infoWithPrivateURL(testPrivatePngS3Key)},
+		IsPublished:      true,
+		PrivateFilename:  testPrivatePngFilename,
+		PrivateS3Path:    testPrivatePngPath,
+		PrivateVaultPath: testPrivatePngPath,
 	}
 
 	unpublishedDatasetDownloadPrivateLink = downloads.Model{
-		IsPublished: false,
-		Available:   map[string]downloads.Info{"csv": infoWithPrivateURL(testPrivateCsvS3Key)},
+		IsPublished:      false,
+		PrivateFilename:  testPrivateCsvFilename,
+		PrivateS3Path:    testPrivateCsvS3Path,
+		PrivateVaultPath: testPrivateCsvVaultPath,
 	}
 
 	unpublishedImageDownloadPrivateLink = downloads.Model{
-		IsPublished: false,
-		Available:   map[string]downloads.Info{"1280x720": infoWithPrivateURL(testPrivatePngS3Key)},
+		IsPublished:      false,
+		PrivateFilename:  testPrivatePngFilename,
+		PrivateS3Path:    testPrivatePngPath,
+		PrivateVaultPath: testPrivatePngPath,
 	}
 
 	publishedDatasetDownloadNoURLs = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]downloads.Info{"csv": {}},
 	}
 
 	publishedImageDownloadNoURLs = downloads.Model{
 		IsPublished: true,
-		Available:   map[string]downloads.Info{"1280x720": {}},
-	}
-
-	publishedDatasetDownloadInvalidPrivateURL = downloads.Model{
-		IsPublished: true,
-		Available:   map[string]downloads.Info{"csv": infoWithInvalidPrivateURL()},
-	}
-
-	publishedImageDownloadInvalidPrivateURL = downloads.Model{
-		IsPublished: true,
-		Available:   map[string]downloads.Info{"1280x720": infoWithInvalidPrivateURL()},
 	}
 )
 
@@ -219,7 +194,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Name: "myImage", Ext: "png"}
+		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png"}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeImage, publishedImageDownloadPublicURL)
 		s3C := s3ContentNeverInvoked(mockCtrl)
@@ -229,7 +204,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 			S3Content:  s3C,
 		}
 
-		r.HandleFunc("/images/{imageID}/{variant}/{name}.{ext}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/images/{imageID}/{variant}/{filename}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusMovedPermanently)
@@ -252,7 +227,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeDatasetVersion, publishedDatasetDownloadPrivateURL)
-		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivateCsvS3Key, testCsvContent)
+		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivateCsvS3Path, testPrivateCsvVaultPath, testCsvContent)
 
 		d := Download{
 			Downloader: dl,
@@ -269,14 +244,14 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 	Convey("Given a private link to the dataset download exists and the dataset is associated and user is authenticated then the file is streamed in the response body", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
-		req = req.WithContext(context.WithValue(req.Context(), dphttp.CallerIdentityKey, "me"))
+		req = req.WithContext(context.WithValue(req.Context(), request.CallerIdentityKey, "me"))
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeDatasetVersion, unpublishedDatasetDownloadPrivateLink)
-		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivateCsvS3Key, testCsvContent)
+		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivateCsvS3Path, testPrivateCsvVaultPath, testCsvContent)
 
 		d := Download{
 			Downloader:   dl,
@@ -294,10 +269,13 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 					Body:       readCloser,
 				}, nil
 			},
+			SetPathsWithNoRetriesFunc: func(in1 []string) {},
+			GetPathsWithNoRetriesFunc: func() []string { return []string{"/healthcheck"} },
 		}
-		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
+		hc := health.Client{Client: httpClient}
+		idClient := clientsidentity.NewWithHealthClient(&hc)
 
-		chain := alice.New(identity.HandlerForHTTPClient(idClient)).Then(r)
+		chain := alice.New(dphandlers.IdentityWithHTTPClient(idClient)).Then(r)
 
 		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.DoDatasetVersion("csv", mockServiceAuthToken, mockDownloadToken))
 		req.Header.Set(florenceTokenHeader, "Florence")
@@ -315,17 +293,17 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Name: "myImage", Ext: "png", UserAuthToken: testUserToken}
+		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png", UserAuthToken: testUserToken}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeImage, publishedImageDownloadPrivateURL)
-		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivatePngS3Key, testImageContent)
+		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivatePngPath, testPrivatePngPath, testImageContent)
 
 		d := Download{
 			Downloader: dl,
 			S3Content:  s3C,
 		}
 
-		r.HandleFunc("/images/{imageID}/{variant}/{name}.{ext}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/images/{imageID}/{variant}/{filename}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusOK)
@@ -335,14 +313,14 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 	Convey("Given a private link to the image download exists and the image is not published and user is authenticated then the file is streamed in the response body", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
 		req = req.WithContext(context.WithValue(req.Context(), dphandlers.UserAccess.Context(), testUserToken))
-		req = req.WithContext(context.WithValue(req.Context(), dphttp.CallerIdentityKey, "me"))
+		req = req.WithContext(context.WithValue(req.Context(), request.CallerIdentityKey, "me"))
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Name: "myImage", Ext: "png", UserAuthToken: testUserToken}
+		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png", UserAuthToken: testUserToken}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeImage, unpublishedImageDownloadPrivateLink)
-		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivatePngS3Key, testImageContent)
+		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivatePngPath, testPrivatePngPath, testImageContent)
 
 		d := Download{
 			Downloader:   dl,
@@ -360,12 +338,15 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 					Body:       readCloser,
 				}, nil
 			},
+			SetPathsWithNoRetriesFunc: func(in1 []string) {},
+			GetPathsWithNoRetriesFunc: func() []string { return []string{"/healthcheck"} },
 		}
-		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
+		hc := health.Client{Client: httpClient}
+		idClient := clientsidentity.NewWithHealthClient(&hc)
 
-		chain := alice.New(identity.HandlerForHTTPClient(idClient)).Then(r)
+		chain := alice.New(dphandlers.IdentityWithHTTPClient(idClient)).Then(r)
 
-		r.HandleFunc("/images/{imageID}/{variant}/{name}.{ext}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/images/{imageID}/{variant}/{filename}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
 		req.Header.Set(florenceTokenHeader, "Florence")
 
 		chain.ServeHTTP(w, req)
@@ -412,7 +393,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Name: "myImage", Ext: "png"}
+		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png"}
 		err := testClientError{http.StatusNotFound}
 
 		dl := downloaderReturningError(mockCtrl, params, downloads.TypeImage, err)
@@ -423,7 +404,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			S3Content:  s3C,
 		}
 
-		r.HandleFunc("/images/{imageID}/{variant}/{name}.{ext}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/images/{imageID}/{variant}/{filename}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
@@ -457,7 +438,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Name: "myImage", Ext: "png"}
+		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png"}
 
 		dl := downloaderReturningError(mockCtrl, params, downloads.TypeImage, testError)
 		s3C := s3ContentNeverInvoked(mockCtrl)
@@ -467,7 +448,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			S3Content:  s3C,
 		}
 
-		r.HandleFunc("/images/{imageID}/{variant}/{name}.{ext}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/images/{imageID}/{variant}/{filename}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
@@ -501,7 +482,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Name: "myImage", Ext: "png"}
+		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png"}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeImage, publishedImageDownloadPrivateURL)
 		s3C := s3ContentReturnsAnError(mockCtrl, testError)
@@ -511,7 +492,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			S3Content:  s3C,
 		}
 
-		r.HandleFunc("/images/{imageID}/{variant}/{name}.{ext}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/images/{imageID}/{variant}/{filename}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
@@ -545,7 +526,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
-		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Name: "myImage", Ext: "png"}
+		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png"}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeImage, publishedImageDownloadNoURLs)
 		s3C := s3ContentNeverInvoked(mockCtrl)
@@ -555,85 +536,41 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 			S3Content:  s3C,
 		}
 
-		r.HandleFunc("/images/{imageID}/{variant}/{name}.{ext}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
+		r.HandleFunc("/images/{imageID}/{variant}/{filename}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
 		r.ServeHTTP(w, req)
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
 		So(w.Body.String(), ShouldEqual, notFoundMessage+"\n")
 	})
-
-	Convey("Should return HTTP status internal server error if dataset downloads has an an invalid private URL", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
-		w := httptest.NewRecorder()
-		r := mux.NewRouter()
-
-		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
-
-		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeDatasetVersion, publishedDatasetDownloadInvalidPrivateURL)
-		s3C := s3ContentNeverInvoked(mockCtrl)
-
-		d := Download{
-			Downloader: dl,
-			S3Content:  s3C,
-		}
-
-		r.HandleFunc("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv", d.DoDatasetVersion("csv", mockServiceAuthToken, mockDownloadToken))
-		r.ServeHTTP(w, req)
-
-		So(w.Code, ShouldEqual, http.StatusInternalServerError)
-		So(w.Body.String(), ShouldEqual, internalServerMessage+"\n")
-	})
-
-	Convey("Should return HTTP status internal server error if image downloads has an an invalid private URL", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
-		w := httptest.NewRecorder()
-		r := mux.NewRouter()
-
-		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Name: "myImage", Ext: "png"}
-
-		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeImage, publishedImageDownloadInvalidPrivateURL)
-		s3C := s3ContentNeverInvoked(mockCtrl)
-
-		d := Download{
-			Downloader: dl,
-			S3Content:  s3C,
-		}
-
-		r.HandleFunc("/images/{imageID}/{variant}/{name}.{ext}", d.DoImage(mockServiceAuthToken, mockDownloadToken))
-		r.ServeHTTP(w, req)
-
-		So(w.Code, ShouldEqual, http.StatusInternalServerError)
-		So(w.Body.String(), ShouldEqual, internalServerMessage+"\n")
-	})
 }
 
 func downloaderReturnsResult(c *gomock.Controller, p downloads.Parameters, ft downloads.FileType, result downloads.Model) *mocks.MockDownloader {
 	dl := mocks.NewMockDownloader(c)
-	dl.EXPECT().Get(gomock.Any(), p, ft).Return(result, nil)
+	dl.EXPECT().Get(gomock.Any(), p, ft, gomock.Any()).Return(result, nil)
 	return dl
 }
 
 func downloaderReturningError(c *gomock.Controller, p downloads.Parameters, ft downloads.FileType, err error) *mocks.MockDownloader {
 	dl := mocks.NewMockDownloader(c)
-	dl.EXPECT().Get(gomock.Any(), p, ft).Return(downloads.Model{}, err)
+	dl.EXPECT().Get(gomock.Any(), p, ft, gomock.Any()).Return(downloads.Model{}, err)
 	return dl
 }
 
 func s3ContentNeverInvoked(c *gomock.Controller) *mocks.MockS3Content {
 	s3C := mocks.NewMockS3Content(c)
 	s3C.EXPECT().
-		StreamAndWrite(gomock.Any(), gomock.Any(), gomock.Any()).
+		StreamAndWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Times(0).
 		Return(nil)
 	return s3C
 }
 
-func s3ContentWriterSuccessfullyWritesToResponse(c *gomock.Controller, w io.Writer, expectedFilename string, expectedBody []byte) *mocks.MockS3Content {
+func s3ContentWriterSuccessfullyWritesToResponse(c *gomock.Controller, w io.Writer, expectedS3Path string, expectedVaultPath string, expectedBody []byte) *mocks.MockS3Content {
 	s3C := mocks.NewMockS3Content(c)
 	s3C.EXPECT().
-		StreamAndWrite(gomock.Any(), gomock.Eq(expectedFilename), gomock.Eq(w)).
+		StreamAndWrite(gomock.Any(), gomock.Eq(expectedS3Path), gomock.Eq(expectedVaultPath), gomock.Eq(w)).
 		Return(nil).
-		Do(func(ctx context.Context, filename string, w io.Writer) {
+		Do(func(ctx context.Context, expectedS3Path string, expectedVaultPath string, w io.Writer) {
 			w.Write(expectedBody)
 		})
 	return s3C
@@ -642,7 +579,7 @@ func s3ContentWriterSuccessfullyWritesToResponse(c *gomock.Controller, w io.Writ
 func s3ContentReturnsAnError(c *gomock.Controller, err error) *mocks.MockS3Content {
 	s3C := mocks.NewMockS3Content(c)
 	s3C.EXPECT().
-		StreamAndWrite(gomock.Any(), gomock.Any(), gomock.Any()).
+		StreamAndWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(err)
 
 	return s3C
