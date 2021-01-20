@@ -44,10 +44,13 @@ func main() {
 	dc := dataset.NewAPIClient(cfg.DatasetAPIURL)
 
 	// Create Vault client.
-	vc, err := vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 3)
-	if err != nil {
-		log.Event(ctx, "could not create a vault client", log.FATAL, log.Error(err))
-		os.Exit(1)
+	var vc *vault.Client = nil
+	if !cfg.EncryptionDisabled {
+		vc, err = vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 3)
+		if err != nil {
+			log.Event(ctx, "could not create a vault client", log.FATAL, log.Error(err))
+			os.Exit(1)
+		}
 	}
 
 	// Create Filter API client.
@@ -63,7 +66,7 @@ func main() {
 	}
 
 	// Create S3 client with region and bucket name.
-	s3, err := s3client.NewClient(cfg.AwsRegion, cfg.BucketName, true)
+	s3, err := s3client.NewClient(cfg.AwsRegion, cfg.BucketName, !cfg.EncryptionDisabled)
 	if err != nil {
 		log.Event(ctx, "could not create the s3 client", log.ERROR, log.Error(err))
 	}
@@ -111,9 +114,11 @@ func registerCheckers(ctx context.Context, hc *healthcheck.HealthCheck, isPublis
 		log.Event(ctx, "error adding check for dataset api", log.ERROR, log.Error(err))
 	}
 
-	if err := hc.AddCheck("Vault", vc.Checker); err != nil {
-		hasErrors = true
-		log.Event(ctx, "error adding check for vault", log.ERROR, log.Error(err))
+	if vc != nil {
+		if err := hc.AddCheck("Vault", vc.Checker); err != nil {
+			hasErrors = true
+			log.Event(ctx, "error adding check for vault", log.ERROR, log.Error(err))
+		}
 	}
 
 	if err := hc.AddCheck("Filter API", fc.Checker); err != nil {

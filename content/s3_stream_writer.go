@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
-	"path/filepath"
 
 	"github.com/ONSdigital/log.go/log"
 )
@@ -30,35 +29,46 @@ type VaultClient interface {
 
 // S3Client is an interface to represent methods called to retrieve from s3
 type S3Client interface {
+	Get(key string) (io.ReadCloser, *int64, error)
 	GetWithPSK(key string, psk []byte) (io.ReadCloser, *int64, error)
 }
 
 //S3StreamWriter provides functionality for retrieving content from an S3 bucket. The content is streamed/decrypted and and written to the provided io.Writer
 type S3StreamWriter struct {
-	VaultCli  VaultClient
-	VaultPath string
-	S3Client  S3Client
+	VaultCli           VaultClient
+	VaultPath          string
+	S3Client           S3Client
+	EncryptionDisabled bool
 }
 
 //NewStreamWriter create a new S3StreamWriter instance.
-func NewStreamWriter(s3c S3Client, vc VaultClient, vp string) *S3StreamWriter {
+func NewStreamWriter(s3c S3Client, vc VaultClient, vp string, encDisabled bool) *S3StreamWriter {
 	return &S3StreamWriter{
-		S3Client:  s3c,
-		VaultCli:  vc,
-		VaultPath: vp,
+		S3Client:           s3c,
+		VaultCli:           vc,
+		VaultPath:          vp,
+		EncryptionDisabled: encDisabled,
 	}
 }
 
 //StreamAndWrite decrypt and stream the request file writing the content to the provided io.Writer.
-func (s S3StreamWriter) StreamAndWrite(ctx context.Context, filename string, w io.Writer) error {
-	psk, err := s.getVaultKeyForFile(filename)
-	if err != nil {
-		return err
-	}
+func (s S3StreamWriter) StreamAndWrite(ctx context.Context, s3Path string, vaultPath string, w io.Writer) (err error) {
+	var s3ReadCloser io.ReadCloser
+	if s.EncryptionDisabled {
+		s3ReadCloser, _, err = s.S3Client.Get(s3Path)
+		if err != nil {
+			return err
+		}
+	} else {
+		psk, err := s.getVaultKeyForFile(vaultPath)
+		if err != nil {
+			return err
+		}
 
-	s3ReadCloser, _, err := s.S3Client.GetWithPSK(filename, psk)
-	if err != nil {
-		return err
+		s3ReadCloser, _, err = s.S3Client.GetWithPSK(s3Path, psk)
+		if err != nil {
+			return err
+		}
 	}
 
 	defer close(ctx, s3ReadCloser)
@@ -71,12 +81,12 @@ func (s S3StreamWriter) StreamAndWrite(ctx context.Context, filename string, w i
 	return nil
 }
 
-func (s *S3StreamWriter) getVaultKeyForFile(filename string) ([]byte, error) {
-	if len(filename) == 0 {
+func (s *S3StreamWriter) getVaultKeyForFile(secretPath string) ([]byte, error) {
+	if len(secretPath) == 0 {
 		return nil, VaultFilenameEmptyErr
 	}
 
-	vp := s.VaultPath + "/" + filepath.Base(filename)
+	vp := s.VaultPath + "/" + secretPath
 	pskStr, err := s.VaultCli.ReadKey(vp, vaultKey)
 	if err != nil {
 		return nil, err

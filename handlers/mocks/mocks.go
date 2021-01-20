@@ -36,18 +36,18 @@ func (m *MockDownloader) EXPECT() *MockDownloaderMockRecorder {
 }
 
 // Get mocks base method
-func (m *MockDownloader) Get(arg0 context.Context, arg1 downloads.Parameters, arg2 downloads.FileType) (downloads.Model, error) {
+func (m *MockDownloader) Get(arg0 context.Context, arg1 downloads.Parameters, arg2 downloads.FileType, arg3 string) (downloads.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(downloads.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get
-func (mr *MockDownloaderMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockDownloaderMockRecorder) Get(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDownloader)(nil).Get), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDownloader)(nil).Get), arg0, arg1, arg2, arg3)
 }
 
 // MockS3Content is a mock of S3Content interface
@@ -74,15 +74,15 @@ func (m *MockS3Content) EXPECT() *MockS3ContentMockRecorder {
 }
 
 // StreamAndWrite mocks base method
-func (m *MockS3Content) StreamAndWrite(arg0 context.Context, arg1 string, arg2 io.Writer) error {
+func (m *MockS3Content) StreamAndWrite(arg0 context.Context, arg1, arg2 string, arg3 io.Writer) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StreamAndWrite", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "StreamAndWrite", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // StreamAndWrite indicates an expected call of StreamAndWrite
-func (mr *MockS3ContentMockRecorder) StreamAndWrite(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockS3ContentMockRecorder) StreamAndWrite(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StreamAndWrite", reflect.TypeOf((*MockS3Content)(nil).StreamAndWrite), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StreamAndWrite", reflect.TypeOf((*MockS3Content)(nil).StreamAndWrite), arg0, arg1, arg2, arg3)
 }

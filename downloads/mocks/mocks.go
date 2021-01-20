@@ -112,17 +112,17 @@ func (m *MockImageClient) EXPECT() *MockImageClientMockRecorder {
 	return m.recorder
 }
 
-// GetImage mocks base method
-func (m *MockImageClient) GetImage(arg0 context.Context, arg1, arg2, arg3, arg4 string) (image.Image, error) {
+// GetDownloadVariant mocks base method
+func (m *MockImageClient) GetDownloadVariant(arg0 context.Context, arg1, arg2, arg3, arg4, arg5 string) (image.ImageDownload, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetImage", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].(image.Image)
+	ret := m.ctrl.Call(m, "GetDownloadVariant", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret0, _ := ret[0].(image.ImageDownload)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetImage indicates an expected call of GetImage
-func (mr *MockImageClientMockRecorder) GetImage(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+// GetDownloadVariant indicates an expected call of GetDownloadVariant
+func (mr *MockImageClientMockRecorder) GetDownloadVariant(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImage", reflect.TypeOf((*MockImageClient)(nil).GetImage), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDownloadVariant", reflect.TypeOf((*MockImageClient)(nil).GetDownloadVariant), arg0, arg1, arg2, arg3, arg4, arg5)
 }

@@ -28,6 +28,7 @@ func getConfigEnv() map[string]string {
 		"VAULT_PATH":                   os.Getenv("VAULT_PATH"),
 		"ZEBEDEE_URL":                  os.Getenv("ZEBEDEE_URL"),
 		"IS_PUBLISHING":                os.Getenv("IS_PUBLISHING"),
+		"ENCRYPTION_DISABLED":          os.Getenv("ENCRYPTION_DISABLED"),
 	}
 }
 
@@ -56,7 +57,7 @@ func TestSpec(t *testing.T) {
 			})
 
 			Convey("the values should be set to the expected defaults", func() {
-				So(cfg.BindAddr, ShouldEqual, ":23600")
+				So(cfg.BindAddr, ShouldEqual, "localhost:23600")
 				So(cfg.BucketName, ShouldEqual, "csv-exported")
 				So(cfg.DatasetAPIURL, ShouldEqual, "http://localhost:22000")
 				So(cfg.DatasetAuthToken, ShouldEqual, "FD0108EA-825D-411C-9B1D-41EF7727F465")
@@ -71,6 +72,7 @@ func TestSpec(t *testing.T) {
 				So(cfg.ServiceAuthToken, ShouldEqual, "c60198e9-1864-4b68-ad0b-1e858e5b46a4")
 				So(cfg.ZebedeeURL, ShouldEqual, "http://localhost:8082")
 				So(cfg.IsPublishing, ShouldBeTrue)
+				So(cfg.EncryptionDisabled, ShouldBeFalse)
 			})
 		})
 	})

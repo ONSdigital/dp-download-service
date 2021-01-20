@@ -45,6 +45,7 @@ The endpoint `/healthcheck` checks the health of vault and the dataset api and r
 | AWS_ACCESS_KEY_ID            | -                                           | The AWS access key credential
 | AWS_SECRET_ACCESS_KEY        | -                                           | The AWS secret key credential
 | IS_PUBLISHING                | true                                        | Determines if the instance is publishing or not
+| ENCRYPTION_DISABLED          | false                                       | Determines whether vault is used and whether files are encrypted on S3
 
 ### Contributing
 
