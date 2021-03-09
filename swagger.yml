@@ -8,9 +8,9 @@ info:
     url: "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
 basePath: "/v1"
 tags:
-- name: "Public"
+  - name: "Public"
 schemes:
-- "http"
+  - "http"
 parameters:
   datasetID:
     name: datasetID
@@ -64,15 +64,38 @@ paths:
   /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv:
     get:
       tags:
-      - "Public"
+        - "Public"
       summary: "Download the full csv for a given datasetID, edition and version"
       description: "Request a download for the full CSV for a given datasetID, edition and version."
       parameters:
-      - $ref: '#/parameters/datasetID'
-      - $ref: '#/parameters/edition'
-      - $ref: '#/parameters/version'
+        - $ref: '#/parameters/datasetID'
+        - $ref: '#/parameters/edition'
+        - $ref: '#/parameters/version'
       produces:
-      - "text/csv"
+        - "text/csv"
+      responses:
+        200:
+          $ref: '#/responses/StreamedResponse'
+        301:
+          $ref: '#/responses/RequestRedirect'
+        400:
+          $ref: '#/responses/InvalidRequestError'
+        404:
+          $ref: '#/responses/NotFoundError'
+        500:
+          $ref: '#/responses/InternalError'
+  /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json:
+    get:
+      tags:
+        - "Public"
+      summary: "Download the csv metadata for a given datasetID, edition and version"
+      description: "Request a download for the metadata for the full CSV for a given datasetID, edition and version."
+      parameters:
+        - $ref: '#/parameters/datasetID'
+        - $ref: '#/parameters/edition'
+        - $ref: '#/parameters/version'
+      produces:
+        - "application/csvm+json"
       responses:
         200:
           $ref: '#/responses/StreamedResponse'
@@ -87,15 +110,15 @@ paths:
   /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx:
     get:
       tags:
-      - "Public"
+        - "Public"
       summary: "Download the full excel file for a given datasetID, edition and version"
       description: "Request a download for the full Excel file for a given datasetID, edition and version."
       parameters:
-      - $ref: '#/parameters/datasetID'
-      - $ref: '#/parameters/edition'
-      - $ref: '#/parameters/version'
+        - $ref: '#/parameters/datasetID'
+        - $ref: '#/parameters/edition'
+        - $ref: '#/parameters/version'
       produces:
-      - "application/vnd.ms-excel"
+        - "application/vnd.ms-excel"
       responses:
         200:
           $ref: '#/responses/StreamedResponse'
@@ -110,13 +133,13 @@ paths:
   /downloads/filter-outputs/{filterOutputID}.csv:
     get:
       tags:
-      - "Public"
+        - "Public"
       summary: "Download a filtered csv file for a given filter output id"
       description: "Request a download for a filtered csv file for a given filter ouput id which has selected dimension values"
       parameters:
-      - $ref: '#/parameters/filterOutputID'
+        - $ref: '#/parameters/filterOutputID'
       produces:
-      - "text/csv"
+        - "text/csv"
       responses:
         200:
           $ref: '#/responses/StreamedResponse'
@@ -131,13 +154,13 @@ paths:
   /downloads/filter-outputs/{filterOutputID}.xlsx:
     get:
       tags:
-      - "Public"
+        - "Public"
       summary: "Download a filtered excel file for a given filter output id"
       description: "Request a download for a filtered excel file for a given filter ouput id which has selected dimension values"
       parameters:
-      - $ref: '#/parameters/filterOutputID'
+        - $ref: '#/parameters/filterOutputID'
       produces:
-      - "text/csv"
+        - "text/csv"
       responses:
         200:
           $ref: '#/responses/StreamedResponse'
