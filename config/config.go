@@ -11,6 +11,7 @@ type Config struct {
 	BindAddr                   string        `envconfig:"BIND_ADDR"`
 	AwsRegion                  string        `envconfig:"AWS_REGION"`
 	BucketName                 string        `envconfig:"BUCKET_NAME"`
+	CodeListAPIURL             string        `envconfig:"CODE_LIST_API_URL"`
 	DatasetAPIURL              string        `envconfig:"DATASET_API_URL"`
 	DownloadServiceToken       string        `envconfig:"DOWNLOAD_SERVICE_TOKEN"     json:"-"`
 	DatasetAuthToken           string        `envconfig:"DATASET_AUTH_TOKEN"         json:"-"`
@@ -27,6 +28,18 @@ type Config struct {
 	ZebedeeURL                 string        `envconfig:"ZEBEDEE_URL"`
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
 	EncryptionDisabled         bool          `envconfig:"ENCRYPTION_DISABLED"`
+	EnableMongo                bool          `envconfig:"ENABLE_MONGO"`
+	MongoConfig                MongoConfig
+}
+
+// MongoConfig contains the config required to connect to MongoDB.
+type MongoConfig struct {
+	BindAddr   string `envconfig:"MONGODB_BIND_ADDR"   json:"-"`
+	Collection string `envconfig:"MONGODB_COLLECTION"`
+	Database   string `envconfig:"MONGODB_DATABASE"`
+	Username   string `envconfig:"MONGODB_USERNAME"    json:"-"`
+	Password   string `envconfig:"MONGODB_PASSWORD"    json:"-"`
+	IsSSL      bool   `envconfig:"MONGODB_IS_SSL"`
 }
 
 var cfg *Config
@@ -41,6 +54,7 @@ func Get() (*Config, error) {
 		BindAddr:                   "localhost:23600",
 		AwsRegion:                  "eu-west-1",
 		BucketName:                 "csv-exported",
+		CodeListAPIURL:             "http://localhost:22400",
 		DatasetAPIURL:              "http://localhost:22000",
 		FilterAPIURL:               "http://localhost:22100",
 		ImageAPIURL:                "http://localhost:24700",
@@ -56,6 +70,15 @@ func Get() (*Config, error) {
 		ZebedeeURL:                 "http://localhost:8082",
 		IsPublishing:               true,
 		EncryptionDisabled:         false,
+		EnableMongo:                false,
+		MongoConfig: MongoConfig{
+			BindAddr:   "localhost:27017",
+			Collection: "datasets",
+			Database:   "datasets",
+			Username:   "",
+			Password:   "",
+			IsSSL:      false,
+		},
 	}
 
 	if err := envconfig.Process("", cfg); err != nil {

@@ -45,6 +45,10 @@ acceptance:
 test:
 	go test -cover $(shell go list ./... | grep -v /vendor/)
 
+.PHONY: lint
+lint:
+	exit
+
 .PHONY: vault
 vault:
 	@echo "$(VAULT_POLICY)"

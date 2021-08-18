@@ -13,6 +13,7 @@ func getConfigEnv() map[string]string {
 	return map[string]string{
 		"BIND_ADDR":                    os.Getenv("BIND_ADDR"),
 		"BUCKET_NAME":                  os.Getenv("BUCKET_NAME"),
+		"CODE_LIST_API_URL":            os.Getenv("CODE_LIST_API_URL"),
 		"DATASET_API_URL":              os.Getenv("DATASET_API_URL"),
 		"DOWNLOAD_SERVICE_TOKEN":       os.Getenv("DOWNLOAD_SERVICE_TOKEN"),
 		"DATASET_AUTH_TOKEN":           os.Getenv("DATASET_AUTH_TOKEN"),
@@ -29,6 +30,13 @@ func getConfigEnv() map[string]string {
 		"ZEBEDEE_URL":                  os.Getenv("ZEBEDEE_URL"),
 		"IS_PUBLISHING":                os.Getenv("IS_PUBLISHING"),
 		"ENCRYPTION_DISABLED":          os.Getenv("ENCRYPTION_DISABLED"),
+		"ENABLE_MONGO":                 os.Getenv("ENABLE_MONGO"),
+		"MONGODB_BIND_ADDR":            os.Getenv("MONGODB_BIND_ADDR"),
+		"MONGODB_COLLECTION":           os.Getenv("MONGODB_COLLECTION"),
+		"MONGODB_DATABASE":             os.Getenv("MONGODB_DATABASE"),
+		"MONGODB_USERNAME":             os.Getenv("MONGODB_USERNAME"),
+		"MONGODB_PASSWORD":             os.Getenv("MONGODB_PASSWORD"),
+		"MONGODB_IS_SSL":               os.Getenv("MONGODB_IS_SSL"),
 	}
 }
 
@@ -59,6 +67,7 @@ func TestSpec(t *testing.T) {
 			Convey("the values should be set to the expected defaults", func() {
 				So(cfg.BindAddr, ShouldEqual, "localhost:23600")
 				So(cfg.BucketName, ShouldEqual, "csv-exported")
+				So(cfg.CodeListAPIURL, ShouldEqual, "http://localhost:22400")
 				So(cfg.DatasetAPIURL, ShouldEqual, "http://localhost:22000")
 				So(cfg.DatasetAuthToken, ShouldEqual, "FD0108EA-825D-411C-9B1D-41EF7727F465")
 				So(cfg.DownloadServiceToken, ShouldEqual, "QB0108EZ-825D-412C-9B1D-41EF7747F462")
@@ -73,6 +82,13 @@ func TestSpec(t *testing.T) {
 				So(cfg.ZebedeeURL, ShouldEqual, "http://localhost:8082")
 				So(cfg.IsPublishing, ShouldBeTrue)
 				So(cfg.EncryptionDisabled, ShouldBeFalse)
+				So(cfg.EnableMongo, ShouldBeFalse)
+				So(cfg.MongoConfig.BindAddr, ShouldEqual, "localhost:27017")
+				So(cfg.MongoConfig.Collection, ShouldEqual, "datasets")
+				So(cfg.MongoConfig.Database, ShouldEqual, "datasets")
+				So(cfg.MongoConfig.Username, ShouldEqual, "")
+				So(cfg.MongoConfig.Password, ShouldEqual, "")
+				So(cfg.MongoConfig.IsSSL, ShouldBeFalse)
 			})
 		})
 	})
