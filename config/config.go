@@ -73,8 +73,8 @@ func Get() (*Config, error) {
 		EnableMongo:                false,
 		MongoConfig: MongoConfig{
 			BindAddr:   "localhost:27017",
-			Collection: "datasets",
-			Database:   "datasets",
+			Collection: "",
+			Database:   "",
 			Username:   "",
 			Password:   "",
 			IsSSL:      false,

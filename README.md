@@ -39,8 +39,8 @@ The endpoint `/healthcheck` checks the health of vault and the dataset api and r
 | BIND_ADDR                    | :23600                                      | The host and port to bind to
 | ENABLE_MONGO                 | false                                       | Set to true to enable mongo connections
 | MONGODB_BIND_ADDR            | localhost:27017                             | The MongoDB bind address
-| MONGODB_DATABASE             | datasets                                    | The MongoDB dataset database
-| MONGODB_COLLECTION           | datasets                                    | MongoDB collection
+| MONGODB_DATABASE             | _empty_                                     | The MongoDB dataset database
+| MONGODB_COLLECTION           | _empty_                                     | MongoDB collection
 | MONGODB_USERNAME             | _empty_                                     | MongoDB Username
 | MONGODB_PASSWORD             | _empty_                                     | MongoDB Password
 | MONGODB_IS_SSL               | false                                       | is SSL enabled for mongo server?

@@ -13,11 +13,6 @@ import (
 const (
 	connectTimeoutInSeconds = 5
 	queryTimeoutInSeconds   = 15
-
-	editionsCollection     = "editions"
-	instanceCollection     = "instances"
-	instanceLockCollection = "instances_locks"
-	dimensionOptions       = "dimension.options"
 )
 
 // Mongo represents a simplistic MongoDB configuration.
@@ -51,8 +46,8 @@ func (m *Mongo) Init(ctx context.Context) (err error) {
 		ClusterEndpoint:               m.URI,
 		Database:                      m.Database,
 		Collection:                    m.Collection,
-		IsWriteConcernMajorityEnabled: false,
-		IsStrongReadConcernEnabled:    true,
+		IsWriteConcernMajorityEnabled: true,
+		IsStrongReadConcernEnabled:    false,
 	}
 
 	conn, err := dpmongo.Open(connCfg)
@@ -61,24 +56,16 @@ func (m *Mongo) Init(ctx context.Context) (err error) {
 	}
 	m.Connection = conn
 
-	databaseCollectionBuilder := make(map[dpMongoHealth.Database][]dpMongoHealth.Collection)
-	databaseCollectionBuilder[(dpMongoHealth.Database)(m.Database)] = []dpMongoHealth.Collection{
-		(dpMongoHealth.Collection)(m.Collection),
-		(dpMongoHealth.Collection)(editionsCollection),
-		(dpMongoHealth.Collection)(instanceCollection),
-		(dpMongoHealth.Collection)(instanceLockCollection),
-		(dpMongoHealth.Collection)(dimensionOptions),
-	}
+	// set up databaseCollectionBuilder here when collections are known
 
 	// Create client and healthclient from session
-	m.client = dpMongoHealth.NewClientWithCollections(m.Connection, databaseCollectionBuilder)
+	m.client = dpMongoHealth.NewClientWithCollections(m.Connection, nil)
 	m.healthClient = &dpMongoHealth.CheckMongoClient{
 		Client:      *m.client,
 		Healthcheck: m.client.Healthcheck,
 	}
 
-	// Create MongoDB lock client, which also starts the purger loop
-	m.lockClient = dpMongoLock.New(ctx, m.Connection, instanceCollection)
+	// create lock client here when collections are known
 	return nil
 }
 
