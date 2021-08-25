@@ -20,7 +20,6 @@ type Mongo struct {
 	Username     string
 	Password     string
 	IsSSL        bool
-	CodeListURL  string
 	Collection   string
 	Database     string
 	DatasetURL   string

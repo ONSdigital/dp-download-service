@@ -45,7 +45,6 @@ The endpoint `/healthcheck` checks the health of vault and the dataset api and r
 | MONGODB_PASSWORD             | _empty_                                     | MongoDB Password
 | MONGODB_IS_SSL               | false                                       | is SSL enabled for mongo server?
 | BUCKET_NAME                  | "csv-exported"                              | The s3 bucket to decrypt files from
-| CODE_LIST_API_URL            | http://localhost:22400                      | The CodeList API url
 | DATASET_API_URL              | http://localhost:22000                      | The dataset api url
 | DOWNLOAD_SERVICE_TOKEN       | QB0108EZ-825D-412C-9B1D-41EF7747F462        | The token to request public/private links from dataset api
 | FILTER_API_URL               | http://localhost:22100                      | The filter api url

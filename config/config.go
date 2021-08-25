@@ -11,7 +11,6 @@ type Config struct {
 	BindAddr                   string        `envconfig:"BIND_ADDR"`
 	AwsRegion                  string        `envconfig:"AWS_REGION"`
 	BucketName                 string        `envconfig:"BUCKET_NAME"`
-	CodeListAPIURL             string        `envconfig:"CODE_LIST_API_URL"`
 	DatasetAPIURL              string        `envconfig:"DATASET_API_URL"`
 	DownloadServiceToken       string        `envconfig:"DOWNLOAD_SERVICE_TOKEN"     json:"-"`
 	DatasetAuthToken           string        `envconfig:"DATASET_AUTH_TOKEN"         json:"-"`
@@ -54,7 +53,6 @@ func Get() (*Config, error) {
 		BindAddr:                   "localhost:23600",
 		AwsRegion:                  "eu-west-1",
 		BucketName:                 "csv-exported",
-		CodeListAPIURL:             "http://localhost:22400",
 		DatasetAPIURL:              "http://localhost:22000",
 		FilterAPIURL:               "http://localhost:22100",
 		ImageAPIURL:                "http://localhost:24700",

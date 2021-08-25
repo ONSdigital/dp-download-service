@@ -76,14 +76,13 @@ func main() {
 	var mongodb *mongo.Mongo
 	if cfg.EnableMongo {
 		mongodb = &mongo.Mongo{
-			CodeListURL: cfg.CodeListAPIURL,
-			Collection:  cfg.MongoConfig.Collection,
-			Database:    cfg.MongoConfig.Database,
-			DatasetURL:  cfg.DatasetAPIURL,
-			URI:         cfg.MongoConfig.BindAddr,
-			Username:    cfg.MongoConfig.Username,
-			Password:    cfg.MongoConfig.Password,
-			IsSSL:       cfg.MongoConfig.IsSSL,
+			Collection: cfg.MongoConfig.Collection,
+			Database:   cfg.MongoConfig.Database,
+			DatasetURL: cfg.DatasetAPIURL,
+			URI:        cfg.MongoConfig.BindAddr,
+			Username:   cfg.MongoConfig.Username,
+			Password:   cfg.MongoConfig.Password,
+			IsSSL:      cfg.MongoConfig.IsSSL,
 		}
 		if err = mongodb.Init(ctx); err != nil {
 			log.Event(ctx, "could not create mongo client", log.FATAL, log.Error(err))

@@ -13,7 +13,6 @@ func getConfigEnv() map[string]string {
 	return map[string]string{
 		"BIND_ADDR":                    os.Getenv("BIND_ADDR"),
 		"BUCKET_NAME":                  os.Getenv("BUCKET_NAME"),
-		"CODE_LIST_API_URL":            os.Getenv("CODE_LIST_API_URL"),
 		"DATASET_API_URL":              os.Getenv("DATASET_API_URL"),
 		"DOWNLOAD_SERVICE_TOKEN":       os.Getenv("DOWNLOAD_SERVICE_TOKEN"),
 		"DATASET_AUTH_TOKEN":           os.Getenv("DATASET_AUTH_TOKEN"),
@@ -67,7 +66,6 @@ func TestSpec(t *testing.T) {
 			Convey("the values should be set to the expected defaults", func() {
 				So(cfg.BindAddr, ShouldEqual, "localhost:23600")
 				So(cfg.BucketName, ShouldEqual, "csv-exported")
-				So(cfg.CodeListAPIURL, ShouldEqual, "http://localhost:22400")
 				So(cfg.DatasetAPIURL, ShouldEqual, "http://localhost:22000")
 				So(cfg.DatasetAuthToken, ShouldEqual, "FD0108EA-825D-411C-9B1D-41EF7727F465")
 				So(cfg.DownloadServiceToken, ShouldEqual, "QB0108EZ-825D-412C-9B1D-41EF7747F462")
