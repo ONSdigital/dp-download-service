@@ -10,7 +10,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/dp-api-clients-go/image"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 //go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/downloads FilterClient,DatasetClient,ImageClient
@@ -75,7 +75,7 @@ type Downloader struct {
 func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType, variant string) (Model, error) {
 
 	if fileType == TypeImage {
-		log.Event(ctx, "getting image downloads", log.INFO, log.Data{
+		log.Info(ctx, "getting image downloads", log.Data{
 			"image_id": p.ImageID,
 			"variant":  p.Variant,
 			"filename": p.Filename,
@@ -84,14 +84,14 @@ func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType, va
 	}
 
 	if fileType == TypeFilterOutput {
-		log.Event(ctx, "getting downloads for filter output job", log.INFO, log.Data{
+		log.Info(ctx, "getting downloads for filter output job", log.Data{
 			"filter_output_id": p.FilterOutputID,
 			"collection_id":    p.CollectionID,
 		})
 		return d.getFilterOutputDownload(ctx, p, variant)
 	}
 
-	log.Event(ctx, "getting downloads for dataset version", log.INFO, log.Data{
+	log.Info(ctx, "getting downloads for dataset version", log.Data{
 		"dataset_id":    p.DatasetID,
 		"edition":       p.Edition,
 		"version":       p.Version,

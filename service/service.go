@@ -19,7 +19,7 @@ import (
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphandlers "github.com/ONSdigital/dp-net/handlers"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 
 	gorillahandlers "github.com/gorilla/handlers"
@@ -79,7 +79,7 @@ func Create(
 
 	// For non-whitelisted endpoints, do identityHandler or corsHandler
 	if cfg.IsPublishing {
-		log.Event(ctx, "private endpoints are enabled. using identity middleware", log.INFO)
+		log.Info(ctx, "private endpoints are enabled. using identity middleware")
 		identityHandler := dphandlers.IdentityWithHTTPClient(clientsidentity.NewWithHealthClient(zc))
 		middlewareChain = middlewareChain.Append(identityHandler)
 	} else {
@@ -117,27 +117,27 @@ func (d Download) Start(ctx context.Context) {
 	d.run(ctx)
 
 	<-signals
-	log.Event(ctx, "os signal received", log.INFO)
+	log.Info(ctx, "os signal received")
 
 	shutdownCtx, cancel := context.WithTimeout(ctx, d.shutdown)
 
 	// Gracefully shutdown the application closing any open resources.
-	log.Event(shutdownCtx, "shutdown with timeout", log.INFO, log.Data{"timeout": d.shutdown})
+	log.Info(shutdownCtx, "shutdown with timeout", log.Data{"timeout": d.shutdown})
 
 	shutdownStart := time.Now()
 	d.close(shutdownCtx)
 	d.healthCheck.Stop()
 
-	log.Event(shutdownCtx, "shutdown complete", log.INFO, log.Data{"duration": time.Since(shutdownStart)})
+	log.Info(shutdownCtx, "shutdown complete", log.Data{"duration": time.Since(shutdownStart)})
 	cancel()
 	os.Exit(1)
 }
 
 func (d Download) run(ctx context.Context) {
 	go func() {
-		log.Event(ctx, "starting download service...", log.INFO)
+		log.Info(ctx, "starting download service...")
 		if err := d.server.ListenAndServe(); err != nil {
-			log.Event(ctx, "download service http service returned an error", log.ERROR, log.Error(err))
+			log.Error(ctx, "download service http service returned an error", err)
 		}
 	}()
 }
@@ -146,6 +146,6 @@ func (d Download) close(ctx context.Context) error {
 	if err := d.server.Shutdown(ctx); err != nil {
 		return err
 	}
-	log.Event(ctx, "graceful shutdown of http server complete", log.INFO)
+	log.Info(ctx, "graceful shutdown of http server complete")
 	return nil
 }

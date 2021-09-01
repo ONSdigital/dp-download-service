@@ -15,7 +15,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/image"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 var (
@@ -34,11 +34,11 @@ func main() {
 
 	cfg, err := config.Get()
 	if err != nil {
-		log.Event(ctx, "error getting config", log.FATAL, log.Error(err))
+		log.Fatal(ctx, "error getting config", err)
 		os.Exit(1)
 	}
 
-	log.Event(ctx, "config on startup", log.INFO, log.Data{"config": cfg})
+	log.Info(ctx, "config on startup", log.Data{"config": cfg})
 
 	// Create Dataset API client.
 	dc := dataset.NewAPIClient(cfg.DatasetAPIURL)
@@ -48,7 +48,7 @@ func main() {
 	if !cfg.EncryptionDisabled {
 		vc, err = vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 3)
 		if err != nil {
-			log.Event(ctx, "could not create a vault client", log.FATAL, log.Error(err))
+			log.Fatal(ctx, "could not create a vault client", err)
 			os.Exit(1)
 		}
 	}
@@ -68,13 +68,13 @@ func main() {
 	// Create S3 client with region and bucket name.
 	s3, err := s3client.NewClient(cfg.AwsRegion, cfg.BucketName, !cfg.EncryptionDisabled)
 	if err != nil {
-		log.Event(ctx, "could not create the s3 client", log.ERROR, log.Error(err))
+		log.Error(ctx, "could not create the s3 client", err)
 	}
 
 	// Create healthcheck object with versionInfo and register Checkers.
 	versionInfo, err := healthcheck.NewVersionInfo(BuildTime, GitCommit, Version)
 	if err != nil {
-		log.Event(ctx, "failed to obtain version info for healthcheck", log.FATAL, log.Error(err))
+		log.Fatal(ctx, "failed to obtain version info for healthcheck", err)
 		os.Exit(1)
 	}
 	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
@@ -111,36 +111,36 @@ func registerCheckers(ctx context.Context, hc *healthcheck.HealthCheck, isPublis
 
 	if err := hc.AddCheck("Dataset API", dc.Checker); err != nil {
 		hasErrors = true
-		log.Event(ctx, "error adding check for dataset api", log.ERROR, log.Error(err))
+		log.Error(ctx, "error adding check for dataset api", err)
 	}
 
 	if vc != nil {
 		if err := hc.AddCheck("Vault", vc.Checker); err != nil {
 			hasErrors = true
-			log.Event(ctx, "error adding check for vault", log.ERROR, log.Error(err))
+			log.Error(ctx, "error adding check for vault", err)
 		}
 	}
 
 	if err := hc.AddCheck("Filter API", fc.Checker); err != nil {
 		hasErrors = true
-		log.Event(ctx, "error adding check for filter api", log.ERROR, log.Error(err))
+		log.Error(ctx, "error adding check for filter api", err)
 	}
 
 	if err := hc.AddCheck("Image API", ic.Checker); err != nil {
 		hasErrors = true
-		log.Event(ctx, "error adding check for image api", log.ERROR, log.Error(err))
+		log.Error(ctx, "error adding check for image api", err)
 	}
 
 	if isPublishing {
 		if err := hc.AddCheck("Zebedee", zc.Checker); err != nil {
 			hasErrors = true
-			log.Event(ctx, "error adding check for zebedee", log.ERROR, log.Error(err))
+			log.Error(ctx, "error adding check for zebedee", err)
 		}
 	}
 
 	if err := hc.AddCheck("S3", s3.Checker); err != nil {
 		hasErrors = true
-		log.Event(ctx, "error adding check for s3", log.ERROR, log.Error(err))
+		log.Error(ctx, "error adding check for s3", err)
 	}
 
 	if hasErrors {

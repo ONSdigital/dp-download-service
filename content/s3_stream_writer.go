@@ -6,7 +6,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 var (
@@ -102,6 +102,6 @@ func (s *S3StreamWriter) getVaultKeyForFile(secretPath string) ([]byte, error) {
 
 func close(ctx context.Context, closer io.Closer) {
 	if err := closer.Close(); err != nil {
-		log.Event(ctx, "error closing io.Closer", log.ERROR, log.Error(err))
+		log.Error(ctx, "error closing io.Closer", err)
 	}
 }

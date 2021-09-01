@@ -8,7 +8,7 @@ require (
 	github.com/ONSdigital/dp-net v1.0.10
 	github.com/ONSdigital/dp-s3 v1.5.0
 	github.com/ONSdigital/dp-vault v1.1.1
-	github.com/ONSdigital/log.go v1.0.1
+	github.com/ONSdigital/log.go/v2 v2.0.9
 	github.com/golang/mock v1.4.4
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.8.0
