@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	testErrDataset                   = errors.New("borked dataset")
+	errDataset                       = errors.New("borked dataset")
 	testDatasetVersionDownloadParams = Parameters{
 		UserAuthToken:        "userAuthToken",
 		ServiceAuthToken:     "serviceAuthToken",
@@ -36,7 +36,7 @@ func TestGetDownloadForDataset(t *testing.T) {
 	defer ctrl.Finish()
 
 	Convey("should return error is dataset client get version returns an error", t, func() {
-		datasetCli := erroringDatasetClient(ctrl, testDatasetVersionDownloadParams, testErrDataset)
+		datasetCli := erroringDatasetClient(ctrl, testDatasetVersionDownloadParams, errDataset)
 		filterCli := filterOutputClientNeverInvoked(ctrl)
 		imgCli := imageClientNeverInvoked(ctrl)
 
@@ -46,14 +46,14 @@ func TestGetDownloadForDataset(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion, "")
+		downloads, err := d.Get(ctx, testDatasetVersionDownloadParams, TypeDatasetVersion, "")
 
 		So(downloads.IsPublished, ShouldBeFalse)
 		So(downloads.Public, ShouldBeBlank)
 		So(downloads.PrivateFilename, ShouldBeBlank)
 		So(downloads.PrivateS3Path, ShouldBeBlank)
 		So(downloads.PrivateVaultPath, ShouldBeBlank)
-		So(err, ShouldResemble, testErrDataset)
+		So(err, ShouldResemble, errDataset)
 	})
 
 	Convey("should return error if privateURL is invalid", t, func() {
@@ -70,7 +70,7 @@ func TestGetDownloadForDataset(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion, "csv")
+		downloads, err := d.Get(ctx, testDatasetVersionDownloadParams, TypeDatasetVersion, "csv")
 
 		So(downloads.IsPublished, ShouldBeFalse)
 		So(downloads.Public, ShouldBeBlank)
@@ -94,7 +94,7 @@ func TestGetDownloadForDataset(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion, "csv")
+		downloads, err := d.Get(ctx, testDatasetVersionDownloadParams, TypeDatasetVersion, "csv")
 
 		So(downloads.IsPublished, ShouldBeFalse)
 		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
@@ -117,7 +117,7 @@ func TestGetDownloadForDataset(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion, "csv")
+		downloads, err := d.Get(ctx, testDatasetVersionDownloadParams, TypeDatasetVersion, "csv")
 
 		So(downloads.IsPublished, ShouldBeFalse)
 		So(downloads.Public, ShouldBeBlank)
@@ -141,7 +141,7 @@ func TestGetDownloadForDataset(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testDatasetVersionDownloadParams, TypeDatasetVersion, "csv")
+		downloads, err := d.Get(ctx, testDatasetVersionDownloadParams, TypeDatasetVersion, "csv")
 
 		So(downloads.IsPublished, ShouldBeFalse)
 		So(downloads.Public, ShouldResemble, testCSVPublicUrl)

@@ -111,7 +111,7 @@ func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType, va
 		return d.getInstanceDownload(ctx, p, variant)
 
 	default:
-		return Model{}, errors.New("invalid fileType")
+		return Model{}, errors.New("unsupported file type")
 
 	}
 }
@@ -181,7 +181,7 @@ func (d Downloader) getDatasetVersionDownload(ctx context.Context, p Parameters,
 	}
 
 	model := Model{
-		IsPublished: "published" == version.State,
+		IsPublished: version.State == dataset.StatePublished.String(),
 	}
 
 	v, ok := version.Downloads[variant]
