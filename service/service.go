@@ -11,14 +11,14 @@ import (
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/justinas/alice"
 
-	"github.com/ONSdigital/dp-api-clients-go/health"
-	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
-	"github.com/ONSdigital/dp-api-clients-go/middleware"
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
+	clientsidentity "github.com/ONSdigital/dp-api-clients-go/v2/identity"
+	"github.com/ONSdigital/dp-api-clients-go/v2/middleware"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/handlers"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphandlers "github.com/ONSdigital/dp-net/handlers"
-	dphttp "github.com/ONSdigital/dp-net/http"
+	dphandlers "github.com/ONSdigital/dp-net/v2/handlers"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
 
@@ -66,6 +66,7 @@ func Create(
 		IsPublishing: cfg.IsPublishing,
 	}
 
+	router.Path("/downloads/instances/{instanceID}.csv").HandlerFunc(d.DoInstance("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.DoDatasetVersion("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.DoDatasetVersion("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.DoDatasetVersion("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))

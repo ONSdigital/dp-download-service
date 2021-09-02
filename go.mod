@@ -3,9 +3,9 @@ module github.com/ONSdigital/dp-download-service
 go 1.15
 
 require (
-	github.com/ONSdigital/dp-api-clients-go v1.31.1
+	github.com/ONSdigital/dp-api-clients-go/v2 v2.1.14
 	github.com/ONSdigital/dp-healthcheck v1.0.5
-	github.com/ONSdigital/dp-net v1.0.10
+	github.com/ONSdigital/dp-net/v2 v2.2.0-beta
 	github.com/ONSdigital/dp-s3 v1.5.0
 	github.com/ONSdigital/dp-vault v1.1.1
 	github.com/ONSdigital/log.go v1.0.1
