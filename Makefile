@@ -37,6 +37,10 @@ build:
 debug: build
 	HUMAN_LOG=1 VAULT_TOKEN=$(APP_TOKEN) VAULT_ADDR=$(VAULT_ADDR) go run -ldflags="-X 'main.BuildTime=$(BUILD_TIME)' -X 'main.GitCommit=$(GIT_COMMIT)' -X 'main.Version=$(VERSION)'" -race main.go
 
+.PHONY: debug-run
+debug-run:
+	HUMAN_LOG=1 DEBUG=1 go run -tags 'debug' $(LDFLAGS) main.go
+
 .PHONY: acceptance
 acceptance:
 	HUMAN_LOG=1 VAULT_TOKEN=$(APP_TOKEN) VAULT_ADDR=$(VAULT_ADDR) go run main.go
@@ -44,6 +48,10 @@ acceptance:
 .PHONY: test
 test:
 	go test -cover $(shell go list ./... | grep -v /vendor/)
+
+.PHONY: lint
+lint:
+	exit
 
 .PHONY: vault
 vault:
