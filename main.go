@@ -3,11 +3,15 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	s3client "github.com/ONSdigital/dp-s3"
 	vault "github.com/ONSdigital/dp-vault"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
@@ -26,6 +30,32 @@ var (
 	// Version represents the version of the service that is running
 	Version string
 )
+
+// GetS3Client obtains a new S3 client, or a local storage client if a non-empty LocalObjectStore is provided
+func GetS3Client(cfg *config.Config) (*s3client.S3, error) {
+	if cfg.LocalObjectStore != "" {
+		s3Config := &aws.Config{
+			Credentials:      credentials.NewStaticCredentials(cfg.MinioAccessKey, cfg.MinioSecretKey, ""),
+			Endpoint:         aws.String(cfg.LocalObjectStore),
+			Region:           aws.String(cfg.AwsRegion),
+			DisableSSL:       aws.Bool(true),
+			S3ForcePathStyle: aws.Bool(true),
+		}
+
+		s, err := session.NewSession(s3Config)
+		if err != nil {
+			return nil, fmt.Errorf("could not create the local-object-store s3 client: %w", err)
+		}
+		return s3client.NewClientWithSession(cfg.BucketName, s), nil
+	}
+
+	s3, err := s3client.NewClient(cfg.AwsRegion, cfg.BucketName)
+	if err != nil {
+		return nil, fmt.Errorf("could not create the s3 client: %w", err)
+	}
+
+	return s3, nil
+}
 
 func main() {
 	log.Namespace = "dp-download-service"
@@ -66,9 +96,10 @@ func main() {
 	}
 
 	// Create S3 client with region and bucket name.
-	s3, err := s3client.NewClient(cfg.AwsRegion, cfg.BucketName, !cfg.EncryptionDisabled)
+	s3, err := GetS3Client(cfg)
+	// s3, err := s3client.NewClient(cfg.AwsRegion, cfg.BucketName, !cfg.EncryptionDisabled)
 	if err != nil {
-		log.Event(ctx, "could not create the s3 client", log.ERROR, log.Error(err))
+		log.Event(ctx, "error getting S3 client", log.ERROR, log.Error(err))
 	}
 
 	// Create healthcheck object with versionInfo and register Checkers.
@@ -144,7 +175,7 @@ func registerCheckers(ctx context.Context, hc *healthcheck.HealthCheck, isPublis
 	}
 
 	if hasErrors {
-		return errors.New("Error(s) registering checkers for healthcheck")
+		return errors.New("error(s) registering checkers for healthcheck")
 	}
 	return nil
 }

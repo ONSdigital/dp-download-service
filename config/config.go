@@ -25,6 +25,9 @@ type Config struct {
 	VaultAddress               string        `envconfig:"VAULT_ADDR"`
 	VaultPath                  string        `envconfig:"VAULT_PATH"`
 	ZebedeeURL                 string        `envconfig:"ZEBEDEE_URL"`
+	LocalObjectStore           string        `envconfig:"LOCAL_OBJECT_STORE"`
+	MinioAccessKey             string        `envconfig:"MINIO_ACCESS_KEY"`
+	MinioSecretKey             string        `envconfig:"MINIO_SECRET_KEY"`
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
 	EncryptionDisabled         bool          `envconfig:"ENCRYPTION_DISABLED"`
 }
@@ -54,6 +57,9 @@ func Get() (*Config, error) {
 		VaultToken:                 "",
 		VaultPath:                  "secret/shared/psk",
 		ZebedeeURL:                 "http://localhost:8082",
+		LocalObjectStore:           "",
+		MinioAccessKey:             "",
+		MinioSecretKey:             "",
 		IsPublishing:               true,
 		EncryptionDisabled:         false,
 	}
