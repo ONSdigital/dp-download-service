@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 
+	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -25,12 +26,14 @@ type S3ReadCloser io.ReadCloser
 // VaultClient is an interface to represent methods called to action upon vault
 type VaultClient interface {
 	ReadKey(path, key string) (string, error)
+	Checker(ctx context.Context, check *healthcheck.CheckState) error
 }
 
 // S3Client is an interface to represent methods called to retrieve from s3
 type S3Client interface {
 	Get(key string) (io.ReadCloser, *int64, error)
 	GetWithPSK(key string, psk []byte) (io.ReadCloser, *int64, error)
+	Checker(ctx context.Context, check *healthcheck.CheckState) error
 }
 
 //S3StreamWriter provides functionality for retrieving content from an S3 bucket. The content is streamed/decrypted and and written to the provided io.Writer

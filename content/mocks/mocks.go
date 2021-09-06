@@ -5,35 +5,52 @@
 package mocks
 
 import (
-	gomock "github.com/golang/mock/gomock"
+	context "context"
 	io "io"
 	reflect "reflect"
+
+	healthcheck "github.com/ONSdigital/dp-healthcheck/healthcheck"
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockVaultClient is a mock of VaultClient interface
+// MockVaultClient is a mock of VaultClient interface.
 type MockVaultClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockVaultClientMockRecorder
 }
 
-// MockVaultClientMockRecorder is the mock recorder for MockVaultClient
+// MockVaultClientMockRecorder is the mock recorder for MockVaultClient.
 type MockVaultClientMockRecorder struct {
 	mock *MockVaultClient
 }
 
-// NewMockVaultClient creates a new mock instance
+// NewMockVaultClient creates a new mock instance.
 func NewMockVaultClient(ctrl *gomock.Controller) *MockVaultClient {
 	mock := &MockVaultClient{ctrl: ctrl}
 	mock.recorder = &MockVaultClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockVaultClient) EXPECT() *MockVaultClientMockRecorder {
 	return m.recorder
 }
 
-// ReadKey mocks base method
+// Checker mocks base method.
+func (m *MockVaultClient) Checker(arg0 context.Context, arg1 *healthcheck.CheckState) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Checker", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Checker indicates an expected call of Checker.
+func (mr *MockVaultClientMockRecorder) Checker(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checker", reflect.TypeOf((*MockVaultClient)(nil).Checker), arg0, arg1)
+}
+
+// ReadKey mocks base method.
 func (m *MockVaultClient) ReadKey(arg0, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReadKey", arg0, arg1)
@@ -42,36 +59,36 @@ func (m *MockVaultClient) ReadKey(arg0, arg1 string) (string, error) {
 	return ret0, ret1
 }
 
-// ReadKey indicates an expected call of ReadKey
+// ReadKey indicates an expected call of ReadKey.
 func (mr *MockVaultClientMockRecorder) ReadKey(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadKey", reflect.TypeOf((*MockVaultClient)(nil).ReadKey), arg0, arg1)
 }
 
-// MockWriter is a mock of Writer interface
+// MockWriter is a mock of Writer interface.
 type MockWriter struct {
 	ctrl     *gomock.Controller
 	recorder *MockWriterMockRecorder
 }
 
-// MockWriterMockRecorder is the mock recorder for MockWriter
+// MockWriterMockRecorder is the mock recorder for MockWriter.
 type MockWriterMockRecorder struct {
 	mock *MockWriter
 }
 
-// NewMockWriter creates a new mock instance
+// NewMockWriter creates a new mock instance.
 func NewMockWriter(ctrl *gomock.Controller) *MockWriter {
 	mock := &MockWriter{ctrl: ctrl}
 	mock.recorder = &MockWriterMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockWriter) EXPECT() *MockWriterMockRecorder {
 	return m.recorder
 }
 
-// Write mocks base method
+// Write mocks base method.
 func (m *MockWriter) Write(arg0 []byte) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Write", arg0)
@@ -80,36 +97,50 @@ func (m *MockWriter) Write(arg0 []byte) (int, error) {
 	return ret0, ret1
 }
 
-// Write indicates an expected call of Write
+// Write indicates an expected call of Write.
 func (mr *MockWriterMockRecorder) Write(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockWriter)(nil).Write), arg0)
 }
 
-// MockS3Client is a mock of S3Client interface
+// MockS3Client is a mock of S3Client interface.
 type MockS3Client struct {
 	ctrl     *gomock.Controller
 	recorder *MockS3ClientMockRecorder
 }
 
-// MockS3ClientMockRecorder is the mock recorder for MockS3Client
+// MockS3ClientMockRecorder is the mock recorder for MockS3Client.
 type MockS3ClientMockRecorder struct {
 	mock *MockS3Client
 }
 
-// NewMockS3Client creates a new mock instance
+// NewMockS3Client creates a new mock instance.
 func NewMockS3Client(ctrl *gomock.Controller) *MockS3Client {
 	mock := &MockS3Client{ctrl: ctrl}
 	mock.recorder = &MockS3ClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockS3Client) EXPECT() *MockS3ClientMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method
+// Checker mocks base method.
+func (m *MockS3Client) Checker(arg0 context.Context, arg1 *healthcheck.CheckState) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Checker", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Checker indicates an expected call of Checker.
+func (mr *MockS3ClientMockRecorder) Checker(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checker", reflect.TypeOf((*MockS3Client)(nil).Checker), arg0, arg1)
+}
+
+// Get mocks base method.
 func (m *MockS3Client) Get(arg0 string) (io.ReadCloser, *int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0)
@@ -119,13 +150,13 @@ func (m *MockS3Client) Get(arg0 string) (io.ReadCloser, *int64, error) {
 	return ret0, ret1, ret2
 }
 
-// Get indicates an expected call of Get
+// Get indicates an expected call of Get.
 func (mr *MockS3ClientMockRecorder) Get(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockS3Client)(nil).Get), arg0)
 }
 
-// GetWithPSK mocks base method
+// GetWithPSK mocks base method.
 func (m *MockS3Client) GetWithPSK(arg0 string, arg1 []byte) (io.ReadCloser, *int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetWithPSK", arg0, arg1)
@@ -135,36 +166,36 @@ func (m *MockS3Client) GetWithPSK(arg0 string, arg1 []byte) (io.ReadCloser, *int
 	return ret0, ret1, ret2
 }
 
-// GetWithPSK indicates an expected call of GetWithPSK
+// GetWithPSK indicates an expected call of GetWithPSK.
 func (mr *MockS3ClientMockRecorder) GetWithPSK(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithPSK", reflect.TypeOf((*MockS3Client)(nil).GetWithPSK), arg0, arg1)
 }
 
-// MockS3ReadCloser is a mock of S3ReadCloser interface
+// MockS3ReadCloser is a mock of S3ReadCloser interface.
 type MockS3ReadCloser struct {
 	ctrl     *gomock.Controller
 	recorder *MockS3ReadCloserMockRecorder
 }
 
-// MockS3ReadCloserMockRecorder is the mock recorder for MockS3ReadCloser
+// MockS3ReadCloserMockRecorder is the mock recorder for MockS3ReadCloser.
 type MockS3ReadCloserMockRecorder struct {
 	mock *MockS3ReadCloser
 }
 
-// NewMockS3ReadCloser creates a new mock instance
+// NewMockS3ReadCloser creates a new mock instance.
 func NewMockS3ReadCloser(ctrl *gomock.Controller) *MockS3ReadCloser {
 	mock := &MockS3ReadCloser{ctrl: ctrl}
 	mock.recorder = &MockS3ReadCloserMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockS3ReadCloser) EXPECT() *MockS3ReadCloserMockRecorder {
 	return m.recorder
 }
 
-// Close mocks base method
+// Close mocks base method.
 func (m *MockS3ReadCloser) Close() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
@@ -172,13 +203,13 @@ func (m *MockS3ReadCloser) Close() error {
 	return ret0
 }
 
-// Close indicates an expected call of Close
+// Close indicates an expected call of Close.
 func (mr *MockS3ReadCloserMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockS3ReadCloser)(nil).Close))
 }
 
-// Read mocks base method
+// Read mocks base method.
 func (m *MockS3ReadCloser) Read(arg0 []byte) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Read", arg0)
@@ -187,7 +218,7 @@ func (m *MockS3ReadCloser) Read(arg0 []byte) (int, error) {
 	return ret0, ret1
 }
 
-// Read indicates an expected call of Read
+// Read indicates an expected call of Read.
 func (mr *MockS3ReadCloserMockRecorder) Read(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockS3ReadCloser)(nil).Read), arg0)

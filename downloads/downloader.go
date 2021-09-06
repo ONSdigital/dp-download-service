@@ -10,6 +10,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/dp-api-clients-go/image"
+	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -18,16 +19,19 @@ import (
 // FilterClient is an interface to represent methods called to action on the filter api
 type FilterClient interface {
 	GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID string) (m filter.Model, err error)
+	Checker(ctx context.Context, check *healthcheck.CheckState) error
 }
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
 type DatasetClient interface {
 	GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string) (m dataset.Version, err error)
+	Checker(ctx context.Context, check *healthcheck.CheckState) error
 }
 
 // ImageClient is an interface to represent methods called to action on the image api
 type ImageClient interface {
 	GetDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (m image.ImageDownload, err error)
+	Checker(ctx context.Context, check *healthcheck.CheckState) error
 }
 
 // FileType - iota enum of possible file types that can be download
