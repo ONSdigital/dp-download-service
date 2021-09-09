@@ -4,14 +4,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/filter"
+	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
 	"github.com/ONSdigital/dp-download-service/downloads/mocks"
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 var (
-	testErrFilter = errors.New("borked filter")
+	errFilter = errors.New("borked filter")
 
 	testFilterOutputDownloadParams = Parameters{
 		UserAuthToken:        "userAuthToken",
@@ -27,7 +27,7 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 	defer ctrl.Finish()
 
 	Convey("should return the error if filter client get output is unsuccessful", t, func() {
-		filterCli := erroringFilterOutputClient(ctrl, testFilterOutputDownloadParams, testErrFilter)
+		filterCli := erroringFilterOutputClient(ctrl, testFilterOutputDownloadParams, errFilter)
 		datasetCli := datasetClientNeverInvoked(ctrl)
 		imgCli := imageClientNeverInvoked(ctrl)
 
@@ -37,14 +37,14 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
+		downloads, err := d.Get(ctx, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
 
 		So(downloads.IsPublished, ShouldBeFalse)
 		So(downloads.Public, ShouldBeBlank)
 		So(downloads.PrivateFilename, ShouldBeBlank)
 		So(downloads.PrivateS3Path, ShouldBeBlank)
 		So(downloads.PrivateVaultPath, ShouldBeBlank)
-		So(err, ShouldResemble, testErrFilter)
+		So(err, ShouldResemble, errFilter)
 	})
 
 	Convey("should return error if privateURL is invalid", t, func() {
@@ -61,7 +61,7 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
+		downloads, err := d.Get(ctx, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
 
 		So(downloads.IsPublished, ShouldBeFalse)
 		So(downloads.Public, ShouldBeBlank)
@@ -85,7 +85,7 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
+		downloads, err := d.Get(ctx, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
 
 		So(downloads.IsPublished, ShouldBeFalse)
 		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
@@ -109,7 +109,7 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
+		downloads, err := d.Get(ctx, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
 
 		So(downloads.IsPublished, ShouldBeTrue)
 		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
@@ -132,7 +132,7 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
+		downloads, err := d.Get(ctx, testFilterOutputDownloadParams, TypeFilterOutput, "csv")
 
 		So(downloads.IsPublished, ShouldBeTrue)
 		So(downloads.Public, ShouldBeBlank)
@@ -178,7 +178,7 @@ func erroringFilterOutputClient(c *gomock.Controller, p Parameters, err error) *
 	filterCli := mocks.NewMockFilterClient(c)
 
 	filterCli.EXPECT().GetOutput(
-		nil,
+		gomock.Any(),
 		gomock.Eq(p.UserAuthToken),
 		gomock.Eq(p.ServiceAuthToken),
 		gomock.Eq(p.DownloadServiceToken),
@@ -193,7 +193,7 @@ func successfulFilterOutputClient(c *gomock.Controller, p Parameters, output fil
 	filterCli := mocks.NewMockFilterClient(c)
 
 	filterCli.EXPECT().GetOutput(
-		nil,
+		gomock.Any(),
 		gomock.Eq(p.UserAuthToken),
 		gomock.Eq(p.ServiceAuthToken),
 		gomock.Eq(p.DownloadServiceToken),
@@ -208,7 +208,7 @@ func filterOutputClientNeverInvoked(c *gomock.Controller) *mocks.MockFilterClien
 	filterCli := mocks.NewMockFilterClient(c)
 
 	filterCli.EXPECT().GetOutput(
-		nil,
+		gomock.Any(),
 		gomock.Any(),
 		gomock.Any(),
 		gomock.Any(),

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/image"
+	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	"github.com/ONSdigital/dp-download-service/downloads/mocks"
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	testErrImage = errors.New("borked image")
+	errImage = errors.New("borked image")
 
 	testImageDownloadParams = Parameters{
 		ImageID:  testImageID,
@@ -37,7 +37,7 @@ func TestGetDownloadsForImage(t *testing.T) {
 	defer ctrl.Finish()
 
 	Convey("should return the error if image client get image is unsuccessful (eg. 404 Not Found)", t, func() {
-		imgCli := erroringImageClient(ctrl, testImageDownloadParams, testErrImage)
+		imgCli := erroringImageClient(ctrl, testImageDownloadParams, errImage)
 		datasetCli := datasetClientNeverInvoked(ctrl)
 		filterCli := filterOutputClientNeverInvoked(ctrl)
 
@@ -47,14 +47,14 @@ func TestGetDownloadsForImage(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testImageDownloadParams, TypeImage, testVariant)
+		downloads, err := d.Get(ctx, testImageDownloadParams, TypeImage, testVariant)
 
 		So(downloads.IsPublished, ShouldBeFalse)
 		So(downloads.Public, ShouldBeBlank)
 		So(downloads.PrivateFilename, ShouldBeBlank)
 		So(downloads.PrivateS3Path, ShouldBeBlank)
 		So(downloads.PrivateVaultPath, ShouldBeBlank)
-		So(err, ShouldResemble, testErrImage)
+		So(err, ShouldResemble, errImage)
 	})
 
 	Convey("should return publish false if image not published", t, func() {
@@ -70,7 +70,7 @@ func TestGetDownloadsForImage(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testImageDownloadParams, TypeImage, testVariant)
+		downloads, err := d.Get(ctx, testImageDownloadParams, TypeImage, testVariant)
 
 		So(downloads.IsPublished, ShouldBeFalse)
 		So(downloads.Public, ShouldBeBlank)
@@ -93,7 +93,7 @@ func TestGetDownloadsForImage(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testImageDownloadParams, TypeImage, testVariant)
+		downloads, err := d.Get(ctx, testImageDownloadParams, TypeImage, testVariant)
 
 		So(downloads.IsPublished, ShouldBeTrue)
 		So(downloads.Public, ShouldBeBlank)
@@ -116,7 +116,7 @@ func TestGetDownloadsForImage(t *testing.T) {
 			ImageCli:   imgCli,
 		}
 
-		downloads, err := d.Get(nil, testImageDownloadParams, TypeImage, testVariant)
+		downloads, err := d.Get(ctx, testImageDownloadParams, TypeImage, testVariant)
 
 		So(downloads.IsPublished, ShouldBeTrue)
 		So(downloads.Public, ShouldResemble, testImagePublicUrl)
@@ -158,7 +158,7 @@ func erroringImageClient(c *gomock.Controller, p Parameters, err error) *mocks.M
 	imgCli := mocks.NewMockImageClient(c)
 
 	imgCli.EXPECT().GetDownloadVariant(
-		nil,
+		gomock.Any(),
 		gomock.Eq(p.UserAuthToken),
 		gomock.Eq(p.ServiceAuthToken),
 		gomock.Eq(p.CollectionID),
@@ -173,7 +173,7 @@ func successfulImageClient(c *gomock.Controller, p Parameters, img image.ImageDo
 	imgCli := mocks.NewMockImageClient(c)
 
 	imgCli.EXPECT().GetDownloadVariant(
-		nil,
+		gomock.Any(),
 		gomock.Eq(p.UserAuthToken),
 		gomock.Eq(p.ServiceAuthToken),
 		gomock.Eq(p.CollectionID),
@@ -188,7 +188,7 @@ func imageClientNeverInvoked(c *gomock.Controller) *mocks.MockImageClient {
 	imgCli := mocks.NewMockImageClient(c)
 
 	imgCli.EXPECT().GetDownloadVariant(
-		nil,
+		gomock.Any(),
 		gomock.Any(),
 		gomock.Any(),
 		gomock.Any(),

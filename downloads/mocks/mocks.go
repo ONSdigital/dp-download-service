@@ -8,9 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	dataset "github.com/ONSdigital/dp-api-clients-go/dataset"
-	filter "github.com/ONSdigital/dp-api-clients-go/filter"
-	image "github.com/ONSdigital/dp-api-clients-go/image"
+	dataset "github.com/ONSdigital/dp-api-clients-go/v2/dataset"
+	filter "github.com/ONSdigital/dp-api-clients-go/v2/filter"
+	image "github.com/ONSdigital/dp-api-clients-go/v2/image"
 	healthcheck "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -102,6 +102,22 @@ func (m *MockDatasetClient) Checker(arg0 context.Context, arg1 *healthcheck.Chec
 func (mr *MockDatasetClientMockRecorder) Checker(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checker", reflect.TypeOf((*MockDatasetClient)(nil).Checker), arg0, arg1)
+}
+
+// GetInstance mocks base method.
+func (m *MockDatasetClient) GetInstance(arg0 context.Context, arg1, arg2, arg3, arg4, arg5 string) (dataset.Instance, string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInstance", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret0, _ := ret[0].(dataset.Instance)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetInstance indicates an expected call of GetInstance.
+func (mr *MockDatasetClientMockRecorder) GetInstance(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstance", reflect.TypeOf((*MockDatasetClient)(nil).GetInstance), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // GetVersion mocks base method.

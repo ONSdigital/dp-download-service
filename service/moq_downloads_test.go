@@ -5,9 +5,9 @@ package service_test
 
 import (
 	"context"
-	"github.com/ONSdigital/dp-api-clients-go/dataset"
-	"github.com/ONSdigital/dp-api-clients-go/filter"
-	"github.com/ONSdigital/dp-api-clients-go/image"
+	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
+	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
+	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"sync"
@@ -26,7 +26,10 @@ var _ downloads.DatasetClient = &DatasetClientMock{}
 // 			CheckerFunc: func(ctx context.Context, check *healthcheck.CheckState) error {
 // 				panic("mock out the Checker method")
 // 			},
-// 			GetVersionFunc: func(ctx context.Context, userAuthToken string, serviceAuthToken string, downloadServiceToken string, collectionID string, datasetID string, edition string, version string) (dataset.Version, error) {
+// 			GetInstanceFunc: func(ctx context.Context, userAuthToken string, serviceAuthToken string, collectionID string, instanceID string, ifMatch string) (dataset.Instance, string, error) {
+// 				panic("mock out the GetInstance method")
+// 			},
+// 			GetVersionFunc: func(ctx context.Context, userAuthToken string, serviceAuthToken string, downloadServiceAuthToken string, collectionID string, datasetID string, edition string, version string) (dataset.Version, error) {
 // 				panic("mock out the GetVersion method")
 // 			},
 // 		}
@@ -39,8 +42,11 @@ type DatasetClientMock struct {
 	// CheckerFunc mocks the Checker method.
 	CheckerFunc func(ctx context.Context, check *healthcheck.CheckState) error
 
+	// GetInstanceFunc mocks the GetInstance method.
+	GetInstanceFunc func(ctx context.Context, userAuthToken string, serviceAuthToken string, collectionID string, instanceID string, ifMatch string) (dataset.Instance, string, error)
+
 	// GetVersionFunc mocks the GetVersion method.
-	GetVersionFunc func(ctx context.Context, userAuthToken string, serviceAuthToken string, downloadServiceToken string, collectionID string, datasetID string, edition string, version string) (dataset.Version, error)
+	GetVersionFunc func(ctx context.Context, userAuthToken string, serviceAuthToken string, downloadServiceAuthToken string, collectionID string, datasetID string, edition string, version string) (dataset.Version, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -51,6 +57,21 @@ type DatasetClientMock struct {
 			// Check is the check argument value.
 			Check *healthcheck.CheckState
 		}
+		// GetInstance holds details about calls to the GetInstance method.
+		GetInstance []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserAuthToken is the userAuthToken argument value.
+			UserAuthToken string
+			// ServiceAuthToken is the serviceAuthToken argument value.
+			ServiceAuthToken string
+			// CollectionID is the collectionID argument value.
+			CollectionID string
+			// InstanceID is the instanceID argument value.
+			InstanceID string
+			// IfMatch is the ifMatch argument value.
+			IfMatch string
+		}
 		// GetVersion holds details about calls to the GetVersion method.
 		GetVersion []struct {
 			// Ctx is the ctx argument value.
@@ -59,8 +80,8 @@ type DatasetClientMock struct {
 			UserAuthToken string
 			// ServiceAuthToken is the serviceAuthToken argument value.
 			ServiceAuthToken string
-			// DownloadServiceToken is the downloadServiceToken argument value.
-			DownloadServiceToken string
+			// DownloadServiceAuthToken is the downloadServiceAuthToken argument value.
+			DownloadServiceAuthToken string
 			// CollectionID is the collectionID argument value.
 			CollectionID string
 			// DatasetID is the datasetID argument value.
@@ -71,8 +92,9 @@ type DatasetClientMock struct {
 			Version string
 		}
 	}
-	lockChecker    sync.RWMutex
-	lockGetVersion sync.RWMutex
+	lockChecker     sync.RWMutex
+	lockGetInstance sync.RWMutex
+	lockGetVersion  sync.RWMutex
 }
 
 // Checker calls CheckerFunc.
@@ -110,58 +132,109 @@ func (mock *DatasetClientMock) CheckerCalls() []struct {
 	return calls
 }
 
+// GetInstance calls GetInstanceFunc.
+func (mock *DatasetClientMock) GetInstance(ctx context.Context, userAuthToken string, serviceAuthToken string, collectionID string, instanceID string, ifMatch string) (dataset.Instance, string, error) {
+	if mock.GetInstanceFunc == nil {
+		panic("DatasetClientMock.GetInstanceFunc: method is nil but DatasetClient.GetInstance was just called")
+	}
+	callInfo := struct {
+		Ctx              context.Context
+		UserAuthToken    string
+		ServiceAuthToken string
+		CollectionID     string
+		InstanceID       string
+		IfMatch          string
+	}{
+		Ctx:              ctx,
+		UserAuthToken:    userAuthToken,
+		ServiceAuthToken: serviceAuthToken,
+		CollectionID:     collectionID,
+		InstanceID:       instanceID,
+		IfMatch:          ifMatch,
+	}
+	mock.lockGetInstance.Lock()
+	mock.calls.GetInstance = append(mock.calls.GetInstance, callInfo)
+	mock.lockGetInstance.Unlock()
+	return mock.GetInstanceFunc(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, ifMatch)
+}
+
+// GetInstanceCalls gets all the calls that were made to GetInstance.
+// Check the length with:
+//     len(mockedDatasetClient.GetInstanceCalls())
+func (mock *DatasetClientMock) GetInstanceCalls() []struct {
+	Ctx              context.Context
+	UserAuthToken    string
+	ServiceAuthToken string
+	CollectionID     string
+	InstanceID       string
+	IfMatch          string
+} {
+	var calls []struct {
+		Ctx              context.Context
+		UserAuthToken    string
+		ServiceAuthToken string
+		CollectionID     string
+		InstanceID       string
+		IfMatch          string
+	}
+	mock.lockGetInstance.RLock()
+	calls = mock.calls.GetInstance
+	mock.lockGetInstance.RUnlock()
+	return calls
+}
+
 // GetVersion calls GetVersionFunc.
-func (mock *DatasetClientMock) GetVersion(ctx context.Context, userAuthToken string, serviceAuthToken string, downloadServiceToken string, collectionID string, datasetID string, edition string, version string) (dataset.Version, error) {
+func (mock *DatasetClientMock) GetVersion(ctx context.Context, userAuthToken string, serviceAuthToken string, downloadServiceAuthToken string, collectionID string, datasetID string, edition string, version string) (dataset.Version, error) {
 	if mock.GetVersionFunc == nil {
 		panic("DatasetClientMock.GetVersionFunc: method is nil but DatasetClient.GetVersion was just called")
 	}
 	callInfo := struct {
-		Ctx                  context.Context
-		UserAuthToken        string
-		ServiceAuthToken     string
-		DownloadServiceToken string
-		CollectionID         string
-		DatasetID            string
-		Edition              string
-		Version              string
+		Ctx                      context.Context
+		UserAuthToken            string
+		ServiceAuthToken         string
+		DownloadServiceAuthToken string
+		CollectionID             string
+		DatasetID                string
+		Edition                  string
+		Version                  string
 	}{
-		Ctx:                  ctx,
-		UserAuthToken:        userAuthToken,
-		ServiceAuthToken:     serviceAuthToken,
-		DownloadServiceToken: downloadServiceToken,
-		CollectionID:         collectionID,
-		DatasetID:            datasetID,
-		Edition:              edition,
-		Version:              version,
+		Ctx:                      ctx,
+		UserAuthToken:            userAuthToken,
+		ServiceAuthToken:         serviceAuthToken,
+		DownloadServiceAuthToken: downloadServiceAuthToken,
+		CollectionID:             collectionID,
+		DatasetID:                datasetID,
+		Edition:                  edition,
+		Version:                  version,
 	}
 	mock.lockGetVersion.Lock()
 	mock.calls.GetVersion = append(mock.calls.GetVersion, callInfo)
 	mock.lockGetVersion.Unlock()
-	return mock.GetVersionFunc(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version)
+	return mock.GetVersionFunc(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version)
 }
 
 // GetVersionCalls gets all the calls that were made to GetVersion.
 // Check the length with:
 //     len(mockedDatasetClient.GetVersionCalls())
 func (mock *DatasetClientMock) GetVersionCalls() []struct {
-	Ctx                  context.Context
-	UserAuthToken        string
-	ServiceAuthToken     string
-	DownloadServiceToken string
-	CollectionID         string
-	DatasetID            string
-	Edition              string
-	Version              string
+	Ctx                      context.Context
+	UserAuthToken            string
+	ServiceAuthToken         string
+	DownloadServiceAuthToken string
+	CollectionID             string
+	DatasetID                string
+	Edition                  string
+	Version                  string
 } {
 	var calls []struct {
-		Ctx                  context.Context
-		UserAuthToken        string
-		ServiceAuthToken     string
-		DownloadServiceToken string
-		CollectionID         string
-		DatasetID            string
-		Edition              string
-		Version              string
+		Ctx                      context.Context
+		UserAuthToken            string
+		ServiceAuthToken         string
+		DownloadServiceAuthToken string
+		CollectionID             string
+		DatasetID                string
+		Edition                  string
+		Version                  string
 	}
 	mock.lockGetVersion.RLock()
 	calls = mock.calls.GetVersion

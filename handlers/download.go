@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/ONSdigital/dp-download-service/downloads"
-	dphandlers "github.com/ONSdigital/dp-net/handlers"
-	"github.com/ONSdigital/dp-net/request"
+	dphandlers "github.com/ONSdigital/dp-net/v2/handlers"
+	"github.com/ONSdigital/dp-net/v2/request"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
 )
@@ -67,6 +67,13 @@ func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logDat
 		message = notFoundMessage
 	}
 	http.Error(w, message, status)
+}
+
+func (d Download) DoInstance(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		params := GetDownloadParameters(req, serviceAuthToken, downloadServiceToken)
+		d.do(w, req, downloads.TypeInstance, params, extension)
+	}
 }
 
 // DoImage handles download image file requests.
@@ -160,6 +167,7 @@ func GetDownloadParameters(req *http.Request, serviceAuthToken, downloadServiceT
 		DownloadServiceToken: downloadServiceToken,
 		CollectionID:         getCollectionIDFromContext(req.Context()),
 		FilterOutputID:       vars["filterOutputID"],
+		InstanceID:           vars["instanceID"],
 		DatasetID:            vars["datasetID"],
 		Edition:              vars["edition"],
 		Version:              vars["version"],

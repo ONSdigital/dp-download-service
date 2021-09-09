@@ -46,7 +46,7 @@ func main() {
 	}
 	rs := bytes.NewReader(b)
 
-	s3cli, err := s3client.NewClient(region, bucket, true)
+	s3cli, err := s3client.NewClient(region, bucket)
 	if err != nil {
 		log.Event(ctx, "error creating new s3 client", log.ERROR, log.Error(err))
 		return
