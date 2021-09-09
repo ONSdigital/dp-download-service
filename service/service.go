@@ -86,7 +86,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		shutdown:      cfg.GracefulShutdownTimeout,
 	}
 
-	// Vault client is set up only when encryption is disabled.
+	// Vault client is set up only when encryption is enabled.
 	//
 	var err error
 	var vc content.VaultClient

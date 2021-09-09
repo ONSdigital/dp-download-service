@@ -41,13 +41,7 @@ func (*External) VaultClient(cfg *config.Config) (content.VaultClient, error) {
 	return vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 3)
 }
 
-/*
-func (*External) S3Client(cfg *config.Config) (content.S3Client, error) {
-	return s3client.NewClient(cfg.AwsRegion, cfg.BucketName, !cfg.EncryptionDisabled)
-}
-*/
-
-// GetS3Client obtains a new S3 client, or a local storage client if a non-empty LocalObjectStore is provided
+// S3Client obtains a new S3 client, or a local storage client if a non-empty LocalObjectStore is provided
 func (*External) S3Client(cfg *config.Config) (content.S3Client, error) {
 	if cfg.LocalObjectStore != "" {
 		s3Config := &aws.Config{
