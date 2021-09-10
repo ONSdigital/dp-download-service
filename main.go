@@ -7,7 +7,7 @@ import (
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-download-service/service/external"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 var (
@@ -26,14 +26,14 @@ func main() {
 
 	cfg, err := config.Get()
 	if err != nil {
-		log.Event(ctx, "error getting config", log.FATAL, log.Error(err))
+		log.Fatal(ctx, "error getting config", err)
 		os.Exit(1)
 	}
-	log.Event(ctx, "config on startup", log.INFO, log.Data{"config": cfg})
+	log.Info(ctx, "config on startup", log.Data{"config": cfg})
 
 	svc, err := service.New(ctx, BuildTime, GitCommit, Version, cfg, &external.External{})
 	if err != nil {
-		log.Event(ctx, "could not set up Download service", log.FATAL, log.Error(err))
+		log.Fatal(ctx, "could not set up Download service", err)
 		os.Exit(1)
 	}
 
