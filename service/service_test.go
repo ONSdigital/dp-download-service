@@ -163,7 +163,7 @@ func TestNew(t *testing.T) {
 
 			svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
 
-			Convey("New shold fail", func() {
+			Convey("New should fail", func() {
 				So(svc, ShouldBeNil)
 				So(err.Error(), ShouldContainSubstring, "healthcheck failure")
 			})
