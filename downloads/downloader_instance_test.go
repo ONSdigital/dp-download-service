@@ -67,7 +67,7 @@ func TestGetDownloadForInstance(t *testing.T) {
 		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
 		So(downloads.PrivateFilename, ShouldResemble, "instanceID.csv")
 		So(downloads.PrivateS3Path, ShouldResemble, "instances/instanceID.csv")
-		So(downloads.PrivateVaultPath, ShouldResemble, "instances/instanceID.csv")
+		So(downloads.PrivateVaultPath, ShouldResemble, "instanceID.csv")
 		So(err, ShouldBeNil)
 	})
 
@@ -114,7 +114,7 @@ func TestGetDownloadForInstance(t *testing.T) {
 		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
 		So(downloads.PrivateFilename, ShouldResemble, "instanceID.csv")
 		So(downloads.PrivateS3Path, ShouldResemble, "instances/instanceID.csv")
-		So(downloads.PrivateVaultPath, ShouldResemble, "instances/instanceID.csv")
+		So(downloads.PrivateVaultPath, ShouldResemble, "instanceID.csv")
 		So(err, ShouldBeNil)
 	})
 }

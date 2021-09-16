@@ -168,7 +168,7 @@ func (d Downloader) getInstanceDownload(ctx context.Context, p Parameters, exten
 		filename := fmt.Sprintf("%s.%s", p.InstanceID, extension)
 		model.Public = v.Public
 		model.PrivateS3Path = privatePath
-		model.PrivateVaultPath = privatePath
+		model.PrivateVaultPath = filename
 		model.PrivateFilename = filename
 	}
 
