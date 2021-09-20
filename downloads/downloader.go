@@ -234,11 +234,11 @@ func (m Model) IsPublicLinkAvailable() bool {
 }
 
 func parseURL(urlString string) (path string, filename string, err error) {
-	url, err := url.Parse(urlString)
+	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
 		return
 	}
-	path = strings.TrimLeft(url.Path, "/")
-	filename = filepath.Base(url.Path)
+	path = strings.TrimLeft(parsedUrl.Path, "/")
+	filename = filepath.Base(parsedUrl.Path)
 	return
 }
