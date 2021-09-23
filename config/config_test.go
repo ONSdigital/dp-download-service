@@ -28,6 +28,7 @@ func getConfigEnv() map[string]string {
 		"VAULT_PATH":                   os.Getenv("VAULT_PATH"),
 		"ZEBEDEE_URL":                  os.Getenv("ZEBEDEE_URL"),
 		"IS_PUBLISHING":                os.Getenv("IS_PUBLISHING"),
+		"ENABLE_DOWNLOAD_MONGO":        os.Getenv("ENABLE_DOWNLOAD_MONGO"),
 		"ENCRYPTION_DISABLED":          os.Getenv("ENCRYPTION_DISABLED"),
 		"ENABLE_MONGO":                 os.Getenv("ENABLE_MONGO"),
 		"MONGODB_BIND_ADDR":            os.Getenv("MONGODB_BIND_ADDR"),
@@ -82,6 +83,7 @@ func TestSpec(t *testing.T) {
 				So(cfg.MinioAccessKey, ShouldEqual, "")
 				So(cfg.MinioSecretKey, ShouldEqual, "")
 				So(cfg.IsPublishing, ShouldBeTrue)
+				So(cfg.EnableDownloadMongo, ShouldBeFalse)
 				So(cfg.EncryptionDisabled, ShouldBeFalse)
 				So(cfg.EnableMongo, ShouldBeFalse)
 				So(cfg.MongoConfig.BindAddr, ShouldEqual, "localhost:27017")

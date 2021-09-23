@@ -29,6 +29,7 @@ type Config struct {
 	MinioAccessKey             string        `envconfig:"MINIO_ACCESS_KEY"`
 	MinioSecretKey             string        `envconfig:"MINIO_SECRET_KEY"`
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
+	EnableDownloadMongo        bool          `envconfig:"ENABLE_DOWNLOAD_MONGO"` // turn on POST endpoint(s)
 	EncryptionDisabled         bool          `envconfig:"ENCRYPTION_DISABLED"`
 	EnableMongo                bool          `envconfig:"ENABLE_MONGO"`
 	MongoConfig                MongoConfig
@@ -73,6 +74,7 @@ func Get() (*Config, error) {
 		MinioAccessKey:             "",
 		MinioSecretKey:             "",
 		IsPublishing:               true,
+		EnableDownloadMongo:        false,
 		EncryptionDisabled:         false,
 		EnableMongo:                false,
 		MongoConfig: MongoConfig{

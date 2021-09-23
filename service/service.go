@@ -16,6 +16,8 @@ import (
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/handlers"
+	"github.com/ONSdigital/dp-download-service/model"
+	"github.com/ONSdigital/dp-download-service/storage"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphandlers "github.com/ONSdigital/dp-net/v2/handlers"
 	dphttp "github.com/ONSdigital/dp-net/v2/http"
@@ -74,6 +76,7 @@ type MongoClient interface {
 	URI() string
 	Close(context.Context) error
 	Checker(context.Context, *healthcheck.CheckState) error
+	CreateDataset(context.Context, *storage.DatasetDocument) error
 }
 
 // New returns a new Download service with dependencies initialised based on cfg and deps.
@@ -167,6 +170,11 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.HandleFunc("/health", hc.Handler)
+	// move this to IsPublishing below once authentication is figured out
+	if cfg.EnableDownloadMongo && cfg.EnableMongo {
+		ds := handlers.NewDataset(model.New(mongoClient))
+		router.Path("/downloads").Methods("POST").HandlerFunc(ds.DoPostDataset())
+	}
 	svc.router = router
 
 	// Create new middleware chain with whitelisted handler for /health endpoint
@@ -176,6 +184,9 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	// For non-whitelisted endpoints, do identityHandler or corsHandler
 	//
 	if cfg.IsPublishing {
+		//if cfg.EnableDownloadMongo && cfg.EnableMongo {
+		//	router.Path("/downloads").Methods("POST").HandlerFunc(ds.DoPostDataset())
+		//}
 		log.Info(ctx, "private endpoints are enabled. using identity middleware")
 		identityHandler := dphandlers.IdentityWithHTTPClient(clientsidentity.NewWithHealthClient(zc))
 		middlewareChain = middlewareChain.Append(identityHandler)

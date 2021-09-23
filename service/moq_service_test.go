@@ -9,6 +9,7 @@ import (
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/service"
+	"github.com/ONSdigital/dp-download-service/storage"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"net/http"
 	"sync"
@@ -576,6 +577,9 @@ var _ service.MongoClient = &MongoClientMock{}
 // 			CloseFunc: func(contextMoqParam context.Context) error {
 // 				panic("mock out the Close method")
 // 			},
+// 			CreateDatasetFunc: func(contextMoqParam context.Context, datasetDocument *storage.DatasetDocument) error {
+// 				panic("mock out the CreateDataset method")
+// 			},
 // 			URIFunc: func() string {
 // 				panic("mock out the URI method")
 // 			},
@@ -591,6 +595,9 @@ type MongoClientMock struct {
 
 	// CloseFunc mocks the Close method.
 	CloseFunc func(contextMoqParam context.Context) error
+
+	// CreateDatasetFunc mocks the CreateDataset method.
+	CreateDatasetFunc func(contextMoqParam context.Context, datasetDocument *storage.DatasetDocument) error
 
 	// URIFunc mocks the URI method.
 	URIFunc func() string
@@ -609,13 +616,21 @@ type MongoClientMock struct {
 			// ContextMoqParam is the contextMoqParam argument value.
 			ContextMoqParam context.Context
 		}
+		// CreateDataset holds details about calls to the CreateDataset method.
+		CreateDataset []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// DatasetDocument is the datasetDocument argument value.
+			DatasetDocument *storage.DatasetDocument
+		}
 		// URI holds details about calls to the URI method.
 		URI []struct {
 		}
 	}
-	lockChecker sync.RWMutex
-	lockClose   sync.RWMutex
-	lockURI     sync.RWMutex
+	lockChecker       sync.RWMutex
+	lockClose         sync.RWMutex
+	lockCreateDataset sync.RWMutex
+	lockURI           sync.RWMutex
 }
 
 // Checker calls CheckerFunc.
@@ -681,6 +696,41 @@ func (mock *MongoClientMock) CloseCalls() []struct {
 	mock.lockClose.RLock()
 	calls = mock.calls.Close
 	mock.lockClose.RUnlock()
+	return calls
+}
+
+// CreateDataset calls CreateDatasetFunc.
+func (mock *MongoClientMock) CreateDataset(contextMoqParam context.Context, datasetDocument *storage.DatasetDocument) error {
+	if mock.CreateDatasetFunc == nil {
+		panic("MongoClientMock.CreateDatasetFunc: method is nil but MongoClient.CreateDataset was just called")
+	}
+	callInfo := struct {
+		ContextMoqParam context.Context
+		DatasetDocument *storage.DatasetDocument
+	}{
+		ContextMoqParam: contextMoqParam,
+		DatasetDocument: datasetDocument,
+	}
+	mock.lockCreateDataset.Lock()
+	mock.calls.CreateDataset = append(mock.calls.CreateDataset, callInfo)
+	mock.lockCreateDataset.Unlock()
+	return mock.CreateDatasetFunc(contextMoqParam, datasetDocument)
+}
+
+// CreateDatasetCalls gets all the calls that were made to CreateDataset.
+// Check the length with:
+//     len(mockedMongoClient.CreateDatasetCalls())
+func (mock *MongoClientMock) CreateDatasetCalls() []struct {
+	ContextMoqParam context.Context
+	DatasetDocument *storage.DatasetDocument
+} {
+	var calls []struct {
+		ContextMoqParam context.Context
+		DatasetDocument *storage.DatasetDocument
+	}
+	mock.lockCreateDataset.RLock()
+	calls = mock.calls.CreateDataset
+	mock.lockCreateDataset.RUnlock()
 	return calls
 }
 

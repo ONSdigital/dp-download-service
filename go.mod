@@ -13,6 +13,7 @@ require (
 	github.com/ONSdigital/log.go/v2 v2.0.9
 	github.com/aws/aws-sdk-go v1.40.37
 	github.com/golang/mock v1.4.4
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.8.0
 	github.com/justinas/alice v1.2.0
