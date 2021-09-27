@@ -32,7 +32,6 @@ func getConfigEnv() map[string]string {
 		"ENCRYPTION_DISABLED":          os.Getenv("ENCRYPTION_DISABLED"),
 		"ENABLE_MONGO":                 os.Getenv("ENABLE_MONGO"),
 		"MONGODB_BIND_ADDR":            os.Getenv("MONGODB_BIND_ADDR"),
-		"MONGODB_COLLECTION":           os.Getenv("MONGODB_COLLECTION"),
 		"MONGODB_DATABASE":             os.Getenv("MONGODB_DATABASE"),
 		"MONGODB_USERNAME":             os.Getenv("MONGODB_USERNAME"),
 		"MONGODB_PASSWORD":             os.Getenv("MONGODB_PASSWORD"),
@@ -87,7 +86,6 @@ func TestSpec(t *testing.T) {
 				So(cfg.EncryptionDisabled, ShouldBeFalse)
 				So(cfg.EnableMongo, ShouldBeFalse)
 				So(cfg.MongoConfig.BindAddr, ShouldEqual, "localhost:27017")
-				So(cfg.MongoConfig.Collection, ShouldEqual, "")
 				So(cfg.MongoConfig.Database, ShouldEqual, "")
 				So(cfg.MongoConfig.Username, ShouldEqual, "")
 				So(cfg.MongoConfig.Password, ShouldEqual, "")

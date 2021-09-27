@@ -7,26 +7,29 @@ package storage
 //	    "downloads": {
 //	        "csv": {
 //	            "private": <>,
-//	            "public": <>
+//	            "public": <>,
+//              "size": 123
 //	        },
 //	        "csvw": {
 //	            "private": <>,
-//	            "public": <>
+//	            "public": <>,
+//              "size": 456
 //	        },
 //	        "xls": {
 //	            "private": <>,
-//	            "public": <>
+//	            "public": <>,
+//              "size": 789
 //	        }
 //      },
-//		"links": {
-//			"datasetversion": {
-//				"href": "/datasets/id/editions/id/versions/4"
-//			},
-//			"self": {
-//				"href": "/downloads/123"
-//			}
-//		}
-//	}
+//      "links": {
+//          "datasetversion": {
+//              "href": "/datasets/id/editions/id/versions/4"
+//          },
+//          "self": {
+//              "href": "/downloads/123"
+//          }
+//      }
+//  }
 //
 type DatasetDocument struct {
 	ID        string                             `json:"id"`

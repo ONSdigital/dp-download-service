@@ -54,6 +54,22 @@ parameters:
     in: path
     required: true
     type: string
+  dataset:
+    name: dataset
+    description: "Body of POST /downloads"
+    in: body
+    required: true
+    schema:
+      type: object
+      required:
+        - downloads
+        - links
+      properties:
+        downloads:
+          type: object
+        links:
+          type: object
+
 securityDefinitions:
   FlorenceAPIKey:
     name: X-Florence-Token
@@ -61,6 +77,24 @@ securityDefinitions:
     in: header
     type: apiKey
 paths:
+  /downloads:
+    post:
+      tags:
+        - "Private"
+      summary: "Create an S3 location record"
+      description: "Saves S3 public and private locations for multiple file types"
+      parameters:
+        - $ref: '#/parameters/dataset'
+      produces:
+        - "application/json"
+      responses:
+        201:
+          $ref: '#/responses/DatasetCreated'
+        400:
+          $ref: '#/responses/DatasetErrorMessage'
+        500:
+          $ref: '#/responses/DatasetErrorMessage'
+
   /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv:
     get:
       tags:
@@ -209,3 +243,21 @@ responses:
     description: "A streamed response containing the requested download file"
     schema:
       type: file
+  DatasetCreated:
+    description: "Dataset record was successfully created"
+    schema:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+  DatasetErrorMessage:
+    description: "Dataset record could not be created"
+    schema:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string

@@ -36,13 +36,13 @@ func TestCreate(t *testing.T) {
 			})
 		})
 
-		Convey("storage error", func() {
+		Convey("when storage returns error", func() {
 			mockedStorage.CreateDatasetFunc = func(ctx context.Context, payload *storage.DatasetDocument) error {
 				return io.ErrUnexpectedEOF // an arbitrary error for testing
 			}
 			uuid, err := ds.Create(ctx, &model.DatasetDocument{})
 
-			Convey("should return error", func() {
+			Convey("model returns error", func() {
 				So(err, ShouldEqual, io.ErrUnexpectedEOF)
 				So(uuid, ShouldEqual, "")
 			})
