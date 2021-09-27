@@ -168,7 +168,7 @@ func (d Downloader) getInstanceDownload(ctx context.Context, p Parameters, exten
 		filename := fmt.Sprintf("%s.%s", p.InstanceID, extension)
 		model.Public = v.Public
 		model.PrivateS3Path = privatePath
-		model.PrivateVaultPath = privatePath
+		model.PrivateVaultPath = filename
 		model.PrivateFilename = filename
 	}
 
@@ -234,11 +234,11 @@ func (m Model) IsPublicLinkAvailable() bool {
 }
 
 func parseURL(urlString string) (path string, filename string, err error) {
-	url, err := url.Parse(urlString)
+	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
 		return
 	}
-	path = strings.TrimLeft(url.Path, "/")
-	filename = filepath.Base(url.Path)
+	path = strings.TrimLeft(parsedUrl.Path, "/")
+	filename = filepath.Base(parsedUrl.Path)
 	return
 }

@@ -36,7 +36,7 @@ type S3Client interface {
 	Checker(ctx context.Context, check *healthcheck.CheckState) error
 }
 
-//S3StreamWriter provides functionality for retrieving content from an S3 bucket. The content is streamed/decrypted and and written to the provided io.Writer
+// S3StreamWriter provides functionality for retrieving content from an S3 bucket. The content is streamed/decrypted and and written to the provided io.Writer
 type S3StreamWriter struct {
 	VaultCli           VaultClient
 	VaultPath          string
@@ -44,7 +44,7 @@ type S3StreamWriter struct {
 	EncryptionDisabled bool
 }
 
-//NewStreamWriter create a new S3StreamWriter instance.
+// NewStreamWriter create a new S3StreamWriter instance.
 func NewStreamWriter(s3c S3Client, vc VaultClient, vp string, encDisabled bool) *S3StreamWriter {
 	return &S3StreamWriter{
 		S3Client:           s3c,
@@ -54,7 +54,7 @@ func NewStreamWriter(s3c S3Client, vc VaultClient, vp string, encDisabled bool) 
 	}
 }
 
-//StreamAndWrite decrypt and stream the request file writing the content to the provided io.Writer.
+// StreamAndWrite decrypt and stream the request file writing the content to the provided io.Writer.
 func (s S3StreamWriter) StreamAndWrite(ctx context.Context, s3Path string, vaultPath string, w io.Writer) (err error) {
 	var s3ReadCloser io.ReadCloser
 	if s.EncryptionDisabled {
@@ -74,7 +74,7 @@ func (s S3StreamWriter) StreamAndWrite(ctx context.Context, s3Path string, vault
 		}
 	}
 
-	defer close(ctx, s3ReadCloser)
+	defer closeAndLogError(ctx, s3ReadCloser)
 
 	_, err = io.Copy(w, s3ReadCloser)
 	if err != nil {
@@ -103,7 +103,7 @@ func (s *S3StreamWriter) getVaultKeyForFile(secretPath string) ([]byte, error) {
 	return psk, nil
 }
 
-func close(ctx context.Context, closer io.Closer) {
+func closeAndLogError(ctx context.Context, closer io.Closer) {
 	if err := closer.Close(); err != nil {
 		log.Error(ctx, "error closing io.Closer", err)
 	}
