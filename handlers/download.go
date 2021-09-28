@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	"github.com/ONSdigital/dp-download-service/downloads"
-	dphandlers "github.com/ONSdigital/dp-net/handlers"
-	"github.com/ONSdigital/dp-net/request"
-	"github.com/ONSdigital/log.go/log"
+	dphandlers "github.com/ONSdigital/dp-net/v2/handlers"
+	"github.com/ONSdigital/dp-net/v2/request"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 )
 
@@ -62,11 +62,18 @@ func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logDat
 
 	logData["setting_response_status"] = status
 	logData["error"] = err.Error()
-	log.Event(ctx, "setting status code for an error", log.INFO, logData)
+	log.Info(ctx, "setting status code for an error", logData)
 	if status == http.StatusNotFound {
 		message = notFoundMessage
 	}
 	http.Error(w, message, status)
+}
+
+func (d Download) DoInstance(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		params := GetDownloadParameters(req, serviceAuthToken, downloadServiceToken)
+		d.do(w, req, downloads.TypeInstance, params, extension)
+	}
 }
 
 // DoImage handles download image file requests.
@@ -111,7 +118,7 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 	}
 
 	logData["published"] = fileDownloads.IsPublished
-	log.Event(req.Context(), "attempting to get download", log.INFO, logData)
+	log.Info(req.Context(), "attempting to get download", logData)
 
 	authorised, logData := d.authenticate(req, logData)
 	logData["authorised"] = authorised
@@ -129,7 +136,7 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 		logData["private_s3_path"] = s3Path
 		logData["private_vault_path"] = vaultPath
 		logData["private_filename"] = filename
-		log.Event(req.Context(), "using private link", log.INFO, logData)
+		log.Info(req.Context(), "using private link", logData)
 
 		if fileDownloads.IsPublished || authorised {
 			w.Header().Set("Content-Disposition", "attachment; filename="+filename)
@@ -140,12 +147,12 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 				return
 			}
 
-			log.Event(ctx, "download content successfully written to response", log.INFO, logData)
+			log.Info(ctx, "download content successfully written to response", logData)
 			return
 		}
 	}
 
-	log.Event(ctx, "no public or private link found", log.ERROR, logData)
+	log.Error(ctx, "no public or private link found", errors.New("no public or private link found"), logData)
 	http.Error(w, notFoundMessage, http.StatusNotFound)
 }
 
@@ -160,6 +167,7 @@ func GetDownloadParameters(req *http.Request, serviceAuthToken, downloadServiceT
 		DownloadServiceToken: downloadServiceToken,
 		CollectionID:         getCollectionIDFromContext(req.Context()),
 		FilterOutputID:       vars["filterOutputID"],
+		InstanceID:           vars["instanceID"],
 		DatasetID:            vars["datasetID"],
 		Edition:              vars["edition"],
 		Version:              vars["version"],
@@ -215,7 +223,7 @@ func getUserAccessTokenFromContext(ctx context.Context) string {
 	if ctx.Value(dphandlers.UserAccess.Context()) != nil {
 		accessToken, ok := ctx.Value(dphandlers.UserAccess.Context()).(string)
 		if !ok {
-			log.Event(ctx, "access token error", log.ERROR, log.Error(errors.New("error casting access token context value to string")))
+			log.Error(ctx, "access token error", errors.New("error casting access token context value to string"))
 		}
 		return accessToken
 	}
@@ -226,7 +234,7 @@ func getCollectionIDFromContext(ctx context.Context) string {
 	if ctx.Value(dphandlers.CollectionID.Context()) != nil {
 		collectionID, ok := ctx.Value(dphandlers.CollectionID.Context()).(string)
 		if !ok {
-			log.Event(ctx, "collection id error", log.ERROR, log.Error(errors.New("error casting collection ID context value to string")))
+			log.Error(ctx, "collection id error", errors.New("error casting collection ID context value to string"))
 		}
 		return collectionID
 	}
