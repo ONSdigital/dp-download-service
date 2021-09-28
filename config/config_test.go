@@ -29,6 +29,13 @@ func getConfigEnv() map[string]string {
 		"ZEBEDEE_URL":                  os.Getenv("ZEBEDEE_URL"),
 		"IS_PUBLISHING":                os.Getenv("IS_PUBLISHING"),
 		"ENCRYPTION_DISABLED":          os.Getenv("ENCRYPTION_DISABLED"),
+		"ENABLE_MONGO":                 os.Getenv("ENABLE_MONGO"),
+		"MONGODB_BIND_ADDR":            os.Getenv("MONGODB_BIND_ADDR"),
+		"MONGODB_COLLECTION":           os.Getenv("MONGODB_COLLECTION"),
+		"MONGODB_DATABASE":             os.Getenv("MONGODB_DATABASE"),
+		"MONGODB_USERNAME":             os.Getenv("MONGODB_USERNAME"),
+		"MONGODB_PASSWORD":             os.Getenv("MONGODB_PASSWORD"),
+		"MONGODB_IS_SSL":               os.Getenv("MONGODB_IS_SSL"),
 	}
 }
 
@@ -71,8 +78,18 @@ func TestSpec(t *testing.T) {
 				So(cfg.VaultPath, ShouldEqual, "secret/shared/psk")
 				So(cfg.ServiceAuthToken, ShouldEqual, "c60198e9-1864-4b68-ad0b-1e858e5b46a4")
 				So(cfg.ZebedeeURL, ShouldEqual, "http://localhost:8082")
+				So(cfg.LocalObjectStore, ShouldEqual, "")
+				So(cfg.MinioAccessKey, ShouldEqual, "")
+				So(cfg.MinioSecretKey, ShouldEqual, "")
 				So(cfg.IsPublishing, ShouldBeTrue)
 				So(cfg.EncryptionDisabled, ShouldBeFalse)
+				So(cfg.EnableMongo, ShouldBeFalse)
+				So(cfg.MongoConfig.BindAddr, ShouldEqual, "localhost:27017")
+				So(cfg.MongoConfig.Collection, ShouldEqual, "")
+				So(cfg.MongoConfig.Database, ShouldEqual, "")
+				So(cfg.MongoConfig.Username, ShouldEqual, "")
+				So(cfg.MongoConfig.Password, ShouldEqual, "")
+				So(cfg.MongoConfig.IsSSL, ShouldBeFalse)
 			})
 		})
 	})

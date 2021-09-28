@@ -25,8 +25,23 @@ type Config struct {
 	VaultAddress               string        `envconfig:"VAULT_ADDR"`
 	VaultPath                  string        `envconfig:"VAULT_PATH"`
 	ZebedeeURL                 string        `envconfig:"ZEBEDEE_URL"`
+	LocalObjectStore           string        `envconfig:"LOCAL_OBJECT_STORE"`
+	MinioAccessKey             string        `envconfig:"MINIO_ACCESS_KEY"`
+	MinioSecretKey             string        `envconfig:"MINIO_SECRET_KEY"`
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
 	EncryptionDisabled         bool          `envconfig:"ENCRYPTION_DISABLED"`
+	EnableMongo                bool          `envconfig:"ENABLE_MONGO"`
+	MongoConfig                MongoConfig
+}
+
+// MongoConfig contains the config required to connect to MongoDB.
+type MongoConfig struct {
+	BindAddr   string `envconfig:"MONGODB_BIND_ADDR"   json:"-"`
+	Collection string `envconfig:"MONGODB_COLLECTION"`
+	Database   string `envconfig:"MONGODB_DATABASE"`
+	Username   string `envconfig:"MONGODB_USERNAME"    json:"-"`
+	Password   string `envconfig:"MONGODB_PASSWORD"    json:"-"`
+	IsSSL      bool   `envconfig:"MONGODB_IS_SSL"`
 }
 
 var cfg *Config
@@ -54,8 +69,20 @@ func Get() (*Config, error) {
 		VaultToken:                 "",
 		VaultPath:                  "secret/shared/psk",
 		ZebedeeURL:                 "http://localhost:8082",
+		LocalObjectStore:           "",
+		MinioAccessKey:             "",
+		MinioSecretKey:             "",
 		IsPublishing:               true,
 		EncryptionDisabled:         false,
+		EnableMongo:                false,
+		MongoConfig: MongoConfig{
+			BindAddr:   "localhost:27017",
+			Collection: "",
+			Database:   "",
+			Username:   "",
+			Password:   "",
+			IsSSL:      false,
+		},
 	}
 
 	if err := envconfig.Process("", cfg); err != nil {

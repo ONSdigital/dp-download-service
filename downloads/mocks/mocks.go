@@ -6,37 +6,53 @@ package mocks
 
 import (
 	context "context"
-	dataset "github.com/ONSdigital/dp-api-clients-go/dataset"
-	filter "github.com/ONSdigital/dp-api-clients-go/filter"
-	image "github.com/ONSdigital/dp-api-clients-go/image"
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	dataset "github.com/ONSdigital/dp-api-clients-go/v2/dataset"
+	filter "github.com/ONSdigital/dp-api-clients-go/v2/filter"
+	image "github.com/ONSdigital/dp-api-clients-go/v2/image"
+	healthcheck "github.com/ONSdigital/dp-healthcheck/healthcheck"
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockFilterClient is a mock of FilterClient interface
+// MockFilterClient is a mock of FilterClient interface.
 type MockFilterClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockFilterClientMockRecorder
 }
 
-// MockFilterClientMockRecorder is the mock recorder for MockFilterClient
+// MockFilterClientMockRecorder is the mock recorder for MockFilterClient.
 type MockFilterClientMockRecorder struct {
 	mock *MockFilterClient
 }
 
-// NewMockFilterClient creates a new mock instance
+// NewMockFilterClient creates a new mock instance.
 func NewMockFilterClient(ctrl *gomock.Controller) *MockFilterClient {
 	mock := &MockFilterClient{ctrl: ctrl}
 	mock.recorder = &MockFilterClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockFilterClient) EXPECT() *MockFilterClientMockRecorder {
 	return m.recorder
 }
 
-// GetOutput mocks base method
+// Checker mocks base method.
+func (m *MockFilterClient) Checker(arg0 context.Context, arg1 *healthcheck.CheckState) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Checker", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Checker indicates an expected call of Checker.
+func (mr *MockFilterClientMockRecorder) Checker(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checker", reflect.TypeOf((*MockFilterClient)(nil).Checker), arg0, arg1)
+}
+
+// GetOutput mocks base method.
 func (m *MockFilterClient) GetOutput(arg0 context.Context, arg1, arg2, arg3, arg4, arg5 string) (filter.Model, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOutput", arg0, arg1, arg2, arg3, arg4, arg5)
@@ -45,36 +61,66 @@ func (m *MockFilterClient) GetOutput(arg0 context.Context, arg1, arg2, arg3, arg
 	return ret0, ret1
 }
 
-// GetOutput indicates an expected call of GetOutput
+// GetOutput indicates an expected call of GetOutput.
 func (mr *MockFilterClientMockRecorder) GetOutput(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOutput", reflect.TypeOf((*MockFilterClient)(nil).GetOutput), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
-// MockDatasetClient is a mock of DatasetClient interface
+// MockDatasetClient is a mock of DatasetClient interface.
 type MockDatasetClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockDatasetClientMockRecorder
 }
 
-// MockDatasetClientMockRecorder is the mock recorder for MockDatasetClient
+// MockDatasetClientMockRecorder is the mock recorder for MockDatasetClient.
 type MockDatasetClientMockRecorder struct {
 	mock *MockDatasetClient
 }
 
-// NewMockDatasetClient creates a new mock instance
+// NewMockDatasetClient creates a new mock instance.
 func NewMockDatasetClient(ctrl *gomock.Controller) *MockDatasetClient {
 	mock := &MockDatasetClient{ctrl: ctrl}
 	mock.recorder = &MockDatasetClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockDatasetClient) EXPECT() *MockDatasetClientMockRecorder {
 	return m.recorder
 }
 
-// GetVersion mocks base method
+// Checker mocks base method.
+func (m *MockDatasetClient) Checker(arg0 context.Context, arg1 *healthcheck.CheckState) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Checker", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Checker indicates an expected call of Checker.
+func (mr *MockDatasetClientMockRecorder) Checker(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checker", reflect.TypeOf((*MockDatasetClient)(nil).Checker), arg0, arg1)
+}
+
+// GetInstance mocks base method.
+func (m *MockDatasetClient) GetInstance(arg0 context.Context, arg1, arg2, arg3, arg4, arg5 string) (dataset.Instance, string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInstance", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret0, _ := ret[0].(dataset.Instance)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetInstance indicates an expected call of GetInstance.
+func (mr *MockDatasetClientMockRecorder) GetInstance(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstance", reflect.TypeOf((*MockDatasetClient)(nil).GetInstance), arg0, arg1, arg2, arg3, arg4, arg5)
+}
+
+// GetVersion mocks base method.
 func (m *MockDatasetClient) GetVersion(arg0 context.Context, arg1, arg2, arg3, arg4, arg5, arg6, arg7 string) (dataset.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVersion", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
@@ -83,36 +129,50 @@ func (m *MockDatasetClient) GetVersion(arg0 context.Context, arg1, arg2, arg3, a
 	return ret0, ret1
 }
 
-// GetVersion indicates an expected call of GetVersion
+// GetVersion indicates an expected call of GetVersion.
 func (mr *MockDatasetClientMockRecorder) GetVersion(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVersion", reflect.TypeOf((*MockDatasetClient)(nil).GetVersion), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 }
 
-// MockImageClient is a mock of ImageClient interface
+// MockImageClient is a mock of ImageClient interface.
 type MockImageClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockImageClientMockRecorder
 }
 
-// MockImageClientMockRecorder is the mock recorder for MockImageClient
+// MockImageClientMockRecorder is the mock recorder for MockImageClient.
 type MockImageClientMockRecorder struct {
 	mock *MockImageClient
 }
 
-// NewMockImageClient creates a new mock instance
+// NewMockImageClient creates a new mock instance.
 func NewMockImageClient(ctrl *gomock.Controller) *MockImageClient {
 	mock := &MockImageClient{ctrl: ctrl}
 	mock.recorder = &MockImageClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockImageClient) EXPECT() *MockImageClientMockRecorder {
 	return m.recorder
 }
 
-// GetDownloadVariant mocks base method
+// Checker mocks base method.
+func (m *MockImageClient) Checker(arg0 context.Context, arg1 *healthcheck.CheckState) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Checker", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Checker indicates an expected call of Checker.
+func (mr *MockImageClientMockRecorder) Checker(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checker", reflect.TypeOf((*MockImageClient)(nil).Checker), arg0, arg1)
+}
+
+// GetDownloadVariant mocks base method.
 func (m *MockImageClient) GetDownloadVariant(arg0 context.Context, arg1, arg2, arg3, arg4, arg5 string) (image.ImageDownload, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDownloadVariant", arg0, arg1, arg2, arg3, arg4, arg5)
@@ -121,7 +181,7 @@ func (m *MockImageClient) GetDownloadVariant(arg0 context.Context, arg1, arg2, a
 	return ret0, ret1
 }
 
-// GetDownloadVariant indicates an expected call of GetDownloadVariant
+// GetDownloadVariant indicates an expected call of GetDownloadVariant.
 func (mr *MockImageClientMockRecorder) GetDownloadVariant(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDownloadVariant", reflect.TypeOf((*MockImageClient)(nil).GetDownloadVariant), arg0, arg1, arg2, arg3, arg4, arg5)

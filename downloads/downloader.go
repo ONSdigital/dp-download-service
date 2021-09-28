@@ -2,15 +2,18 @@ package downloads
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
 	"strings"
 
-	"github.com/ONSdigital/dp-api-clients-go/dataset"
-	"github.com/ONSdigital/dp-api-clients-go/filter"
-	"github.com/ONSdigital/dp-api-clients-go/image"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
+	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
+	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
+	"github.com/ONSdigital/dp-api-clients-go/v2/image"
+	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 //go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/downloads FilterClient,DatasetClient,ImageClient
@@ -18,16 +21,20 @@ import (
 // FilterClient is an interface to represent methods called to action on the filter api
 type FilterClient interface {
 	GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID string) (m filter.Model, err error)
+	Checker(ctx context.Context, check *healthcheck.CheckState) error
 }
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
 type DatasetClient interface {
-	GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string) (m dataset.Version, err error)
+	GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (m dataset.Version, err error)
+	GetInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID, ifMatch string) (m dataset.Instance, eTag string, err error)
+	Checker(ctx context.Context, check *healthcheck.CheckState) error
 }
 
 // ImageClient is an interface to represent methods called to action on the image api
 type ImageClient interface {
 	GetDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (m image.ImageDownload, err error)
+	Checker(ctx context.Context, check *healthcheck.CheckState) error
 }
 
 // FileType - iota enum of possible file types that can be download
@@ -38,6 +45,7 @@ const (
 	TypeDatasetVersion FileType = iota
 	TypeFilterOutput
 	TypeImage
+	TypeInstance
 )
 
 // Model is a struct that contains all the required information to download a file.
@@ -56,6 +64,7 @@ type Parameters struct {
 	DownloadServiceToken string
 	CollectionID         string
 	FilterOutputID       string
+	InstanceID           string
 	DatasetID            string
 	Edition              string
 	Version              string
@@ -73,31 +82,42 @@ type Downloader struct {
 
 // Get requests the required metadata using a client depending on the provided paramters
 func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType, variant string) (Model, error) {
+	switch fileType {
 
-	if fileType == TypeImage {
-		log.Event(ctx, "getting image downloads", log.INFO, log.Data{
+	case TypeImage:
+		log.Info(ctx, "getting image downloads", log.Data{
 			"image_id": p.ImageID,
 			"variant":  p.Variant,
 			"filename": p.Filename,
 		})
 		return d.getImageDownload(ctx, p, variant)
-	}
 
-	if fileType == TypeFilterOutput {
-		log.Event(ctx, "getting downloads for filter output job", log.INFO, log.Data{
+	case TypeFilterOutput:
+		log.Info(ctx, "getting downloads for filter output job", log.Data{
 			"filter_output_id": p.FilterOutputID,
 			"collection_id":    p.CollectionID,
 		})
 		return d.getFilterOutputDownload(ctx, p, variant)
-	}
 
-	log.Event(ctx, "getting downloads for dataset version", log.INFO, log.Data{
-		"dataset_id":    p.DatasetID,
-		"edition":       p.Edition,
-		"version":       p.Version,
-		"collection_id": p.CollectionID,
-	})
-	return d.getDatasetVersionDownload(ctx, p, variant)
+	case TypeDatasetVersion:
+		log.Info(ctx, "getting downloads for dataset version", log.Data{
+			"dataset_id":    p.DatasetID,
+			"edition":       p.Edition,
+			"version":       p.Version,
+			"collection_id": p.CollectionID,
+		})
+		return d.getDatasetVersionDownload(ctx, p, variant)
+
+	case TypeInstance:
+		log.Info(ctx, "getting downloads for instance", log.Data{
+			"instance_id": p.InstanceID,
+		})
+		return d.getInstanceDownload(ctx, p, variant)
+
+	default:
+		return Model{}, errors.New("unsupported file type")
+
+	}
 }
 
 //getFilterOutputDownload gets the Model for a filter output job.
@@ -129,6 +149,32 @@ func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, v
 	return model, nil
 }
 
+// getInstanceDownload gets the Model for an instance download (e.g. Cantabular CSV files)
+func (d Downloader) getInstanceDownload(ctx context.Context, p Parameters, extension string) (Model, error) {
+	var downloads Model
+
+	instance, _, err := d.DatasetCli.GetInstance(ctx, p.UserAuthToken, p.ServiceAuthToken, p.CollectionID, p.InstanceID, headers.IfMatchAnyETag)
+	if err != nil {
+		return downloads, err
+	}
+
+	model := Model{
+		IsPublished: instance.State == dataset.StatePublished.String(),
+	}
+
+	v, ok := instance.Downloads[extension]
+	if ok {
+		privatePath := fmt.Sprintf("instances/%s.%s", p.InstanceID, extension)
+		filename := fmt.Sprintf("%s.%s", p.InstanceID, extension)
+		model.Public = v.Public
+		model.PrivateS3Path = privatePath
+		model.PrivateVaultPath = filename
+		model.PrivateFilename = filename
+	}
+
+	return model, nil
+}
+
 //getDatasetVersionDownload gets the Model for a dataset version
 func (d Downloader) getDatasetVersionDownload(ctx context.Context, p Parameters, variant string) (Model, error) {
 	var downloads Model
@@ -139,7 +185,7 @@ func (d Downloader) getDatasetVersionDownload(ctx context.Context, p Parameters,
 	}
 
 	model := Model{
-		IsPublished: "published" == version.State,
+		IsPublished: version.State == dataset.StatePublished.String(),
 	}
 
 	v, ok := version.Downloads[variant]
@@ -188,11 +234,11 @@ func (m Model) IsPublicLinkAvailable() bool {
 }
 
 func parseURL(urlString string) (path string, filename string, err error) {
-	url, err := url.Parse(urlString)
+	parsedUrl, err := url.Parse(urlString)
 	if err != nil {
 		return
 	}
-	path = strings.TrimLeft(url.Path, "/")
-	filename = filepath.Base(url.Path)
+	path = strings.TrimLeft(parsedUrl.Path, "/")
+	filename = filepath.Base(parsedUrl.Path)
 	return
 }
