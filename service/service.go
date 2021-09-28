@@ -170,11 +170,6 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.HandleFunc("/health", hc.Handler)
-	// move this to IsPublishing below once authentication is figured out
-	//if cfg.EnableDownloadMongo && cfg.EnableMongo {
-	//	ds := handlers.NewDataset(model.New(mongoClient))
-	//	router.Path("/downloads").Methods("POST").HandlerFunc(ds.DoPostDataset())
-	//}
 	svc.router = router
 
 	// Create new middleware chain with whitelisted handler for /health endpoint
