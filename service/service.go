@@ -171,10 +171,10 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.HandleFunc("/health", hc.Handler)
 	// move this to IsPublishing below once authentication is figured out
-	if cfg.EnableDownloadMongo && cfg.EnableMongo {
-		ds := handlers.NewDataset(model.New(mongoClient))
-		router.Path("/downloads").Methods("POST").HandlerFunc(ds.DoPostDataset())
-	}
+	//if cfg.EnableDownloadMongo && cfg.EnableMongo {
+	//	ds := handlers.NewDataset(model.New(mongoClient))
+	//	router.Path("/downloads").Methods("POST").HandlerFunc(ds.DoPostDataset())
+	//}
 	svc.router = router
 
 	// Create new middleware chain with whitelisted handler for /health endpoint
@@ -184,9 +184,10 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	// For non-whitelisted endpoints, do identityHandler or corsHandler
 	//
 	if cfg.IsPublishing {
-		//if cfg.EnableDownloadMongo && cfg.EnableMongo {
-		//	router.Path("/downloads").Methods("POST").HandlerFunc(ds.DoPostDataset())
-		//}
+		if cfg.EnableDownloadMongo && cfg.EnableMongo {
+			ds := handlers.NewDataset(model.New(mongoClient))
+			router.Path("/downloads").Methods("POST").HandlerFunc(ds.DoPostDataset())
+		}
 		log.Info(ctx, "private endpoints are enabled. using identity middleware")
 		identityHandler := dphandlers.IdentityWithHTTPClient(clientsidentity.NewWithHealthClient(zc))
 		middlewareChain = middlewareChain.Append(identityHandler)
