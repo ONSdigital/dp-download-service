@@ -5,9 +5,9 @@ import (
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dpMongoLock "github.com/ONSdigital/dp-mongodb/v2/dplock"
-	dpMongoHealth "github.com/ONSdigital/dp-mongodb/v2/health"
-	dpmongo "github.com/ONSdigital/dp-mongodb/v2/mongodb"
+	dpMongoLock "github.com/ONSdigital/dp-mongodb/v3/dplock"
+	dpMongoHealth "github.com/ONSdigital/dp-mongodb/v3/health"
+	dpmongo "github.com/ONSdigital/dp-mongodb/v3/mongodb"
 )
 
 const (
