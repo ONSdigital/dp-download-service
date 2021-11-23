@@ -3,12 +3,11 @@ package main
 import (
 	"flag"
 	componenttest "github.com/ONSdigital/dp-component-test"
+	"github.com/ONSdigital/dp-download-service/features"
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
-	"net/http"
 	"os"
 	"testing"
-	"github.com/ONSdigital/dp-download-service/features"
 )
 
 var componentFlag = flag.Bool("component", false, "perform component tests")
@@ -16,28 +15,28 @@ var componentFlag = flag.Bool("component", false, "perform component tests")
 type componentTestSuite struct {
 	Mongo *componenttest.MongoFeature
 }
-func NewServer() *http.Server {
-	return &http.Server{}
-}
 
 func (t *componentTestSuite) InitializeScenario(ctx *godog.ScenarioContext) {
-	server := NewServer()
-
-	component := features.NewDownloadServiceComponent(server.Handler, t.Mongo.Server.URI()) // This is the part that YOU will implement
-	apiFeature := componenttest.NewAPIFeature(component.Initialiser(server.Handler))
+	authorizationFeature := componenttest.NewAuthorizationFeature()
+	component := features.NewDownloadServiceComponent(t.Mongo.Server.URI(), authorizationFeature.FakeAuthService.ResolveURL(""))
+	apiFeature := componenttest.NewAPIFeature(component.Initialiser)
 
 	ctx.BeforeScenario(func(*godog.Scenario) {
 		t.Mongo.Reset()
 		apiFeature.Reset()
+		authorizationFeature.Reset()
+
 	})
 
 	ctx.AfterScenario(func(*godog.Scenario, error) {
 		t.Mongo.Reset()
 		apiFeature.Reset()
+		authorizationFeature.Reset()
 	})
 
 	apiFeature.RegisterSteps(ctx)
 	t.Mongo.RegisterSteps(ctx)
+	authorizationFeature.RegisterSteps(ctx)
 }
 
 func (t *componentTestSuite) InitializeTestSuite(ctx *godog.TestSuiteContext) {
@@ -53,7 +52,6 @@ func (t *componentTestSuite) InitializeTestSuite(ctx *godog.TestSuiteContext) {
 		t.Mongo.Close()
 	})
 }
-
 
 func TestMain(t *testing.T) {
 	if *componentFlag {
