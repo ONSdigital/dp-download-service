@@ -76,17 +76,20 @@ func NewDownloadServiceComponent(handler http.Handler, mongoUrl string) *Downloa
 
 	svc, err := service.New(ctx, "1", "1", "1", cfg, &external.External{})
 
+	//fakeService := httpfake.New()
+
 	//svc.Server = dphttp.NewServer("", fakeService.Server.Config.Handler)
+
 	if err != nil {
 		log.Fatal(ctx, "could not set up Download service", err)
 		os.Exit(1)
 	}
-	fmt.Println("here!!!!!!!!!!!!!!!!!!!")
+	fmt.Println("here1")
 
 
-	svc.Start(ctx)
+	svc.Run(ctx)
 
-	fmt.Println("here!!!!!!!!!!!!!!!!!!!")
+	fmt.Println("here2")
 
 	return &DownloadServiceComponent{
 		Handler: handler,

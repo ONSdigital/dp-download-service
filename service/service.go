@@ -31,9 +31,9 @@ type Download struct {
 	s3Client            content.S3Client
 	zebedeeHealthClient *health.Client
 	mongoClient         MongoClient
-	router              *mux.Router
-	server              *dphttp.Server
-	shutdown            time.Duration
+	router   *mux.Router
+	Server   *dphttp.Server
+	shutdown time.Duration
 	healthCheck         HealthChecker
 }
 
@@ -53,6 +53,7 @@ type Dependencies interface {
 	S3Client(*config.Config) (content.S3Client, error)
 	MongoClient(context.Context, *config.Config) (MongoClient, error)
 	HealthCheck(*config.Config, string, string, string) (HealthChecker, error)
+	HttpServer(*config.Config, http.Handler) *dphttp.Server
 }
 
 // HealthChecker abstracts healthcheck.HealthCheck so we can create a mock.
@@ -185,7 +186,8 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		Append(dphandlers.CheckHeader(dphandlers.UserAccess)).
 		Append(dphandlers.CheckHeader(dphandlers.CollectionID)).
 		Then(router)
-	svc.server = dphttp.NewServer(cfg.BindAddr, r)
+
+	svc.Server = deps.HttpServer(cfg, r)
 
 	return svc, nil
 }
@@ -242,12 +244,12 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 }
 
 func (d Download) Run(ctx context.Context) {
-	d.server.HandleOSSignals = false
+	d.Server.HandleOSSignals = false
 
 	d.healthCheck.Start(ctx)
 	go func() {
 		log.Info(ctx, "starting download service...")
-		if err := d.server.ListenAndServe(); err != nil {
+		if err := d.Server.ListenAndServe(); err != nil {
 			log.Error(ctx, "download service http service returned an error", err)
 		}
 	}()
@@ -262,7 +264,7 @@ func (d Download) Close(ctx context.Context) error {
 	shutdownStart := time.Now()
 	d.healthCheck.Stop()
 
-	if err := d.server.Shutdown(ctx); err != nil {
+	if err := d.Server.Shutdown(ctx); err != nil {
 		return err
 	}
 
