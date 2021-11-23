@@ -21,9 +21,11 @@ require (
 
 require (
 	github.com/ONSdigital/dp-api-clients-go v1.41.1 // indirect
+	github.com/ONSdigital/dp-component-test v0.6.0 // indirect
 	github.com/ONSdigital/dp-net v1.0.12 // indirect
 	github.com/ONSdigital/log.go v1.0.1 // indirect
 	github.com/ONSdigital/s3crypto v0.0.0-20180725145621-f8943119a487 // indirect
+	github.com/cucumber/godog v0.12.2 // indirect
 	github.com/fatih/color v1.12.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
@@ -40,10 +42,12 @@ require (
 	github.com/hashicorp/vault/sdk v0.1.14-0.20200514144402-4bfac290c352 // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20210113012101-fb4e108d2519 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/johannesboyne/gofakes3 v0.0.0-20210819161434-5c8dfcfe5310 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/klauspost/compress v1.11.1 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect
+	github.com/maxcnunes/httpfake v1.2.4 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.2.2 // indirect
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
@@ -51,6 +55,7 @@ require (
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/square/mongo-lock v0.0.0-20201208161834-4db518ed7fb2 // indirect
+	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.0.2 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
