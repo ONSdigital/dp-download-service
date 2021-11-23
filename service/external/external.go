@@ -3,6 +3,8 @@ package external
 import (
 	"context"
 	"fmt"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	"net/http"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
@@ -78,4 +80,8 @@ func (*External) HealthCheck(cfg *config.Config, buildTime, gitCommit, version s
 	}
 	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
 	return &hc, nil
+}
+
+func (*External) HttpServer(cfg *config.Config, r http.Handler) *dphttp.Server {
+	return dphttp.NewServer(cfg.BindAddr, r)
 }
