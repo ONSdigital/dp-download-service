@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"net/http"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/ONSdigital/dp-download-service/handlers"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphandlers "github.com/ONSdigital/dp-net/v2/handlers"
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"github.com/ONSdigital/log.go/v2/log"
 	gorillahandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -32,19 +32,20 @@ type Download struct {
 	zebedeeHealthClient *health.Client
 	mongoClient         MongoClient
 	router   *mux.Router
-	Server   *dphttp.Server
+	server   *dphttp.Server
 	shutdown time.Duration
 	healthCheck         HealthChecker
 }
 
 // Generate mocks of dependencies
 //
-//go:generate moq -rm -pkg service_test -out moq_service_test.go . Dependencies HealthChecker MongoClient
-//go:generate moq -rm -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilterClient ImageClient
-//go:generate moq -rm -pkg service_test -out moq_content_test.go ../content S3Client VaultClient
+//go:generate moq -pkg service_test -out moq_service_test.go . Dependencies HealthChecker MongoClient HTTPServer
+//go:generate moq -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilterClient ImageClient
+//go:generate moq -pkg service_test -out moq_content_test.go ../content S3Client VaultClient
 
 // Dependencies holds constructors/factories for all external dependencies
 //
+
 type Dependencies interface {
 	DatasetClient(string) downloads.DatasetClient
 	FilterClient(string) downloads.FilterClient
@@ -72,6 +73,12 @@ type MongoClient interface {
 	URI() string
 	Close(context.Context) error
 	Checker(context.Context, *healthcheck.CheckState) error
+}
+
+// HTTPServer defines the required methods from the HTTP server
+type HTTPServer interface {
+	ListenAndServe() error
+	Shutdown(ctx context.Context) error
 }
 
 // New returns a new Download service with dependencies initialised based on cfg and deps.
@@ -187,7 +194,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		Append(dphandlers.CheckHeader(dphandlers.CollectionID)).
 		Then(router)
 
-	svc.Server = deps.HttpServer(cfg, r)
+	svc.server = deps.HttpServer(cfg, r)
 
 	return svc, nil
 }
@@ -244,12 +251,12 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 }
 
 func (d Download) Run(ctx context.Context) {
-	d.Server.HandleOSSignals = false
+	d.server.HandleOSSignals = false
 
 	d.healthCheck.Start(ctx)
 	go func() {
 		log.Info(ctx, "starting download service...")
-		if err := d.Server.ListenAndServe(); err != nil {
+		if err := d.server.ListenAndServe(); err != nil {
 			log.Error(ctx, "download service http service returned an error", err)
 		}
 	}()
@@ -264,7 +271,7 @@ func (d Download) Close(ctx context.Context) error {
 	shutdownStart := time.Now()
 	d.healthCheck.Stop()
 
-	if err := d.Server.Shutdown(ctx); err != nil {
+	if err := d.server.Shutdown(ctx); err != nil {
 		return err
 	}
 

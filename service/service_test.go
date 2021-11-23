@@ -3,6 +3,8 @@ package service_test
 import (
 	"context"
 	"errors"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	"net/http"
 	"testing"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -64,6 +67,9 @@ func TestNew(t *testing.T) {
 			},
 		}
 
+		mockedHttpServer := &HTTPServerMock{
+		}
+
 		mockedMongoClient := &MongoClientMock{
 			CheckerFunc: checker,
 			URIFunc: func() string {
@@ -92,6 +98,9 @@ func TestNew(t *testing.T) {
 			},
 			HealthCheckFunc: func(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
 				return mockedHealthChecker, nil
+			},
+			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
+				return mockedHttpServer
 			},
 		}
 
