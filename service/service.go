@@ -4,9 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
@@ -244,35 +241,10 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 	return nil
 }
 
-// Start should be called to manage the running of the download service
-func (d Download) Start(ctx context.Context) {
-
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
-
+func (d Download) Run(ctx context.Context) {
 	d.server.HandleOSSignals = false
 
 	d.healthCheck.Start(ctx)
-	d.run(ctx)
-
-	<-signals
-	log.Info(ctx, "os signal received")
-
-	shutdownCtx, cancel := context.WithTimeout(ctx, d.shutdown)
-
-	// Gracefully shutdown the application closing any open resources.
-	log.Info(shutdownCtx, "shutdown with timeout", log.Data{"timeout": d.shutdown})
-
-	shutdownStart := time.Now()
-	d.close(shutdownCtx)
-	d.healthCheck.Stop()
-
-	log.Info(shutdownCtx, "shutdown complete", log.Data{"duration": time.Since(shutdownStart)})
-	cancel()
-	os.Exit(1)
-}
-
-func (d Download) run(ctx context.Context) {
 	go func() {
 		log.Info(ctx, "starting download service...")
 		if err := d.server.ListenAndServe(); err != nil {
@@ -281,10 +253,20 @@ func (d Download) run(ctx context.Context) {
 	}()
 }
 
-func (d Download) close(ctx context.Context) error {
+func (d Download) Close(ctx context.Context) error {
+	shutdownCtx, cancel := context.WithTimeout(ctx, d.shutdown)
+
+	// Gracefully shutdown the application closing any open resources.
+	log.Info(shutdownCtx, "shutdown with timeout", log.Data{"timeout": d.shutdown})
+
+	shutdownStart := time.Now()
+	d.healthCheck.Stop()
+
 	if err := d.server.Shutdown(ctx); err != nil {
 		return err
 	}
-	log.Info(ctx, "graceful shutdown of http server complete")
+
+	log.Info(shutdownCtx, "shutdown complete", log.Data{"duration": time.Since(shutdownStart)})
+	cancel()
 	return nil
 }
