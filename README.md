@@ -15,16 +15,6 @@ Service is authenticated against zebedee, one can run [dp-auth-api-stub](https:/
 
 The app uses the default provider chain. When running locally this typically means they are provided by the `~/.aws/credentials` file.  Alternatively you can inject the credentials via environment variables as described in the configuration section
 
-### Mongo
-
-The `ENABLE_MONGO` feature flag lets the application connect to a mongo instance using the `MONGODB_*` variables.
-
-The application doesn't actually do anything with Mongo at this time.
-This is just a first phase.
-
-* Run `brew install mongo`
-* Run `brew services start mongodb`
-
 ### Healthcheck
 
 The endpoint `/healthcheck` checks the health of vault and the dataset api and returns one of:

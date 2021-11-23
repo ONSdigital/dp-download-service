@@ -15,7 +15,6 @@ import (
 	"github.com/ONSdigital/dp-download-service/handlers"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphandlers "github.com/ONSdigital/dp-net/v2/handlers"
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"github.com/ONSdigital/log.go/v2/log"
 	gorillahandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -30,29 +29,29 @@ type Download struct {
 	vaultClient         content.VaultClient
 	s3Client            content.S3Client
 	zebedeeHealthClient *health.Client
-	mongoClient         MongoClient
 	router              *mux.Router
-	server              *dphttp.Server
+	server              HTTPServer
 	shutdown            time.Duration
 	healthCheck         HealthChecker
 }
 
 // Generate mocks of dependencies
 //
-//go:generate moq -rm -pkg service_test -out moq_service_test.go . Dependencies HealthChecker MongoClient
-//go:generate moq -rm -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilterClient ImageClient
-//go:generate moq -rm -pkg service_test -out moq_content_test.go ../content S3Client VaultClient
+//go:generate moq -pkg service_test -out moq_service_test.go . Dependencies HealthChecker HTTPServer
+//go:generate moq -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilterClient ImageClient
+//go:generate moq -pkg service_test -out moq_content_test.go ../content S3Client VaultClient
 
 // Dependencies holds constructors/factories for all external dependencies
 //
+
 type Dependencies interface {
 	DatasetClient(string) downloads.DatasetClient
 	FilterClient(string) downloads.FilterClient
 	ImageClient(string) downloads.ImageClient
 	VaultClient(*config.Config) (content.VaultClient, error)
 	S3Client(*config.Config) (content.S3Client, error)
-	MongoClient(context.Context, *config.Config) (MongoClient, error)
 	HealthCheck(*config.Config, string, string, string) (HealthChecker, error)
+	HttpServer(*config.Config, http.Handler) HTTPServer
 }
 
 // HealthChecker abstracts healthcheck.HealthCheck so we can create a mock.
@@ -65,12 +64,10 @@ type HealthChecker interface {
 	Handler(http.ResponseWriter, *http.Request)
 }
 
-// Mongo abstracts mongo.Mongo so we can create a mock.
-//
-type MongoClient interface {
-	URI() string
-	Close(context.Context) error
-	Checker(context.Context, *healthcheck.CheckState) error
+// HTTPServer defines the required methods from the HTTP server
+type HTTPServer interface {
+	ListenAndServe() error
+	Shutdown(ctx context.Context) error
 }
 
 // New returns a new Download service with dependencies initialised based on cfg and deps.
@@ -104,19 +101,6 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		return nil, err
 	}
 	svc.s3Client = s3
-
-	// Only set up mongo when enabled with feature flag.
-	//
-	var mongoClient MongoClient
-	if cfg.EnableMongo {
-		mongoClient, err = deps.MongoClient(ctx, cfg)
-		if err != nil {
-			log.Fatal(ctx, "could not create mongo client", err)
-			return nil, err
-		}
-		log.Info(ctx, "listening to mongo db session", log.Data{"URI": mongoClient.URI()})
-	}
-	svc.mongoClient = mongoClient
 
 	// Create Health client for Zebedee only if we are in publishing mode.
 	//
@@ -163,6 +147,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoFilterOutput("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/{filename}").HandlerFunc(d.DoDownload(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.HandleFunc("/health", hc.Handler)
 	svc.router = router
 
@@ -185,7 +170,8 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		Append(dphandlers.CheckHeader(dphandlers.UserAccess)).
 		Append(dphandlers.CheckHeader(dphandlers.CollectionID)).
 		Then(router)
-	svc.server = dphttp.NewServer(cfg.BindAddr, r)
+
+	svc.server = deps.HttpServer(cfg, r)
 
 	return svc, nil
 }
@@ -228,13 +214,6 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 		log.Error(ctx, "error adding check for s3", err)
 	}
 
-	if svc.mongoClient != nil {
-		if err := hc.AddCheck("Mongo", svc.mongoClient.Checker); err != nil {
-			hasErrors = true
-			log.Error(ctx, "error adding check for mongo", err)
-		}
-	}
-
 	if hasErrors {
 		return errors.New("Error(s) registering checkers for healthcheck")
 	}
@@ -242,7 +221,7 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 }
 
 func (d Download) Run(ctx context.Context) {
-	d.server.HandleOSSignals = false
+	//d.server.HandleOSSignals = false
 
 	d.healthCheck.Start(ctx)
 	go func() {

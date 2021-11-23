@@ -30,7 +30,6 @@ func main() {
 		return
 	}
 	log.Info(ctx, "created vault client", logData)
-
 	psk := createPSK()
 	pskStr := hex.EncodeToString(psk)
 

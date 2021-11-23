@@ -1,8 +1,9 @@
 package external
 
 import (
-	"context"
 	"fmt"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	"net/http"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
@@ -11,7 +12,6 @@ import (
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
-	"github.com/ONSdigital/dp-download-service/mongo"
 	"github.com/ONSdigital/dp-download-service/service"
 
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
@@ -70,10 +70,6 @@ func (*External) S3Client(cfg *config.Config) (content.S3Client, error) {
 	return s3, nil
 }
 
-func (ext *External) MongoClient(ctx context.Context, cfg *config.Config) (service.MongoClient, error) {
-	return mongo.New(ctx, cfg)
-}
-
 func (*External) HealthCheck(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
 	versionInfo, err := healthcheck.NewVersionInfo(buildTime, gitCommit, version)
 	if err != nil {
@@ -81,4 +77,11 @@ func (*External) HealthCheck(cfg *config.Config, buildTime, gitCommit, version s
 	}
 	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
 	return &hc, nil
+}
+
+func (*External) HttpServer(cfg *config.Config, r http.Handler) service.HTTPServer {
+	s := dphttp.NewServer(cfg.BindAddr, r)
+	s.HandleOSSignals = false
+
+	return s
 }
