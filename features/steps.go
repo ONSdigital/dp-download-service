@@ -1,6 +1,10 @@
 package features
 
-import "github.com/cucumber/godog"
+import (
+        "github.com/cucumber/godog"
+        "github.com/stretchr/testify/assert"
+        "net/http"
+)
 
 func (d *DownloadServiceComponent) iRequestTODownloadTheFile(filename string) error {
         return d.ApiFeature.IGet("/downloads/" + filename)
@@ -14,8 +18,11 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 
 }
 
-func (d *DownloadServiceComponent) iShouldReceiveThePrivateFile(arg1 string) error {
-        return godog.ErrPending
+func (d *DownloadServiceComponent) iShouldReceiveThePrivateFile(filename string) error {
+        assert.Equal(d.ApiFeature, http.StatusOK, d.ApiFeature.HttpResponse.StatusCode)
+
+        //return errors.New("BROKE")
+        return d.ApiFeature.StepError()
 }
 
 func (d *DownloadServiceComponent) isNotYetPublished() error {
