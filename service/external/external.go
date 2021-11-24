@@ -83,5 +83,8 @@ func (*External) HealthCheck(cfg *config.Config, buildTime, gitCommit, version s
 }
 
 func (*External) HttpServer(cfg *config.Config, r http.Handler) service.HTTPServer {
-	return dphttp.NewServer(cfg.BindAddr, r)
+	s := dphttp.NewServer(cfg.BindAddr, r)
+	s.HandleOSSignals = false
+
+	return s
 }
