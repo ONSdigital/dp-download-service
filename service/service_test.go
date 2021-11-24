@@ -1,9 +1,10 @@
 package service_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -21,6 +22,9 @@ func TestNew(t *testing.T) {
 	buildTime := "buildTime"
 	gitCommit := "gitCommit"
 	version := "version"
+
+	buf := bytes.NewBufferString("")
+	log.SetOutput(buf)
 
 	// We are not testing the checker function or its return value; we only need
 	// a valid function to attach to clients.

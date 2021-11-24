@@ -10,7 +10,6 @@ import (
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"net/http"
 	"sync"
 )
@@ -34,7 +33,7 @@ var _ service.Dependencies = &DependenciesMock{}
 // 			HealthCheckFunc: func(configMoqParam *config.Config, s1 string, s2 string, s3 string) (service.HealthChecker, error) {
 // 				panic("mock out the HealthCheck method")
 // 			},
-// 			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) *dphttp.Server {
+// 			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
 // 				panic("mock out the HttpServer method")
 // 			},
 // 			ImageClientFunc: func(s string) downloads.ImageClient {
@@ -66,7 +65,7 @@ type DependenciesMock struct {
 	HealthCheckFunc func(configMoqParam *config.Config, s1 string, s2 string, s3 string) (service.HealthChecker, error)
 
 	// HttpServerFunc mocks the HttpServer method.
-	HttpServerFunc func(configMoqParam *config.Config, handler http.Handler) *dphttp.Server
+	HttpServerFunc func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer
 
 	// ImageClientFunc mocks the ImageClient method.
 	ImageClientFunc func(s string) downloads.ImageClient
@@ -249,7 +248,7 @@ func (mock *DependenciesMock) HealthCheckCalls() []struct {
 }
 
 // HttpServer calls HttpServerFunc.
-func (mock *DependenciesMock) HttpServer(configMoqParam *config.Config, handler http.Handler) *dphttp.Server {
+func (mock *DependenciesMock) HttpServer(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
 	if mock.HttpServerFunc == nil {
 		panic("DependenciesMock.HttpServerFunc: method is nil but Dependencies.HttpServer was just called")
 	}

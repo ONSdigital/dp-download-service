@@ -58,7 +58,7 @@ func (e *External) DatasetClient(datasetAPIURL string) downloads.DatasetClient {
 	return &mocks.MockDatasetClient{}
 }
 
-func (e *External) HttpServer(cfg *config.Config, r http.Handler) *dphttp.Server {
+func (e *External) HttpServer(cfg *config.Config, r http.Handler) service.HTTPServer {
 	e.Server.Server.Addr = cfg.BindAddr
 	e.Server.Server.Handler = r
 
