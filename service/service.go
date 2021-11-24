@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"net/http"
 	"time"
 
@@ -32,7 +31,7 @@ type Download struct {
 	zebedeeHealthClient *health.Client
 	mongoClient         MongoClient
 	router   *mux.Router
-	server   *dphttp.Server
+	server   HTTPServer
 	shutdown time.Duration
 	healthCheck         HealthChecker
 }
@@ -54,7 +53,7 @@ type Dependencies interface {
 	S3Client(*config.Config) (content.S3Client, error)
 	MongoClient(context.Context, *config.Config) (MongoClient, error)
 	HealthCheck(*config.Config, string, string, string) (HealthChecker, error)
-	HttpServer(*config.Config, http.Handler) *dphttp.Server
+	HttpServer(*config.Config, http.Handler) HTTPServer
 }
 
 // HealthChecker abstracts healthcheck.HealthCheck so we can create a mock.
@@ -251,7 +250,7 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 }
 
 func (d Download) Run(ctx context.Context) {
-	d.server.HandleOSSignals = false
+	//d.server.HandleOSSignals = false
 
 	d.healthCheck.Start(ctx)
 	go func() {
