@@ -1,4 +1,4 @@
-package main
+package main_test
 
 import (
 	"flag"
@@ -26,7 +26,6 @@ func (t *componentTestSuite) InitializeScenario(ctx *godog.ScenarioContext) {
 		t.Mongo.Reset()
 		apiFeature.Reset()
 		authorizationFeature.Reset()
-
 	})
 
 	ctx.AfterScenario(func(*godog.Scenario, error) {
@@ -55,7 +54,7 @@ func (t *componentTestSuite) InitializeTestSuite(ctx *godog.TestSuiteContext) {
 	})
 }
 
-func TestMain(t *testing.T) {
+func TestSomething(t *testing.T) {
 	if *componentFlag {
 		var opts = godog.Options{
 			Output: colors.Colored(os.Stdout),

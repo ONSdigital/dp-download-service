@@ -1,6 +1,7 @@
 package features
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	componenttest "github.com/ONSdigital/dp-component-test"
@@ -71,7 +72,8 @@ func (e *External) HttpServer(cfg *config.Config, r http.Handler) service.HTTPSe
 }
 
 func NewDownloadServiceComponent(mongoUrl string, fake_auth_url string) *DownloadServiceComponent {
-
+	buf := bytes.NewBufferString("")
+	log.SetDestination(buf, buf)
 	os.Setenv("ZEBEDEE_URL", fake_auth_url)
 
 	d := &DownloadServiceComponent{
