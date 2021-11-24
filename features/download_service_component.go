@@ -65,10 +65,6 @@ func (e *External) HttpServer(cfg *config.Config, r http.Handler) service.HTTPSe
 	e.Server.Server.Handler = r
 
 	return e.Server
-	//e.server.Addr = cfg.BindAddr
-	//e.server.Handler = r
-	//
-	//return e.server
 }
 
 func NewDownloadServiceComponent(mongoUrl string, fake_auth_url string) *DownloadServiceComponent {
@@ -104,15 +100,11 @@ func NewDownloadServiceComponent(mongoUrl string, fake_auth_url string) *Downloa
 		os.Exit(1)
 	}
 
-	//svc.Run(ctx)
-
 	return d
 }
 
 func (d *DownloadServiceComponent) Initialiser() (http.Handler, error) {
 	d.svc.Run(context.Background())
 
-	//fmt.Println("handler: ", d.HttpServer.Handler)
-	//d.ServiceRunning = true
 	return d.DpHttpServer.Handler, nil
 }
