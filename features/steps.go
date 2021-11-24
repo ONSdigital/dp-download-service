@@ -20,6 +20,7 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 
 func (d *DownloadServiceComponent) iShouldReceiveThePrivateFile(filename string) error {
         assert.Equal(d.ApiFeature, http.StatusOK, d.ApiFeature.HttpResponse.StatusCode)
+        assert.Equal(d.ApiFeature, "attachment; filename="+filename, d.ApiFeature.HttpResponse.Header.Get("Content-Disposition"))
 
         //return errors.New("BROKE")
         return d.ApiFeature.StepError()

@@ -170,6 +170,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoFilterOutput("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/{filename}").HandlerFunc(d.DoDownload(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.HandleFunc("/health", hc.Handler)
 	svc.router = router
 
