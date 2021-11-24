@@ -20,6 +20,7 @@ func (t *componentTestSuite) InitializeScenario(ctx *godog.ScenarioContext) {
 	authorizationFeature := componenttest.NewAuthorizationFeature()
 	component := features.NewDownloadServiceComponent(t.Mongo.Server.URI(), authorizationFeature.FakeAuthService.ResolveURL(""))
 	apiFeature := componenttest.NewAPIFeature(component.Initialiser)
+	component.ApiFeature = apiFeature
 
 	ctx.BeforeScenario(func(*godog.Scenario) {
 		t.Mongo.Reset()
@@ -37,6 +38,7 @@ func (t *componentTestSuite) InitializeScenario(ctx *godog.ScenarioContext) {
 	apiFeature.RegisterSteps(ctx)
 	t.Mongo.RegisterSteps(ctx)
 	authorizationFeature.RegisterSteps(ctx)
+	component.RegisterSteps(ctx)
 }
 
 func (t *componentTestSuite) InitializeTestSuite(ctx *godog.TestSuiteContext) {

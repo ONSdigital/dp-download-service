@@ -22,6 +22,7 @@ import (
 type DownloadServiceComponent struct {
 	DpHttpServer *dphttp.Server
 	svc        *service.Download
+	ApiFeature *componenttest.APIFeature
 	errChan    chan error
 }
 
