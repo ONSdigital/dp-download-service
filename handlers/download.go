@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"fmt"
 	"net/http"
 
 	"github.com/ONSdigital/dp-download-service/downloads"
@@ -62,6 +63,8 @@ func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logDat
 
 	logData["setting_response_status"] = status
 	logData["error"] = err.Error()
+	logData["embedded"] = unwrapLogData(err)
+
 	log.Info(ctx, "setting status code for an error", logData)
 	if status == http.StatusNotFound {
 		message = notFoundMessage
@@ -113,7 +116,7 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 
 	fileDownloads, err := d.Downloader.Get(ctx, params, fileType, variant)
 	if err != nil {
-		setStatusCode(ctx, w, err, logData)
+		setStatusCode(ctx, w, fmt.Errorf("failed to get download: %w", err), logData)
 		return
 	}
 
@@ -143,7 +146,7 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 
 			err = d.S3Content.StreamAndWrite(ctx, s3Path, vaultPath, w)
 			if err != nil {
-				setStatusCode(ctx, w, err, logData)
+				setStatusCode(ctx, w, fmt.Errorf("failed to stream response: %w", err), logData)
 				return
 			}
 
