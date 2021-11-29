@@ -5,9 +5,11 @@ import (
 	"errors"
 	"io"
 	"fmt"
+	"strings"
 	"net/http"
 
 	"github.com/ONSdigital/dp-download-service/downloads"
+	"github.com/ONSdigital/dp-download-service/config"
 	dphandlers "github.com/ONSdigital/dp-net/v2/handlers"
 	"github.com/ONSdigital/dp-net/v2/request"
 	"github.com/ONSdigital/log.go/v2/log"
@@ -110,9 +112,12 @@ func (d Download) DoFilterOutput(extension, serviceAuthToken, downloadServiceTok
 // Authenticated requests will always allow access to the private, whether or not the version is published.
 func (d Download) do(w http.ResponseWriter, req *http.Request, fileType downloads.FileType, params downloads.Parameters, variant string) {
 	ctx := req.Context()
-	logData := downloadParametersToLogData(params)
+	cfg, err := config.Get() 
+	if err != nil{
+		log.Warn(ctx, "failed to get config", log.Data{})
+	}
 
-	var err error
+	logData := downloadParametersToLogData(params)
 
 	fileDownloads, err := d.Downloader.Get(ctx, params, fileType, variant)
 	if err != nil {
@@ -133,6 +138,12 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 
 	if len(fileDownloads.PrivateS3Path) > 0 {
 		s3Path := fileDownloads.PrivateS3Path
+		// Trim everything left of first '/' when using local minio container
+		if len(cfg.LocalObjectStore) > 0 {
+			if i := strings.Index(s3Path, "/"); i > 0{
+				s3Path = s3Path[i:]
+			}
+		}
 		vaultPath := fileDownloads.PrivateVaultPath
 		filename := fileDownloads.PrivateFilename
 
