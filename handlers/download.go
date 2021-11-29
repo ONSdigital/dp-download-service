@@ -112,9 +112,12 @@ func (d Download) DoFilterOutput(extension, serviceAuthToken, downloadServiceTok
 // Authenticated requests will always allow access to the private, whether or not the version is published.
 func (d Download) do(w http.ResponseWriter, req *http.Request, fileType downloads.FileType, params downloads.Parameters, variant string) {
 	ctx := req.Context()
+
 	cfg, err := config.Get() 
 	if err != nil{
+		// cfg not used in production codepath so warning will suffice
 		log.Warn(ctx, "failed to get config", log.Data{})
+		cfg = &config.Config{}
 	}
 
 	logData := downloadParametersToLogData(params)
