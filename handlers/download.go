@@ -63,7 +63,7 @@ func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logDat
 
 	logData["setting_response_status"] = status
 	logData["error"] = err.Error()
-	logData["embedded"] = unwrapLogData(err)
+	logData["other"] = unwrapLogData(err)
 
 	log.Info(ctx, "setting status code for an error", logData)
 	if status == http.StatusNotFound {

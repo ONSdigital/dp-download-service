@@ -69,7 +69,7 @@ func (s S3StreamWriter) StreamAndWrite(ctx context.Context, s3Path string, vault
 			return fmt.Errorf("failed to get Vault key: %w", err)
 		}
 
-		s3ReadCloser, _, err = s.S3Client.GetWithPSK("datasets/cantabular-example-1-2021-1.csv", psk)
+		s3ReadCloser, _, err = s.S3Client.GetWithPSK(s3Path, psk)
 		if err != nil {
 			return fmt.Errorf("failed to get stream object (encrypted) from S3 client: %w", err)
 		}

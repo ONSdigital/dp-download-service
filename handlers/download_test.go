@@ -39,7 +39,7 @@ const (
 )
 
 var (
-	testError        = errors.New("borked")
+	testErr        = errors.New("borked")
 	testCsvContent   = []byte("1,2,3,4")
 	testImageContent = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
 )
@@ -418,7 +418,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
-		dl := downloaderReturningError(mockCtrl, params, downloads.TypeDatasetVersion, testError)
+		dl := downloaderReturningError(mockCtrl, params, downloads.TypeDatasetVersion, testErr)
 		s3C := s3ContentNeverInvoked(mockCtrl)
 
 		d := Download{
@@ -440,7 +440,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 
 		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png"}
 
-		dl := downloaderReturningError(mockCtrl, params, downloads.TypeImage, testError)
+		dl := downloaderReturningError(mockCtrl, params, downloads.TypeImage, testErr)
 		s3C := s3ContentNeverInvoked(mockCtrl)
 
 		d := Download{
@@ -463,7 +463,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeDatasetVersion, publishedDatasetDownloadPrivateURL)
-		s3C := s3ContentReturnsAnError(mockCtrl, testError)
+		s3C := s3ContentReturnsAnError(mockCtrl, testErr)
 
 		d := Download{
 			Downloader: dl,
@@ -485,7 +485,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png"}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeImage, publishedImageDownloadPrivateURL)
-		s3C := s3ContentReturnsAnError(mockCtrl, testError)
+		s3C := s3ContentReturnsAnError(mockCtrl, testErr)
 
 		d := Download{
 			Downloader: dl,
