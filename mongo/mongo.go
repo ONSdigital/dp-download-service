@@ -20,7 +20,6 @@ type Mongo struct {
 	datasetURL   string
 	connection   *dpmongo.MongoConnection
 	uri          string
-	client       *dpMongoHealth.Client
 	healthClient *dpMongoHealth.CheckMongoClient
 	lockClient   *dpMongoLock.Lock
 }
@@ -32,7 +31,9 @@ func New(ctx context.Context, cfg *config.Config) (*Mongo, error) {
 	}
 
 	connCfg := &dpmongo.MongoConnectionConfig{
-		IsSSL:                   cfg.MongoConfig.IsSSL,
+		TLSConnectionConfig: dpmongo.TLSConnectionConfig{
+			IsSSL: cfg.MongoConfig.IsSSL,
+		},
 		ConnectTimeoutInSeconds: connectTimeoutInSeconds,
 		QueryTimeoutInSeconds:   queryTimeoutInSeconds,
 
@@ -54,11 +55,7 @@ func New(ctx context.Context, cfg *config.Config) (*Mongo, error) {
 	// set up databaseCollectionBuilder here when collections are known
 
 	// Create client and healthclient from session
-	m.client = dpMongoHealth.NewClientWithCollections(m.connection, nil)
-	m.healthClient = &dpMongoHealth.CheckMongoClient{
-		Client:      *m.client,
-		Healthcheck: m.client.Healthcheck,
-	}
+	m.healthClient = dpMongoHealth.NewClientWithCollections(m.connection, nil)
 
 	// create lock client here when collections are known
 	return m, nil
