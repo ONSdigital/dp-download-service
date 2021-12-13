@@ -156,7 +156,6 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	// And tie routes to download hander methods.
 	//
 	router := mux.NewRouter()
-	router.Path("/downloads/instances/{instanceID}.csv").HandlerFunc(d.DoInstance("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.DoDatasetVersion("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.DoDatasetVersion("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.txt").HandlerFunc(d.DoDatasetVersion("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken))

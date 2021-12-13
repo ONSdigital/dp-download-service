@@ -3,13 +3,13 @@ package handlers
 import (
 	"context"
 	"errors"
-	"io"
 	"fmt"
-	"strings"
+	"io"
 	"net/http"
+	"strings"
 
-	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/config"
+	"github.com/ONSdigital/dp-download-service/downloads"
 	dphandlers "github.com/ONSdigital/dp-net/v2/handlers"
 	"github.com/ONSdigital/dp-net/v2/request"
 	"github.com/ONSdigital/log.go/v2/log"
@@ -74,13 +74,6 @@ func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logDat
 	http.Error(w, message, status)
 }
 
-func (d Download) DoInstance(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		params := GetDownloadParameters(req, serviceAuthToken, downloadServiceToken)
-		d.do(w, req, downloads.TypeInstance, params, extension)
-	}
-}
-
 // DoImage handles download image file requests.
 func (d Download) DoImage(serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -113,8 +106,8 @@ func (d Download) DoFilterOutput(extension, serviceAuthToken, downloadServiceTok
 func (d Download) do(w http.ResponseWriter, req *http.Request, fileType downloads.FileType, params downloads.Parameters, variant string) {
 	ctx := req.Context()
 
-	cfg, err := config.Get() 
-	if err != nil{
+	cfg, err := config.Get()
+	if err != nil {
 		// cfg not used in production codepath so warning will suffice
 		log.Warn(ctx, "failed to get config", log.Data{})
 		cfg = &config.Config{}
@@ -143,7 +136,7 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 		s3Path := fileDownloads.PrivateS3Path
 		// Trim everything left of first '/' when using local minio container
 		if len(cfg.LocalObjectStore) > 0 {
-			if i := strings.Index(s3Path, "/"); i > 0{
+			if i := strings.Index(s3Path, "/"); i > 0 {
 				s3Path = s3Path[i:]
 			}
 		}
