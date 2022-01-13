@@ -3,9 +3,12 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
+	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	dphandlers "github.com/ONSdigital/dp-net/v2/handlers"
 	"github.com/ONSdigital/dp-net/v2/request"
@@ -62,18 +65,13 @@ func setStatusCode(ctx context.Context, w http.ResponseWriter, err error, logDat
 
 	logData["setting_response_status"] = status
 	logData["error"] = err.Error()
+	logData["other"] = unwrapLogData(err)
+
 	log.Info(ctx, "setting status code for an error", logData)
 	if status == http.StatusNotFound {
 		message = notFoundMessage
 	}
 	http.Error(w, message, status)
-}
-
-func (d Download) DoInstance(extension, serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		params := GetDownloadParameters(req, serviceAuthToken, downloadServiceToken)
-		d.do(w, req, downloads.TypeInstance, params, extension)
-	}
 }
 
 // DoImage handles download image file requests.
@@ -107,13 +105,19 @@ func (d Download) DoFilterOutput(extension, serviceAuthToken, downloadServiceTok
 // Authenticated requests will always allow access to the private, whether or not the version is published.
 func (d Download) do(w http.ResponseWriter, req *http.Request, fileType downloads.FileType, params downloads.Parameters, variant string) {
 	ctx := req.Context()
-	logData := downloadParametersToLogData(params)
 
-	var err error
+	cfg, err := config.Get()
+	if err != nil {
+		// cfg not used in production codepath so warning will suffice
+		log.Warn(ctx, "failed to get config", log.Data{})
+		cfg = &config.Config{}
+	}
+
+	logData := downloadParametersToLogData(params)
 
 	fileDownloads, err := d.Downloader.Get(ctx, params, fileType, variant)
 	if err != nil {
-		setStatusCode(ctx, w, err, logData)
+		setStatusCode(ctx, w, fmt.Errorf("failed to get download: %w", err), logData)
 		return
 	}
 
@@ -130,6 +134,12 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 
 	if len(fileDownloads.PrivateS3Path) > 0 {
 		s3Path := fileDownloads.PrivateS3Path
+		// Trim everything left of first '/' when using local minio container
+		if len(cfg.LocalObjectStore) > 0 {
+			if i := strings.Index(s3Path, "/"); i > 0 {
+				s3Path = s3Path[i:]
+			}
+		}
 		vaultPath := fileDownloads.PrivateVaultPath
 		filename := fileDownloads.PrivateFilename
 
@@ -143,7 +153,7 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 
 			err = d.S3Content.StreamAndWrite(ctx, s3Path, vaultPath, w)
 			if err != nil {
-				setStatusCode(ctx, w, err, logData)
+				setStatusCode(ctx, w, fmt.Errorf("failed to stream response: %w", err), logData)
 				return
 			}
 

@@ -10,7 +10,6 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
-	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/log.go/v2/log"
@@ -45,7 +44,6 @@ const (
 	TypeDatasetVersion FileType = iota
 	TypeFilterOutput
 	TypeImage
-	TypeInstance
 )
 
 // Model is a struct that contains all the required information to download a file.
@@ -108,12 +106,6 @@ func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType, va
 		})
 		return d.getDatasetVersionDownload(ctx, p, variant)
 
-	case TypeInstance:
-		log.Info(ctx, "getting downloads for instance", log.Data{
-			"instance_id": p.InstanceID,
-		})
-		return d.getInstanceDownload(ctx, p, variant)
-
 	default:
 		return Model{}, errors.New("unsupported file type")
 
@@ -142,32 +134,6 @@ func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, v
 			return downloads, err
 		}
 		model.PrivateS3Path = s3Path
-		model.PrivateVaultPath = filename
-		model.PrivateFilename = filename
-	}
-
-	return model, nil
-}
-
-// getInstanceDownload gets the Model for an instance download (e.g. Cantabular CSV files)
-func (d Downloader) getInstanceDownload(ctx context.Context, p Parameters, extension string) (Model, error) {
-	var downloads Model
-
-	instance, _, err := d.DatasetCli.GetInstance(ctx, p.UserAuthToken, p.ServiceAuthToken, p.CollectionID, p.InstanceID, headers.IfMatchAnyETag)
-	if err != nil {
-		return downloads, err
-	}
-
-	model := Model{
-		IsPublished: instance.State == dataset.StatePublished.String(),
-	}
-
-	v, ok := instance.Downloads[extension]
-	if ok {
-		privatePath := fmt.Sprintf("instances/%s.%s", p.InstanceID, extension)
-		filename := fmt.Sprintf("%s.%s", p.InstanceID, extension)
-		model.Public = v.Public
-		model.PrivateS3Path = privatePath
 		model.PrivateVaultPath = filename
 		model.PrivateFilename = filename
 	}

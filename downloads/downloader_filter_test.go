@@ -1,6 +1,7 @@
 package downloads
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -23,6 +24,7 @@ var (
 )
 
 func TestGetDownloadsForFilterOutput(t *testing.T) {
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
