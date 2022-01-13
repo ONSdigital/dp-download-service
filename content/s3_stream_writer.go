@@ -2,6 +2,7 @@ package content
 
 import (
 	"context"
+	"fmt"
 	"encoding/hex"
 	"errors"
 	"io"
@@ -60,17 +61,17 @@ func (s S3StreamWriter) StreamAndWrite(ctx context.Context, s3Path string, vault
 	if s.EncryptionDisabled {
 		s3ReadCloser, _, err = s.S3Client.Get(s3Path)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get stream object from S3 client: %w", err)
 		}
 	} else {
 		psk, err := s.getVaultKeyForFile(vaultPath)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get Vault key: %w", err)
 		}
 
 		s3ReadCloser, _, err = s.S3Client.GetWithPSK(s3Path, psk)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get stream object (encrypted) from S3 client: %w", err)
 		}
 	}
 
@@ -78,7 +79,7 @@ func (s S3StreamWriter) StreamAndWrite(ctx context.Context, s3Path string, vault
 
 	_, err = io.Copy(w, s3ReadCloser)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write response: %w", err)
 	}
 
 	return nil
@@ -92,12 +93,12 @@ func (s *S3StreamWriter) getVaultKeyForFile(secretPath string) ([]byte, error) {
 	vp := s.VaultPath + "/" + secretPath
 	pskStr, err := s.VaultCli.ReadKey(vp, vaultKey)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read Vault key: %w", err)
 	}
 
 	psk, err := hex.DecodeString(pskStr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode psk: %w", err)
 	}
 
 	return psk, nil

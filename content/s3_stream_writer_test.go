@@ -41,7 +41,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 
 		err := s.StreamAndWrite(nil, "", "", w)
 
-		So(err, ShouldEqual, VaultFilenameEmptyErr)
+		So(errors.Is(err, VaultFilenameEmptyErr), ShouldBeTrue)
 	})
 
 	Convey("should return expected error if vault client read key returns and error", t, func() {
@@ -55,7 +55,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 
 		err := s.StreamAndWrite(nil, testS3Path, testVaultKeyPath, w)
 
-		So(err, ShouldEqual, expectedErr)
+		So(errors.Is(err, expectedErr), ShouldBeTrue)
 	})
 
 	Convey("should return expected error if vault client read key returns non hex value", t, func() {
@@ -85,7 +85,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 
 		err := s.StreamAndWrite(nil, testS3Path, testVaultKeyPath, w)
 
-		So(err, ShouldEqual, expectedErr)
+		So(errors.Is(err, expectedErr), ShouldBeTrue)
 	})
 
 	Convey("should return expected error if s3 client Get returns an error when encryption disabled", t, func() {
@@ -102,7 +102,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 
 		err := s.StreamAndWrite(nil, testS3Path, testVaultKeyPath, w)
 
-		So(err, ShouldEqual, expectedErr)
+		So(errors.Is(err, expectedErr), ShouldBeTrue)
 	})
 
 	Convey("should return expected error if s3reader returns an error", t, func() {
@@ -119,7 +119,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 
 		err := s.StreamAndWrite(nil, testS3Path, testVaultKeyPath, w)
 
-		So(err, ShouldEqual, expectedErr)
+		So(errors.Is(err, expectedErr), ShouldBeTrue)
 	})
 
 	Convey("should return expected error if writer.write returns an error", t, func() {
@@ -136,7 +136,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 
 		err := s.StreamAndWrite(nil, testS3Path, testVaultKeyPath, w)
 
-		So(err, ShouldEqual, expectedErr)
+		So(errors.Is(err, expectedErr), ShouldBeTrue)
 	})
 
 	Convey("should successfully write bytes from s3Reader to the provided writer", t, func() {
@@ -206,7 +206,7 @@ func Test_GetVaultKeyForFile(t *testing.T) {
 
 		So(psk, ShouldBeNil)
 		So(err, ShouldNotBeNil)
-		So(err, ShouldEqual, expectedErr)
+		So(errors.Is(err, expectedErr), ShouldBeTrue)
 	})
 
 	Convey("should return expected error if the vault key cannot be hex decoded", t, func() {

@@ -1,6 +1,7 @@
 package downloads
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -33,6 +34,7 @@ var (
 )
 
 func TestGetDownloadsForImage(t *testing.T) {
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

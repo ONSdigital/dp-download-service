@@ -6,36 +6,37 @@ package mocks
 
 import (
 	context "context"
-	downloads "github.com/ONSdigital/dp-download-service/downloads"
-	gomock "github.com/golang/mock/gomock"
 	io "io"
 	reflect "reflect"
+
+	downloads "github.com/ONSdigital/dp-download-service/downloads"
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockDownloader is a mock of Downloader interface
+// MockDownloader is a mock of Downloader interface.
 type MockDownloader struct {
 	ctrl     *gomock.Controller
 	recorder *MockDownloaderMockRecorder
 }
 
-// MockDownloaderMockRecorder is the mock recorder for MockDownloader
+// MockDownloaderMockRecorder is the mock recorder for MockDownloader.
 type MockDownloaderMockRecorder struct {
 	mock *MockDownloader
 }
 
-// NewMockDownloader creates a new mock instance
+// NewMockDownloader creates a new mock instance.
 func NewMockDownloader(ctrl *gomock.Controller) *MockDownloader {
 	mock := &MockDownloader{ctrl: ctrl}
 	mock.recorder = &MockDownloaderMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockDownloader) EXPECT() *MockDownloaderMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method
+// Get mocks base method.
 func (m *MockDownloader) Get(arg0 context.Context, arg1 downloads.Parameters, arg2 downloads.FileType, arg3 string) (downloads.Model, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0, arg1, arg2, arg3)
@@ -44,36 +45,36 @@ func (m *MockDownloader) Get(arg0 context.Context, arg1 downloads.Parameters, ar
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get
+// Get indicates an expected call of Get.
 func (mr *MockDownloaderMockRecorder) Get(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDownloader)(nil).Get), arg0, arg1, arg2, arg3)
 }
 
-// MockS3Content is a mock of S3Content interface
+// MockS3Content is a mock of S3Content interface.
 type MockS3Content struct {
 	ctrl     *gomock.Controller
 	recorder *MockS3ContentMockRecorder
 }
 
-// MockS3ContentMockRecorder is the mock recorder for MockS3Content
+// MockS3ContentMockRecorder is the mock recorder for MockS3Content.
 type MockS3ContentMockRecorder struct {
 	mock *MockS3Content
 }
 
-// NewMockS3Content creates a new mock instance
+// NewMockS3Content creates a new mock instance.
 func NewMockS3Content(ctrl *gomock.Controller) *MockS3Content {
 	mock := &MockS3Content{ctrl: ctrl}
 	mock.recorder = &MockS3ContentMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockS3Content) EXPECT() *MockS3ContentMockRecorder {
 	return m.recorder
 }
 
-// StreamAndWrite mocks base method
+// StreamAndWrite mocks base method.
 func (m *MockS3Content) StreamAndWrite(arg0 context.Context, arg1, arg2 string, arg3 io.Writer) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StreamAndWrite", arg0, arg1, arg2, arg3)
@@ -81,7 +82,7 @@ func (m *MockS3Content) StreamAndWrite(arg0 context.Context, arg1, arg2 string, 
 	return ret0
 }
 
-// StreamAndWrite indicates an expected call of StreamAndWrite
+// StreamAndWrite indicates an expected call of StreamAndWrite.
 func (mr *MockS3ContentMockRecorder) StreamAndWrite(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StreamAndWrite", reflect.TypeOf((*MockS3Content)(nil).StreamAndWrite), arg0, arg1, arg2, arg3)
