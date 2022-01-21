@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
+
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-download-service/service/external"
 	"github.com/ONSdigital/log.go/v2/log"
-	"os"
-	"os/signal"
 )
 
 var (
@@ -21,7 +22,7 @@ var (
 
 const serviceName = "dp-download-service"
 
-func main()  {
+func main() {
 	log.Namespace = serviceName
 	ctx := context.Background()
 

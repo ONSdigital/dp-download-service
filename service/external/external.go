@@ -14,9 +14,9 @@ import (
 	"github.com/ONSdigital/dp-download-service/mongo"
 	"github.com/ONSdigital/dp-download-service/service"
 
+	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	s3client "github.com/ONSdigital/dp-s3"
 	vault "github.com/ONSdigital/dp-vault"
-	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
