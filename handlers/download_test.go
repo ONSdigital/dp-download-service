@@ -39,7 +39,7 @@ const (
 )
 
 var (
-	testErr        = errors.New("borked")
+	testErr          = errors.New("borked")
 	testCsvContent   = []byte("1,2,3,4")
 	testImageContent = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
 )
