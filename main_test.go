@@ -1,25 +1,28 @@
 package main_test
 
 import (
+	"bytes"
 	"context"
 	"flag"
-	componenttest "github.com/ONSdigital/dp-component-test"
-	"github.com/ONSdigital/dp-download-service/features"
-	"github.com/cucumber/godog"
-	"github.com/cucumber/godog/colors"
 	"os"
 	"testing"
+
+	componenttest "github.com/ONSdigital/dp-component-test"
+	"github.com/ONSdigital/dp-download-service/features/steps"
+	"github.com/ONSdigital/log.go/v2/log"
+	"github.com/cucumber/godog"
+	"github.com/cucumber/godog/colors"
 )
 
 var componentFlag = flag.Bool("component", false, "perform component tests")
 
 type componentTestSuite struct {
-
 }
 
 func (t *componentTestSuite) InitializeScenario(ctx *godog.ScenarioContext) {
 	authorizationFeature := componenttest.NewAuthorizationFeature()
-	component := features.NewDownloadServiceComponent( authorizationFeature.FakeAuthService.ResolveURL(""))
+
+	component := steps.NewDownloadServiceComponent(authorizationFeature.FakeAuthService.ResolveURL(""))
 	apiFeature := componenttest.NewAPIFeature(component.Initialiser)
 	component.ApiFeature = apiFeature
 
@@ -31,7 +34,6 @@ func (t *componentTestSuite) InitializeScenario(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.After(func(ctx context.Context, sc *godog.Scenario, err error) (context.Context, error) {
-		//t.Mongo.Reset()
 		//apiFeature.Reset()
 		return ctx, nil
 	})
@@ -43,7 +45,6 @@ func (t *componentTestSuite) InitializeScenario(ctx *godog.ScenarioContext) {
 
 func (t *componentTestSuite) InitializeTestSuite(ctx *godog.TestSuiteContext) {
 	ctx.BeforeSuite(func() {
-
 	})
 
 	ctx.AfterSuite(func() {
@@ -51,6 +52,9 @@ func (t *componentTestSuite) InitializeTestSuite(ctx *godog.TestSuiteContext) {
 }
 
 func TestSomething(t *testing.T) {
+	buf := bytes.NewBufferString("")
+	log.SetDestination(buf, buf)
+
 	if *componentFlag {
 		var opts = godog.Options{
 			Output: colors.Colored(os.Stdout),

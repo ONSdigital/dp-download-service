@@ -29,14 +29,15 @@ type Download struct {
 	vaultClient         content.VaultClient
 	s3Client            content.S3Client
 	zebedeeHealthClient *health.Client
-	router   *mux.Router
-	server   HTTPServer
-	shutdown time.Duration
+	router              *mux.Router
+	server              HTTPServer
+	shutdown            time.Duration
 	healthCheck         HealthChecker
 }
 
 // Generate mocks of dependencies
 //
+//go:generate moq -rm -pkg service_test -out moq_service_test.go . Dependencies HealthChecker HTTPServer
 //go:generate moq -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilterClient ImageClient
 //go:generate moq -pkg service_test -out moq_content_test.go ../content S3Client VaultClient
 

@@ -49,11 +49,24 @@ acceptance:
 
 .PHONY: test
 test:
-	go test -cover $(shell go list ./... | grep -v /vendor/)
+	go test -cover ./...
 
 .PHONY: lint
 lint:
 	exit
+
+docker-test-component:
+	docker-compose -f docker-compose.yml down
+	docker build -f Dockerfile . -t template_test --target=test
+	docker-compose -f docker-compose.yml up -d
+	docker-compose -f docker-compose.yml exec -T download-service go test -component
+	docker-compose -f docker-compose.yml down
+
+docker-local:
+	docker-compose -f docker-compose-local.yml down
+	docker-compose -f docker-compose-local.yml up -d
+	docker-compose -f docker-compose-local.yml exec download-service bash
+
 
 .PHONY: vault
 vault:
