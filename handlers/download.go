@@ -16,7 +16,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/handlers Downloader,S3Content
+//go:generate mockgen --build_flags=--mod=mod -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/handlers Downloader,S3Content
 
 const (
 	notFoundMessage       = "resource not found"
@@ -97,6 +97,18 @@ func (d Download) DoFilterOutput(extension, serviceAuthToken, downloadServiceTok
 		d.do(w, req, downloads.TypeFilterOutput, params, extension)
 	}
 }
+
+// DoDownload handles download generic file requests.
+func (d Download) DoDownload(serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		w.Header().Set("Content-Disposition", "attachment; filename="+vars["filename"])
+		//params := GetDownloadParameters(req, serviceAuthToken, downloadServiceToken)
+		//d.do(w, req, downloads.TypeImage, params, params.Variant)
+
+	}
+}
+
 
 // do handles download requests for any possible provided file type. If the object is published and a public download link is available then
 // the request is redirected to the existing public link.

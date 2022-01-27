@@ -33,11 +33,11 @@ var _ service.Dependencies = &DependenciesMock{}
 // 			HealthCheckFunc: func(configMoqParam *config.Config, s1 string, s2 string, s3 string) (service.HealthChecker, error) {
 // 				panic("mock out the HealthCheck method")
 // 			},
+// 			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
+// 				panic("mock out the HttpServer method")
+// 			},
 // 			ImageClientFunc: func(s string) downloads.ImageClient {
 // 				panic("mock out the ImageClient method")
-// 			},
-// 			MongoClientFunc: func(contextMoqParam context.Context, configMoqParam *config.Config) (service.MongoClient, error) {
-// 				panic("mock out the MongoClient method")
 // 			},
 // 			S3ClientFunc: func(configMoqParam *config.Config) (content.S3Client, error) {
 // 				panic("mock out the S3Client method")
@@ -61,11 +61,11 @@ type DependenciesMock struct {
 	// HealthCheckFunc mocks the HealthCheck method.
 	HealthCheckFunc func(configMoqParam *config.Config, s1 string, s2 string, s3 string) (service.HealthChecker, error)
 
+	// HttpServerFunc mocks the HttpServer method.
+	HttpServerFunc func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer
+
 	// ImageClientFunc mocks the ImageClient method.
 	ImageClientFunc func(s string) downloads.ImageClient
-
-	// MongoClientFunc mocks the MongoClient method.
-	MongoClientFunc func(contextMoqParam context.Context, configMoqParam *config.Config) (service.MongoClient, error)
 
 	// S3ClientFunc mocks the S3Client method.
 	S3ClientFunc func(configMoqParam *config.Config) (content.S3Client, error)
@@ -96,17 +96,17 @@ type DependenciesMock struct {
 			// S3 is the s3 argument value.
 			S3 string
 		}
+		// HttpServer holds details about calls to the HttpServer method.
+		HttpServer []struct {
+			// ConfigMoqParam is the configMoqParam argument value.
+			ConfigMoqParam *config.Config
+			// Handler is the handler argument value.
+			Handler http.Handler
+		}
 		// ImageClient holds details about calls to the ImageClient method.
 		ImageClient []struct {
 			// S is the s argument value.
 			S string
-		}
-		// MongoClient holds details about calls to the MongoClient method.
-		MongoClient []struct {
-			// ContextMoqParam is the contextMoqParam argument value.
-			ContextMoqParam context.Context
-			// ConfigMoqParam is the configMoqParam argument value.
-			ConfigMoqParam *config.Config
 		}
 		// S3Client holds details about calls to the S3Client method.
 		S3Client []struct {
@@ -122,8 +122,8 @@ type DependenciesMock struct {
 	lockDatasetClient sync.RWMutex
 	lockFilterClient  sync.RWMutex
 	lockHealthCheck   sync.RWMutex
+	lockHttpServer    sync.RWMutex
 	lockImageClient   sync.RWMutex
-	lockMongoClient   sync.RWMutex
 	lockS3Client      sync.RWMutex
 	lockVaultClient   sync.RWMutex
 }
@@ -233,6 +233,41 @@ func (mock *DependenciesMock) HealthCheckCalls() []struct {
 	return calls
 }
 
+// HttpServer calls HttpServerFunc.
+func (mock *DependenciesMock) HttpServer(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
+	if mock.HttpServerFunc == nil {
+		panic("DependenciesMock.HttpServerFunc: method is nil but Dependencies.HttpServer was just called")
+	}
+	callInfo := struct {
+		ConfigMoqParam *config.Config
+		Handler        http.Handler
+	}{
+		ConfigMoqParam: configMoqParam,
+		Handler:        handler,
+	}
+	mock.lockHttpServer.Lock()
+	mock.calls.HttpServer = append(mock.calls.HttpServer, callInfo)
+	mock.lockHttpServer.Unlock()
+	return mock.HttpServerFunc(configMoqParam, handler)
+}
+
+// HttpServerCalls gets all the calls that were made to HttpServer.
+// Check the length with:
+//     len(mockedDependencies.HttpServerCalls())
+func (mock *DependenciesMock) HttpServerCalls() []struct {
+	ConfigMoqParam *config.Config
+	Handler        http.Handler
+} {
+	var calls []struct {
+		ConfigMoqParam *config.Config
+		Handler        http.Handler
+	}
+	mock.lockHttpServer.RLock()
+	calls = mock.calls.HttpServer
+	mock.lockHttpServer.RUnlock()
+	return calls
+}
+
 // ImageClient calls ImageClientFunc.
 func (mock *DependenciesMock) ImageClient(s string) downloads.ImageClient {
 	if mock.ImageClientFunc == nil {
@@ -261,41 +296,6 @@ func (mock *DependenciesMock) ImageClientCalls() []struct {
 	mock.lockImageClient.RLock()
 	calls = mock.calls.ImageClient
 	mock.lockImageClient.RUnlock()
-	return calls
-}
-
-// MongoClient calls MongoClientFunc.
-func (mock *DependenciesMock) MongoClient(contextMoqParam context.Context, configMoqParam *config.Config) (service.MongoClient, error) {
-	if mock.MongoClientFunc == nil {
-		panic("DependenciesMock.MongoClientFunc: method is nil but Dependencies.MongoClient was just called")
-	}
-	callInfo := struct {
-		ContextMoqParam context.Context
-		ConfigMoqParam  *config.Config
-	}{
-		ContextMoqParam: contextMoqParam,
-		ConfigMoqParam:  configMoqParam,
-	}
-	mock.lockMongoClient.Lock()
-	mock.calls.MongoClient = append(mock.calls.MongoClient, callInfo)
-	mock.lockMongoClient.Unlock()
-	return mock.MongoClientFunc(contextMoqParam, configMoqParam)
-}
-
-// MongoClientCalls gets all the calls that were made to MongoClient.
-// Check the length with:
-//     len(mockedDependencies.MongoClientCalls())
-func (mock *DependenciesMock) MongoClientCalls() []struct {
-	ContextMoqParam context.Context
-	ConfigMoqParam  *config.Config
-} {
-	var calls []struct {
-		ContextMoqParam context.Context
-		ConfigMoqParam  *config.Config
-	}
-	mock.lockMongoClient.RLock()
-	calls = mock.calls.MongoClient
-	mock.lockMongoClient.RUnlock()
 	return calls
 }
 
@@ -707,5 +707,106 @@ func (mock *MongoClientMock) URICalls() []struct {
 	mock.lockURI.RLock()
 	calls = mock.calls.URI
 	mock.lockURI.RUnlock()
+	return calls
+}
+
+// Ensure, that HTTPServerMock does implement service.HTTPServer.
+// If this is not the case, regenerate this file with moq.
+var _ service.HTTPServer = &HTTPServerMock{}
+
+// HTTPServerMock is a mock implementation of service.HTTPServer.
+//
+// 	func TestSomethingThatUsesHTTPServer(t *testing.T) {
+//
+// 		// make and configure a mocked service.HTTPServer
+// 		mockedHTTPServer := &HTTPServerMock{
+// 			ListenAndServeFunc: func() error {
+// 				panic("mock out the ListenAndServe method")
+// 			},
+// 			ShutdownFunc: func(ctx context.Context) error {
+// 				panic("mock out the Shutdown method")
+// 			},
+// 		}
+//
+// 		// use mockedHTTPServer in code that requires service.HTTPServer
+// 		// and then make assertions.
+//
+// 	}
+type HTTPServerMock struct {
+	// ListenAndServeFunc mocks the ListenAndServe method.
+	ListenAndServeFunc func() error
+
+	// ShutdownFunc mocks the Shutdown method.
+	ShutdownFunc func(ctx context.Context) error
+
+	// calls tracks calls to the methods.
+	calls struct {
+		// ListenAndServe holds details about calls to the ListenAndServe method.
+		ListenAndServe []struct {
+		}
+		// Shutdown holds details about calls to the Shutdown method.
+		Shutdown []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+	}
+	lockListenAndServe sync.RWMutex
+	lockShutdown       sync.RWMutex
+}
+
+// ListenAndServe calls ListenAndServeFunc.
+func (mock *HTTPServerMock) ListenAndServe() error {
+	if mock.ListenAndServeFunc == nil {
+		panic("HTTPServerMock.ListenAndServeFunc: method is nil but HTTPServer.ListenAndServe was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockListenAndServe.Lock()
+	mock.calls.ListenAndServe = append(mock.calls.ListenAndServe, callInfo)
+	mock.lockListenAndServe.Unlock()
+	return mock.ListenAndServeFunc()
+}
+
+// ListenAndServeCalls gets all the calls that were made to ListenAndServe.
+// Check the length with:
+//     len(mockedHTTPServer.ListenAndServeCalls())
+func (mock *HTTPServerMock) ListenAndServeCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockListenAndServe.RLock()
+	calls = mock.calls.ListenAndServe
+	mock.lockListenAndServe.RUnlock()
+	return calls
+}
+
+// Shutdown calls ShutdownFunc.
+func (mock *HTTPServerMock) Shutdown(ctx context.Context) error {
+	if mock.ShutdownFunc == nil {
+		panic("HTTPServerMock.ShutdownFunc: method is nil but HTTPServer.Shutdown was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockShutdown.Lock()
+	mock.calls.Shutdown = append(mock.calls.Shutdown, callInfo)
+	mock.lockShutdown.Unlock()
+	return mock.ShutdownFunc(ctx)
+}
+
+// ShutdownCalls gets all the calls that were made to Shutdown.
+// Check the length with:
+//     len(mockedHTTPServer.ShutdownCalls())
+func (mock *HTTPServerMock) ShutdownCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockShutdown.RLock()
+	calls = mock.calls.Shutdown
+	mock.lockShutdown.RUnlock()
 	return calls
 }

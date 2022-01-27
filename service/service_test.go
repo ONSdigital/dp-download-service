@@ -1,8 +1,11 @@
 package service_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log"
+	"net/http"
 	"testing"
 	"time"
 
@@ -11,6 +14,7 @@ import (
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -18,6 +22,9 @@ func TestNew(t *testing.T) {
 	buildTime := "buildTime"
 	gitCommit := "gitCommit"
 	version := "version"
+
+	buf := bytes.NewBufferString("")
+	log.SetOutput(buf)
 
 	// We are not testing the checker function or its return value; we only need
 	// a valid function to attach to clients.
@@ -64,6 +71,9 @@ func TestNew(t *testing.T) {
 			},
 		}
 
+		mockedHttpServer := &HTTPServerMock{
+		}
+
 		mockedMongoClient := &MongoClientMock{
 			CheckerFunc: checker,
 			URIFunc: func() string {
@@ -92,6 +102,9 @@ func TestNew(t *testing.T) {
 			},
 			HealthCheckFunc: func(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
 				return mockedHealthChecker, nil
+			},
+			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
+				return mockedHttpServer
 			},
 		}
 
