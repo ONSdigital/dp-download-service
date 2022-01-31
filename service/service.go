@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"github.com/ONSdigital/dp-download-service/api"
+	"github.com/ONSdigital/dp-download-service/files"
 	"net/http"
 	"time"
 
@@ -137,6 +139,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		IsPublishing: cfg.IsPublishing,
 	}
 
+	store := files.NewStore(cfg.FilesApiURL, svc.s3Client)
 	// And tie routes to download hander methods.
 	//
 	router := mux.NewRouter()
@@ -147,7 +150,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoFilterOutput("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/{filename}").HandlerFunc(d.DoDownload(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/v1/downloads/{path:[a-zA-Z0-9\\\\.\\\\-\\\\/]+}").HandlerFunc(api.CreateV1DownloadHandler(store.RetrieveBy))
 	router.HandleFunc("/health", hc.Handler)
 	svc.router = router
 

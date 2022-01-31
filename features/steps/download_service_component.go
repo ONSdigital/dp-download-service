@@ -24,13 +24,17 @@ type DownloadServiceComponent struct {
 	svc          *service.Download
 	ApiFeature   *componenttest.APIFeature
 	errChan      chan error
+	cfg *config.Config
 }
 
 func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent {
 	//os.Setenv("ZEBEDEE_URL", fake_auth_url)
 
+	s := dphttp.NewServer("", http.NewServeMux())
+	s.HandleOSSignals = false
+
 	d := &DownloadServiceComponent{
-		DpHttpServer: dphttp.NewServer("", http.NewServeMux()),
+		DpHttpServer: s,
 		errChan:      make(chan error),
 	}
 
@@ -38,19 +42,32 @@ func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent
 
 	log.Namespace = "dp-download-service"
 
-	//assert.NoError(&componenttest.ErrorFeature{}, err, "error getting config")
 
+
+	//assert.NoError(&componenttest.ErrorFeature{}, err, "error getting config")
+	fakeService := httpfake.New()
+	fakeService.NewHandler().Get("/health").Reply(http.StatusOK)
+	os.Setenv("ZEBEDEE_URL", fakeService.ResolveURL(""))
+	d.cfg, _ = config.Get()
 	return d
 }
 
 func (d *DownloadServiceComponent) Initialiser() (http.Handler, error) {
-	fakeService := httpfake.New()
-	fakeService.NewHandler().Get("/health").Reply(http.StatusOK)
-	os.Setenv("ZEBEDEE_URL", fakeService.ResolveURL(""))
-	cfg, _ := config.Get()
-	d.svc, _ = service.New(context.Background(), "1", "1", "1", cfg, &External{Server: d.DpHttpServer})
+	d.svc, _ = service.New(context.Background(), "1", "1", "1", d.cfg, &External{Server: d.DpHttpServer})
 	d.svc.Run(context.Background())
-	time.Sleep(15 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	return d.DpHttpServer.Handler, nil
+}
+
+func (d *DownloadServiceComponent) Reset() {
+}
+
+func (d *DownloadServiceComponent) Close() error {
+	if d.svc != nil {
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		return d.svc.Close(ctx)
+	}
+
+	return nil
 }

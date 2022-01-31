@@ -3,6 +3,7 @@ module github.com/ONSdigital/dp-download-service
 go 1.17
 
 replace github.com/coreos/etcd => github.com/coreos/etcd v3.3.24+incompatible
+
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go v3.2.1-0.20210802184156-9742bd7fca1c+incompatible
 
 require (
@@ -21,6 +22,7 @@ require (
 	github.com/justinas/alice v1.2.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/maxcnunes/httpfake v1.2.4
+	github.com/rdumont/assistdog v0.0.0-20201106100018-168b06230d14
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/stretchr/testify v1.7.0
 )

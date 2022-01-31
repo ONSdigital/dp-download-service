@@ -98,18 +98,6 @@ func (d Download) DoFilterOutput(extension, serviceAuthToken, downloadServiceTok
 	}
 }
 
-// DoDownload handles download generic file requests.
-func (d Download) DoDownload(serviceAuthToken, downloadServiceToken string) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		vars := mux.Vars(req)
-		w.Header().Set("Content-Disposition", "attachment; filename="+vars["filename"])
-		//params := GetDownloadParameters(req, serviceAuthToken, downloadServiceToken)
-		//d.do(w, req, downloads.TypeImage, params, params.Variant)
-
-	}
-}
-
-
 // do handles download requests for any possible provided file type. If the object is published and a public download link is available then
 // the request is redirected to the existing public link.
 // If the object is published but a public link does not exist then the requested file is streamed from the content
