@@ -234,6 +234,7 @@ func (d Download) Run(ctx context.Context) {
 
 func (d Download) Close(ctx context.Context) error {
 	shutdownCtx, cancel := context.WithTimeout(ctx, d.shutdown)
+	defer cancel()
 
 	// Gracefully shutdown the application closing any open resources.
 	log.Info(shutdownCtx, "shutdown with timeout", log.Data{"timeout": d.shutdown})
@@ -246,6 +247,6 @@ func (d Download) Close(ctx context.Context) error {
 	}
 
 	log.Info(shutdownCtx, "shutdown complete", log.Data{"duration": time.Since(shutdownStart)})
-	cancel()
+
 	return nil
 }

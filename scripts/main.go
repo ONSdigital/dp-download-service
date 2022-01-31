@@ -63,7 +63,7 @@ func main() {
 
 func createPSK() []byte {
 	key := make([]byte, 16)
-	rand.Read(key)
+	rand.Read(key) // nolint
 
 	return key
 }
