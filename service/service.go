@@ -139,7 +139,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		IsPublishing: cfg.IsPublishing,
 	}
 
-	store := files.NewStore(cfg.FilesApiURL, svc.s3Client)
+	store := files.NewStore(cfg.FilesApiURL, svc.s3Client, http.DefaultClient)
 	// And tie routes to download hander methods.
 	//
 	router := mux.NewRouter()

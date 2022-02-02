@@ -1,5 +1,5 @@
 #!/bin/bash -eux
 
-pushd dp-upload-service
+pushd dp-download-service
   make docker-test-component
 popd
