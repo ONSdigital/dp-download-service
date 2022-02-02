@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/ONSdigital/dp-download-service/files"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 	"io"
 	"net/http"
@@ -13,12 +14,21 @@ func CreateV1DownloadHandler(retrieve files.FileRetriever) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 
-		m, file, _ := retrieve(vars["path"])
+		m, file, err := retrieve(vars["path"])
+		if err != nil {
+			handleError(w, err)
+			return
+		}
 
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Content-Length", m.GetContentLength())
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", m.GetFilename()))
 
-		io.Copy(w, file)
+		_, err = io.Copy(w, file)
+		if err != nil {
+			log.Error(req.Context(), "failed to stream file content", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 }
