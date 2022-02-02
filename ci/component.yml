@@ -9,7 +9,7 @@ image_resource:
     tag: latest
 
 inputs:
-  - name: dp-upload-service
+  - name: dp-download-service
 
 run:
   path: bash
@@ -18,4 +18,4 @@ run:
     - |
       source /docker-lib.sh
       start_docker
-      dp-upload-service/ci/scripts/component.sh
+      dp-download-service/ci/scripts/component.sh

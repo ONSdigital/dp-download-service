@@ -38,3 +38,8 @@ Feature: ONS Public Website Download files
       russ,3
       Ioannis,4
       """
+
+  Scenario: Trying to download a file that has not been uploaded yet
+      Given the file "data/populations.csv" has not been uploaded
+      When I download the file "data/populations.csv"
+      Then the HTTP status code should be "404"

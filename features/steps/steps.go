@@ -14,8 +14,8 @@ import (
 	"github.com/maxcnunes/httpfake"
 
 	"github.com/cucumber/godog"
-	"github.com/stretchr/testify/assert"
 	"github.com/rdumont/assistdog"
+	"github.com/stretchr/testify/assert"
 )
 
 func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
@@ -28,6 +28,7 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^we are in web mode$`, d.weAreInWebMode)
     ctx.Step(`^the headers should be:$`,d.theHeadersShouldBe)
 	ctx.Step(`^the file content should be:$`, d.theFileContentShouldBe)
+	ctx.Step(`^the file "([^"]*)" has not been uploaded$`, d.theFileHasNotBeenUploaded)
 
 }
 
@@ -59,6 +60,16 @@ func (d *DownloadServiceComponent) iShouldReceiveThePrivateFile(filename string)
 func (d *DownloadServiceComponent) isNotYetPublished() error {
 	return nil
 }
+
+func (d *DownloadServiceComponent) theFileHasNotBeenUploaded(filename string) error {
+	server := httpfake.New()
+	server.NewHandler().Get(fmt.Sprintf("/v1/files/%s", filename)).Reply(http.StatusNotFound).BodyString("")
+
+	d.cfg.FilesApiURL = server.ResolveURL("")
+
+	return d.ApiFeature.StepError()
+}
+
 
 func (d *DownloadServiceComponent) theFileHasBeenUploaded(arg1 string) error {
 	return nil
