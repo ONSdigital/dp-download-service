@@ -51,6 +51,7 @@ func (e *External) ImageClient(s string) downloads.ImageClient {
 }
 
 func (e *External) VaultClient(cfg *config.Config) (content.VaultClient, error) {
+
 	v, err := vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 5)
 	if err != nil {
 		fmt.Println(err.Error())
