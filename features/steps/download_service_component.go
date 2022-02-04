@@ -2,6 +2,12 @@ package steps
 
 import (
 	"context"
+	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"net/http"
 	"os"
 	"time"
@@ -24,7 +30,7 @@ type DownloadServiceComponent struct {
 	svc          *service.Download
 	ApiFeature   *componenttest.APIFeature
 	errChan      chan error
-	cfg *config.Config
+	cfg          *config.Config
 }
 
 func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent {
@@ -41,8 +47,6 @@ func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent
 	os.Setenv("DATABASE_NAME", "testing")
 
 	log.Namespace = "dp-download-service"
-
-
 
 	//assert.NoError(&componenttest.ErrorFeature{}, err, "error getting config")
 	fakeService := httpfake.New()
@@ -61,6 +65,25 @@ func (d *DownloadServiceComponent) Initialiser() (http.Handler, error) {
 }
 
 func (d *DownloadServiceComponent) Reset() {
+	// clear out test bucket
+	cfg, _ := config.Get()
+	s, _ := session.NewSession(&aws.Config{
+		Endpoint:         aws.String(localStackHost),
+		Region:           aws.String(cfg.AwsRegion),
+		S3ForcePathStyle: aws.Bool(true),
+		Credentials:      credentials.NewStaticCredentials("test", "test", ""),
+	})
+
+	s3client := s3.New(s)
+
+	err := s3manager.NewBatchDeleteWithClient(s3client).Delete(
+		aws.BackgroundContext(), s3manager.NewDeleteListIterator(s3client, &s3.ListObjectsInput{
+			Bucket: aws.String(cfg.BucketName),
+		}))
+
+	if err != nil {
+		panic(fmt.Sprintf("Failed to empty localstack s3: %s", err.Error()))
+	}
 }
 
 func (d *DownloadServiceComponent) Close() error {

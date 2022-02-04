@@ -41,10 +41,39 @@ func TestHandlingErrorSteamingFileContent(t *testing.T) {
 	rec := &ErrorWriter{}
 
 	h := api.CreateV1DownloadHandler(func(path string) (files.Metadata, io.ReadCloser, error) {
-		return files.Metadata{}, DummyReadCloser{}, nil
+		return files.Metadata{State: "PUBLISHED"}, DummyReadCloser{}, nil
 	})
 
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.status)
+}
+
+func TestHandleFileNotPublished(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/v1/files/data/file.csv", nil)
+	rec := &ErrorWriter{}
+
+	type args struct {
+		retrieve files.FileRetriever
+	}
+	tests := []struct {
+		name           string
+		expectedStatus int
+		state          files.State
+	}{
+		{"Test CREATED", http.StatusNotFound, files.CREATED},
+		{"Test UPDATED", http.StatusNotFound, files.UPLOADED},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			h := api.CreateV1DownloadHandler(func(path string) (files.Metadata, io.ReadCloser, error) {
+				return files.Metadata{State: tt.state}, DummyReadCloser{}, nil
+			})
+
+			h.ServeHTTP(rec, req)
+
+			assert.Equalf(t, tt.expectedStatus, rec.status, "CreateV1DownloadHandler(%v)", tt.name)
+		})
+	}
 }
