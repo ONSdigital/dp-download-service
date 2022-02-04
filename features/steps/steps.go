@@ -26,7 +26,7 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the file "([^"]*)" metadata:$`, d.theFileMetadata)
 	ctx.Step(`^the S3 file "([^"]*)" with content:$`, d.theS3FileWithContent)
 	ctx.Step(`^we are in web mode$`, d.weAreInWebMode)
-    ctx.Step(`^the headers should be:$`,d.theHeadersShouldBe)
+	ctx.Step(`^the headers should be:$`, d.theHeadersShouldBe)
 	ctx.Step(`^the file content should be:$`, d.theFileContentShouldBe)
 	ctx.Step(`^the file "([^"]*)" has not been uploaded$`, d.theFileHasNotBeenUploaded)
 
@@ -70,9 +70,13 @@ func (d *DownloadServiceComponent) theFileHasNotBeenUploaded(filename string) er
 	return d.ApiFeature.StepError()
 }
 
+func (d *DownloadServiceComponent) theFileHasBeenUploaded(filename string, metadata *godog.DocString) error {
+	server := httpfake.New()
+	server.NewHandler().Get(fmt.Sprintf("/v1/files/%s", filename)).Reply(http.StatusOK).BodyString(metadata.Content)
 
-func (d *DownloadServiceComponent) theFileHasBeenUploaded(arg1 string) error {
-	return nil
+	d.cfg.FilesApiURL = server.ResolveURL("")
+
+	return d.ApiFeature.StepError()
 }
 
 func (d *DownloadServiceComponent) iDownloadTheFile(filepath string) error {

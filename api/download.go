@@ -14,15 +14,19 @@ func CreateV1DownloadHandler(retrieve files.FileRetriever) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 
-		m, file, err := retrieve(vars["path"])
+		metadata, file, err := retrieve(vars["path"])
 		if err != nil {
 			handleError(w, err)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/octet-stream")
-		w.Header().Set("Content-Length", m.GetContentLength())
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", m.GetFilename()))
+		if metadata.Unpublished() {
+			log.Info(req.Context(), "File is not published yet")
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		setHeaders(w, metadata)
 
 		_, err = io.Copy(w, file)
 		if err != nil {
@@ -31,4 +35,10 @@ func CreateV1DownloadHandler(retrieve files.FileRetriever) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func setHeaders(w http.ResponseWriter, m files.Metadata) {
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Length", m.GetContentLength())
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", m.GetFilename()))
 }
