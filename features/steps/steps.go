@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-
+	vault "github.com/ONSdigital/dp-vault"
 	"github.com/maxcnunes/httpfake"
 
 	"github.com/cucumber/godog"
@@ -29,6 +29,7 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the headers should be:$`, d.theHeadersShouldBe)
 	ctx.Step(`^the file content should be:$`, d.theFileContentShouldBe)
 	ctx.Step(`^the file "([^"]*)" has not been uploaded$`, d.theFileHasNotBeenUploaded)
+	ctx.Step(`^the file "([^"]*)" encrypted using key "([^"]*)" from Vault stored in S3 with content:$`, d.theFileEncryptedUsingKeyFromVaultStoredInSWithContent)
 
 }
 
@@ -92,8 +93,33 @@ func (d *DownloadServiceComponent) theFileMetadata(filepath string, metadata *go
 	return d.ApiFeature.StepError()
 }
 
+func (d *DownloadServiceComponent) theFileEncryptedUsingKeyFromVaultStoredInSWithContent(filepath string, encryptionkey string, content *godog.DocString) error {
+	cfg, _ := config.Get()
+
+	vaultPath := fmt.Sprintf("%s/%s", cfg.VaultPath, filepath)
+
+	vaultClient, err := vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 1)
+	if err != nil {
+		return err
+	}
+
+	// store encryptionkey key in vault against the path <filepath>
+	if err := vaultClient.WriteKey(vaultPath, "key", encryptionkey); err != nil {
+		return err
+	}
+
+	//actualEncryptionKey, err := vaultClient.ReadKey(vaultPath, "key")
+
+	// encrypt
+	d.theS3FileWithContent(filepath, content)
+
+	return d.ApiFeature.StepError()
+}
+
+
 func (d *DownloadServiceComponent) theS3FileWithContent(filepath string, content *godog.DocString) error {
 	cfg, _ := config.Get()
+
 	s, err := session.NewSession(&aws.Config{
 		Endpoint:         aws.String(localStackHost),
 		Region:           aws.String(cfg.AwsRegion),

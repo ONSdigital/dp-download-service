@@ -31,6 +31,7 @@ type DownloadServiceComponent struct {
 	ApiFeature   *componenttest.APIFeature
 	errChan      chan error
 	cfg          *config.Config
+	deps *External
 }
 
 func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent {
@@ -53,11 +54,14 @@ func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent
 	fakeService.NewHandler().Get("/health").Reply(http.StatusOK)
 	os.Setenv("ZEBEDEE_URL", fakeService.ResolveURL(""))
 	d.cfg, _ = config.Get()
+
+	d.deps = &External{Server: d.DpHttpServer}
+
 	return d
 }
 
 func (d *DownloadServiceComponent) Initialiser() (http.Handler, error) {
-	d.svc, _ = service.New(context.Background(), "1", "1", "1", d.cfg, &External{Server: d.DpHttpServer})
+	d.svc, _ = service.New(context.Background(), "1", "1", "1", d.cfg, d.deps)
 	d.svc.Run(context.Background())
 	time.Sleep(2 * time.Second)
 
