@@ -7,8 +7,6 @@ import (
 	"github.com/ONSdigital/dp-download-service/content"
 	"io"
 	"net/http"
-	"path/filepath"
-	"strconv"
 )
 
 type HTTPClient interface {
@@ -17,25 +15,6 @@ type HTTPClient interface {
 
 var ErrFileNotRegistered = errors.New("file not registered")
 var ErrBadJSONResponse = errors.New("could not decode JSON response from files api")
-
-type Metadata struct {
-	Path          string `json:"path"`
-	IsPublishable *bool  `json:"is_publishable,omitempty"`
-	CollectionID  string `json:"collection_id"`
-	Title         string `json:"title"`
-	SizeInBytes   uint64 `json:"size_in_bytes"`
-	Type          string `json:"type"`
-	Licence       string `json:"licence"`
-	LicenceUrl    string `json:"licence_url"`
-}
-
-func (m Metadata) GetFilename() string {
-	return filepath.Base(m.Path)
-}
-
-func (m Metadata) GetContentLength() string {
-	return strconv.FormatUint(m.SizeInBytes, 10)
-}
 
 type FileRetriever func(path string) (Metadata, io.ReadCloser, error)
 
