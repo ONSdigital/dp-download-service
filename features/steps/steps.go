@@ -1,16 +1,21 @@
 package steps
 
 import (
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
 	"github.com/ONSdigital/dp-download-service/config"
+	vault "github.com/ONSdigital/dp-vault"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	vault "github.com/ONSdigital/dp-vault"
 	"github.com/maxcnunes/httpfake"
 
 	"github.com/cucumber/godog"
@@ -109,13 +114,25 @@ func (d *DownloadServiceComponent) theFileEncryptedUsingKeyFromVaultStoredInSWit
 	}
 
 	//actualEncryptionKey, err := vaultClient.ReadKey(vaultPath, "key")
+	c := bytes.NewBuffer([]byte(content.Content))
 
 	// encrypt
-	d.theS3FileWithContent(filepath, content)
+	encryptedContent, err := encryptObjectContent([]byte(encryptionkey), c)
+	if err != nil {
+		fmt.Printf("encryption has failed: %v", err)
+		panic("encryption has failed")
+	}
+
+	fmt.Printf("encrypted content : %v", encryptedContent)
+
+	//storing
+	d.theS3FileWithContent(filepath, &godog.DocString{
+		MediaType: "",
+		Content:   string(encryptedContent),
+	})
 
 	return d.ApiFeature.StepError()
 }
-
 
 func (d *DownloadServiceComponent) theS3FileWithContent(filepath string, content *godog.DocString) error {
 	cfg, _ := config.Get()
@@ -136,4 +153,24 @@ func (d *DownloadServiceComponent) theS3FileWithContent(filepath string, content
 	assert.NoError(d.ApiFeature, err)
 
 	return d.ApiFeature.StepError()
+}
+
+func encryptObjectContent(psk []byte, b io.Reader) ([]byte, error) {
+	unencryptedBytes, err := ioutil.ReadAll(b)
+	if err != nil {
+		return nil, err
+	}
+
+	block, err := aes.NewCipher(psk)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptedBytes := make([]byte, len(unencryptedBytes))
+
+	stream := cipher.NewCFBEncrypter(block, psk)
+
+	stream.XORKeyStream(encryptedBytes, unencryptedBytes)
+
+	return encryptedBytes, nil
 }
