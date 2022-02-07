@@ -20,6 +20,12 @@ func CreateV1DownloadHandler(retrieve files.FileRetriever) http.HandlerFunc {
 			return
 		}
 
+		defer func() {
+			if err := file.Close(); err != nil {
+				log.Error(req.Context(), "error closing io.Closer", err)
+			}
+		}()
+
 		if metadata.Unpublished() {
 			log.Info(req.Context(), "File is not published yet")
 			w.WriteHeader(http.StatusNotFound)
