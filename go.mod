@@ -9,12 +9,12 @@ replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go v3.2.1-0.2021
 require (
 	github.com/ONSdigital/dp-api-clients-go/v2 v2.1.14
 	github.com/ONSdigital/dp-component-test v0.6.0
-	github.com/ONSdigital/dp-healthcheck v1.1.0
+	github.com/ONSdigital/dp-healthcheck v1.2.3
 	github.com/ONSdigital/dp-net/v2 v2.2.0-beta
 	github.com/ONSdigital/dp-s3 v1.7.0
 	github.com/ONSdigital/dp-vault v1.1.1
 	github.com/ONSdigital/log.go/v2 v2.0.9
-	github.com/aws/aws-sdk-go v1.40.37
+	github.com/aws/aws-sdk-go v1.42.29
 	github.com/cucumber/godog v0.12.2
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/handlers v1.4.2
@@ -23,7 +23,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/maxcnunes/httpfake v1.2.4
 	github.com/rdumont/assistdog v0.0.0-20201106100018-168b06230d14
-	github.com/smartystreets/goconvey v1.6.4
+	github.com/smartystreets/goconvey v1.7.2
 	github.com/stretchr/testify v1.7.0
 )
 
@@ -31,6 +31,7 @@ require (
 	github.com/ONSdigital/dp-api-clients-go v1.41.1 // indirect
 	github.com/ONSdigital/dp-mongodb-in-memory v1.0.0 // indirect
 	github.com/ONSdigital/dp-net v1.0.12 // indirect
+	github.com/ONSdigital/dp-s3/v2 v2.0.0-beta.2 // indirect
 	github.com/ONSdigital/log.go v1.0.1 // indirect
 	github.com/ONSdigital/s3crypto v0.0.0-20180725145621-f8943119a487 // indirect
 	github.com/cucumber/gherkin-go/v19 v19.0.3 // indirect
@@ -76,7 +77,7 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.mongodb.org/mongo-driver v1.7.1 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
+	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
 	golang.org/x/text v0.3.7 // indirect
