@@ -18,7 +18,7 @@ Feature: ONS Public Website Download files
           "state": "PUBLISHED"
         }
         """
-    And the file "data/populations.csv" encrypted using key "abc123" from Vault stored in S3 with content:
+    And the file "data/populations.csv" encrypted using key "1234567891234567" from Vault stored in S3 with content:
         """
         mark,1
         jon,2
