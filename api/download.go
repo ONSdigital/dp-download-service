@@ -29,6 +29,11 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile f
 		setHeaders(w, metadata)
 
 		file, err := downloadFile(filePath)
+		if err != nil {
+			handleError(w, err)
+			return
+		}
+
 		defer func() {
 			if err := file.Close(); err != nil {
 				log.Error(req.Context(), "error closing io.Closer", err)
