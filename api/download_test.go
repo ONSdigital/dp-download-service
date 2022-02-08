@@ -54,7 +54,7 @@ func TestHandleFileNotPublished(t *testing.T) {
 	rec := &ErrorWriter{}
 
 	type args struct {
-		retrieve files.FileRetriever
+		retrieve files.FileDownloader
 	}
 	tests := []struct {
 		name           string

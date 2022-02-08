@@ -50,9 +50,7 @@ func (suite *RetrieverTestSuite) TestReturnsBadJSONResponseWhenCannotParseJSON()
 
 	fhc := newFakeHttpClient(200, "{bad json")
 
-	store := NewStore("", suite.s3c, fhc, nil, "")
-
-	_, err := store.FetchMetadata("data/file.csv")
+	_, err := FetchMetadata("", fhc)("data/file.csv")
 
 	assert.Equal(suite.T(), ErrBadJSONResponse, err)
 }
@@ -62,9 +60,7 @@ func (suite *RetrieverTestSuite) TestFetchMetadata() {
 
 	fhc := newFakeHttpClient(200, "{}")
 
-	store := NewStore("", suite.s3c, fhc, suite.vc, "")
-
-	metadata, err := store.FetchMetadata(filePath)
+	metadata, err := FetchMetadata("", fhc)(filePath)
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), Metadata{}, metadata)
@@ -78,13 +74,9 @@ func (suite *RetrieverTestSuite) TestDownloadFile() {
 
 	suite.s3c.EXPECT().GetWithPSK(filePath, []byte(psk)).Return(fileContent, nil, nil)
 
-	fhc := newFakeHttpClient(200, "{}")
-
 	suite.vc.EXPECT().ReadKey("/"+filePath, VAULT_KEY).Return(psk, nil)
 
-	store := NewStore("", suite.s3c, fhc, suite.vc, "")
-
-	file, err := store.DownloadFile(filePath)
+	file, err := DownloadFile(suite.s3c, suite.vc, "")(filePath)
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), fileContent, file)
