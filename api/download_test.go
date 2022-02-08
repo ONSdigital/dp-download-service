@@ -36,12 +36,26 @@ func (d DummyReadCloser) Close() error {
 	return nil
 }
 
-func TestHandlingErrorSteamingFileContent(t *testing.T) {
+func TestHandlingErrorForMetadata(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/v1/files/data/file.csv", nil)
 	rec := &ErrorWriter{}
 
 	fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: "PUBLISHED"}, nil}
 	downloadFile := func(path string) (io.ReadCloser, error) {return DummyReadCloser{}, nil}
+
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile)
+
+	h.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.status)
+}
+
+func TestHandlingErrorGettingFileContent(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/v1/files/data/file.csv", nil)
+	rec := &ErrorWriter{}
+
+	fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: "PUBLISHED"}, nil}
+	downloadFile := func(path string) (io.ReadCloser, error) {return nil, errors.New("error downloading file")}
 
 	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile)
 
