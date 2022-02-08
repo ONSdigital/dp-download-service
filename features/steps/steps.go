@@ -35,6 +35,7 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the file content should be:$`, d.theFileContentShouldBe)
 	ctx.Step(`^the file "([^"]*)" has not been uploaded$`, d.theFileHasNotBeenUploaded)
 	ctx.Step(`^the file "([^"]*)" encrypted using key "([^"]*)" from Vault stored in S3 with content:$`, d.theFileEncryptedUsingKeyFromVaultStoredInSWithContent)
+	ctx.Step(`^I should be redirected to "([^"]*)"$`, d.iShouldBeRedirectedTo)
 
 }
 
@@ -150,6 +151,10 @@ func (d *DownloadServiceComponent) theS3FileWithContent(filepath string, content
 	assert.NoError(d.ApiFeature, err)
 
 	return d.ApiFeature.StepError()
+}
+
+func (d *DownloadServiceComponent) iShouldBeRedirectedTo(url string) error {
+	return d.ApiFeature.TheHTTPStatusCodeShouldBe("302")
 }
 
 func encryptObjectContent(psk []byte, b io.Reader) ([]byte, error) {
