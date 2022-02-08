@@ -20,45 +20,37 @@ type HTTPClient interface {
 var ErrFileNotRegistered = errors.New("file not registered")
 var ErrBadJSONResponse = errors.New("could not decode JSON response from files api")
 
-type FileRetriever func(path string) (io.ReadCloser, error)
+type FileDownloader func(path string) (io.ReadCloser, error)
 type MetadataFetcher func(path string) (Metadata, error)
 
-type Store struct {
-	s3c         content.S3Client
-	filesApiUrl string
-	httpClient  HTTPClient
-	vaultClient content.VaultClient
-	vaultPath   string
+func FetchMetadata(filesApiUrl string, httpClient HTTPClient) MetadataFetcher {
+	return func (path string) (Metadata, error) {
+		m := Metadata{}
+
+		resp, _ := httpClient.Get(fmt.Sprintf("%s/v1/files/%s", filesApiUrl, path))
+		if resp.StatusCode == http.StatusNotFound {
+			return m, ErrFileNotRegistered
+		}
+
+		err := json.NewDecoder(resp.Body).Decode(&m)
+		if err != nil {
+			return Metadata{}, ErrBadJSONResponse
+		}
+
+		return m, nil
+	}
 }
 
-func NewStore(filesApiUrl string, s3client content.S3Client, httpClient HTTPClient, vc content.VaultClient, vaultPath string) Store {
-	return Store{s3client, filesApiUrl, httpClient, vc, vaultPath}
-}
+func DownloadFile(s3client content.S3Client, vc content.VaultClient, vaultPath string) FileDownloader {
+	return func(filePath string) (io.ReadCloser, error) {
+		vp := vaultPath + "/" + filePath
+		pskStr, err := vc.ReadKey(vp, VAULT_KEY)
+		if err != nil {
+			return nil, err
+		}
 
-func (s Store) FetchMetadata(path string) (Metadata, error) {
-	m := Metadata{}
+		file, _, err := s3client.GetWithPSK(filePath, []byte(pskStr))
 
-	resp, _ := s.httpClient.Get(fmt.Sprintf("%s/v1/files/%s", s.filesApiUrl, path))
-	if resp.StatusCode == http.StatusNotFound {
-		return m, ErrFileNotRegistered
+		return file, err
 	}
-
-	err := json.NewDecoder(resp.Body).Decode(&m)
-	if err != nil {
-		return Metadata{}, ErrBadJSONResponse
-	}
-
-	return m, nil
-}
-
-func (s Store) DownloadFile(filePath string) (io.ReadCloser, error) {
-	vp := s.vaultPath + "/" + filePath
-	pskStr, err := s.vaultClient.ReadKey(vp, VAULT_KEY)
-	if err != nil {
-		return nil, err
-	}
-
-	file, _, err := s.s3c.GetWithPSK(filePath, []byte(pskStr))
-
-	return file, err
 }
