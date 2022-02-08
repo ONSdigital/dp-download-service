@@ -52,30 +52,25 @@ func (suite *RetrieverTestSuite) TestReturnsBadJSONResponseWhenCannotParseJSON()
 
 	store := NewStore("", suite.s3c, fhc, nil, "")
 
-	_, _, err := store.RetrieveBy("data/file.csv")
+	_, err := store.FetchMetadata("data/file.csv")
 
 	assert.Equal(suite.T(), ErrBadJSONResponse, err)
 }
 
-func (suite *RetrieverTestSuite) TestRetrieveByReturnsMetadata() {
+func (suite *RetrieverTestSuite) TestFetchMetadata() {
 	filePath := "data/file.csv"
-	psk := "psk"
-
-	suite.s3c.EXPECT().GetWithPSK(filePath, []byte(psk))
 
 	fhc := newFakeHttpClient(200, "{}")
 
-	suite.vc.EXPECT().ReadKey("/"+filePath, VAULT_KEY).Return(psk, nil)
-
 	store := NewStore("", suite.s3c, fhc, suite.vc, "")
 
-	metadata, _, err := store.RetrieveBy(filePath)
+	metadata, err := store.FetchMetadata(filePath)
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), Metadata{}, metadata)
 }
 
-func (suite *RetrieverTestSuite) TestRetrieveByReturnsFile() {
+func (suite *RetrieverTestSuite) TestDownloadFile() {
 	filePath := "data/file.csv"
 	psk := "psk"
 
@@ -89,7 +84,7 @@ func (suite *RetrieverTestSuite) TestRetrieveByReturnsFile() {
 
 	store := NewStore("", suite.s3c, fhc, suite.vc, "")
 
-	_, file, err := store.RetrieveBy(filePath)
+	file, err := store.DownloadFile(filePath)
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), fileContent, file)
