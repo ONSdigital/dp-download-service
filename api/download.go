@@ -10,16 +10,15 @@ import (
 )
 
 // DoDownload handles download generic file requests.
-func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile files.FileRetriever) http.HandlerFunc {
+func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile files.FileDownloader) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		vars := mux.Vars(req)
+		filePath := mux.Vars(req)["path"]
 
-		metadata, err := fetchMetadata(vars["path"])
+		metadata, err := fetchMetadata(filePath)
 		if err != nil {
 			handleError(w, err)
 			return
 		}
-
 
 		if metadata.Unpublished() {
 			log.Info(req.Context(), "File is not published yet")
@@ -29,8 +28,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile f
 
 		setHeaders(w, metadata)
 
-		file, err := downloadFile(vars["path"])
-
+		file, err := downloadFile(filePath)
 		defer func() {
 			if err := file.Close(); err != nil {
 				log.Error(req.Context(), "error closing io.Closer", err)
