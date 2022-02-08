@@ -40,9 +40,10 @@ func TestHandlingErrorSteamingFileContent(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/v1/files/data/file.csv", nil)
 	rec := &ErrorWriter{}
 
-	h := api.CreateV1DownloadHandler(func(path string) (files.Metadata, io.ReadCloser, error) {
-		return files.Metadata{State: "PUBLISHED"}, DummyReadCloser{}, nil
-	})
+	fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: "PUBLISHED"}, nil}
+	downloadFile := func(path string) (io.ReadCloser, error) {return DummyReadCloser{}, nil}
+
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile)
 
 	h.ServeHTTP(rec, req)
 
@@ -66,10 +67,10 @@ func TestHandleFileNotPublished(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: tt.state}, nil}
+			downloadFile := func(path string) (io.ReadCloser, error) {return nil, nil}
 
-			h := api.CreateV1DownloadHandler(func(path string) (files.Metadata, io.ReadCloser, error) {
-				return files.Metadata{State: tt.state}, DummyReadCloser{}, nil
-			})
+			h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile)
 
 			h.ServeHTTP(rec, req)
 
