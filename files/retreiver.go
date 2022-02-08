@@ -20,7 +20,8 @@ type HTTPClient interface {
 var ErrFileNotRegistered = errors.New("file not registered")
 var ErrBadJSONResponse = errors.New("could not decode JSON response from files api")
 
-type FileRetriever func(path string) (Metadata, io.ReadCloser, error)
+type FileRetriever func(path string) (io.ReadCloser, error)
+type MetadataFetcher func(path string) (Metadata, error)
 
 type Store struct {
 	s3c         content.S3Client
@@ -34,21 +35,7 @@ func NewStore(filesApiUrl string, s3client content.S3Client, httpClient HTTPClie
 	return Store{s3client, filesApiUrl, httpClient, vc, vaultPath}
 }
 
-func (s Store) RetrieveBy(filePath string) (Metadata, io.ReadCloser, error) {
-	metadata, err := s.fetchMetadata(filePath)
-	if err != nil {
-		return Metadata{}, nil, err
-	}
-
-	file, err := s.downloadFile(filePath)
-	if err != nil {
-		return Metadata{}, nil, err
-	}
-
-	return metadata, file, nil
-}
-
-func (s Store) fetchMetadata(path string) (Metadata, error) {
+func (s Store) FetchMetadata(path string) (Metadata, error) {
 	m := Metadata{}
 
 	resp, _ := s.httpClient.Get(fmt.Sprintf("%s/v1/files/%s", s.filesApiUrl, path))
@@ -64,7 +51,7 @@ func (s Store) fetchMetadata(path string) (Metadata, error) {
 	return m, nil
 }
 
-func (s Store) downloadFile(filePath string) (io.ReadCloser, error) {
+func (s Store) DownloadFile(filePath string) (io.ReadCloser, error) {
 	vp := s.vaultPath + "/" + filePath
 	pskStr, err := s.vaultClient.ReadKey(vp, VAULT_KEY)
 	if err != nil {
