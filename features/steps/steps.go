@@ -113,7 +113,6 @@ func (d *DownloadServiceComponent) theFileEncryptedUsingKeyFromVaultStoredInSWit
 		return err
 	}
 
-	//actualEncryptionKey, err := vaultClient.ReadKey(vaultPath, "key")
 	c := bytes.NewBuffer([]byte(content.Content))
 
 	// encrypt
@@ -123,9 +122,7 @@ func (d *DownloadServiceComponent) theFileEncryptedUsingKeyFromVaultStoredInSWit
 		panic("encryption has failed")
 	}
 
-	fmt.Printf("encrypted content : %v", encryptedContent)
-
-	//storing
+	// store
 	d.theS3FileWithContent(filepath, &godog.DocString{
 		MediaType: "",
 		Content:   string(encryptedContent),
