@@ -43,7 +43,7 @@ func TestHandlingErrorForMetadata(t *testing.T) {
 	fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: "PUBLISHED"}, nil}
 	downloadFile := func(path string) (io.ReadCloser, error) {return DummyReadCloser{}, nil}
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile)
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, "")
 
 	h.ServeHTTP(rec, req)
 
@@ -57,7 +57,7 @@ func TestHandlingErrorGettingFileContent(t *testing.T) {
 	fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: "PUBLISHED"}, nil}
 	downloadFile := func(path string) (io.ReadCloser, error) {return nil, errors.New("error downloading file")}
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile)
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, "")
 
 	h.ServeHTTP(rec, req)
 
@@ -84,11 +84,25 @@ func TestHandleFileNotPublished(t *testing.T) {
 			fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: tt.state}, nil}
 			downloadFile := func(path string) (io.ReadCloser, error) {return nil, nil}
 
-			h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile)
+			h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, "")
 
 			h.ServeHTTP(rec, req)
 
 			assert.Equalf(t, tt.expectedStatus, rec.status, "CreateV1DownloadHandler(%v)", tt.name)
 		})
 	}
+}
+
+func TestHandlingErrorWhenBadPublicBucketUrl(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/v1/files/data/file.csv", nil)
+	rec := &ErrorWriter{}
+
+	fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: "DECRYPTED"}, nil}
+	downloadFile := func(path string) (io.ReadCloser, error) {return nil, errors.New("error downloading file")}
+
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, "://foo/")
+
+	h.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.status)
 }
