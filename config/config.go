@@ -16,7 +16,7 @@ type Config struct {
 	DatasetAuthToken           string        `envconfig:"DATASET_AUTH_TOKEN"         json:"-"`
 	FilterAPIURL               string        `envconfig:"FILTER_API_URL"`
 	ImageAPIURL                string        `envconfig:"IMAGE_API_URL"`
-	FilesApiURL                string		 `envconfig:"FILES_API_URL"`
+	FilesApiURL                string        `envconfig:"FILES_API_URL"`
 	GracefulShutdownTimeout    time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"  json:"-"`
 	HealthCheckInterval        time.Duration `envconfig:"HEALTHCHECK_INTERVAL"`
 	HealthCheckCriticalTimeout time.Duration `envconfig:"HEALTHCHECK_CRITICAL_TIMEOUT"`
@@ -31,6 +31,7 @@ type Config struct {
 	MinioSecretKey             string        `envconfig:"MINIO_SECRET_KEY"`   // TODO remove replacing minio with localstack in component tests
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
 	EncryptionDisabled         bool          `envconfig:"ENCRYPTION_DISABLED"` // TODO remove encryption always required
+	PublicBucketURL            string        `envconfig:"PUBLIC_BUCKET_URL"`
 }
 
 var cfg *Config
@@ -64,6 +65,7 @@ func Get() (*Config, error) {
 		MinioSecretKey:             "",
 		IsPublishing:               true,
 		EncryptionDisabled:         false,
+		PublicBucketURL:            "http://public-bucket.com/",
 	}
 
 	if err := envconfig.Process("", cfg); err != nil {
