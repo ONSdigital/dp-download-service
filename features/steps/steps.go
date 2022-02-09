@@ -154,7 +154,11 @@ func (d *DownloadServiceComponent) theS3FileWithContent(filepath string, content
 }
 
 func (d *DownloadServiceComponent) iShouldBeRedirectedTo(url string) error {
-	return d.ApiFeature.TheHTTPStatusCodeShouldBe("302")
+	d.ApiFeature.TheHTTPStatusCodeShouldBe("301")
+
+	assert.Equal(d.ApiFeature, url, d.ApiFeature.HttpResponse.Header.Get("Location"))
+
+	return d.ApiFeature.StepError()
 }
 
 func encryptObjectContent(psk []byte, b io.Reader) ([]byte, error) {
