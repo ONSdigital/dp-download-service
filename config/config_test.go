@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -36,6 +37,7 @@ func getConfigEnv() map[string]string {
 		"MONGODB_USERNAME":             os.Getenv("MONGODB_USERNAME"),
 		"MONGODB_PASSWORD":             os.Getenv("MONGODB_PASSWORD"),
 		"MONGODB_IS_SSL":               os.Getenv("MONGODB_IS_SSL"),
+		"PUBLIC_BUCKET_URL":            os.Getenv("PUBLIC_BUCKET_URL"),
 	}
 }
 
@@ -54,6 +56,8 @@ func TestSpec(t *testing.T) {
 		for k := range originalConfigEnv {
 			os.Unsetenv(k)
 		}
+
+		os.Setenv("PUBLIC_BUCKET_URL", "http://test")
 
 		cfg, err := Get()
 
@@ -83,6 +87,9 @@ func TestSpec(t *testing.T) {
 				So(cfg.MinioSecretKey, ShouldEqual, "")
 				So(cfg.IsPublishing, ShouldBeTrue)
 				So(cfg.EncryptionDisabled, ShouldBeFalse)
+
+				expectedUrl, _ := url.Parse("http://test")
+				So(cfg.PublicBucketURL, ShouldResemble, ConfigUrl{*expectedUrl})
 			})
 		})
 	})
