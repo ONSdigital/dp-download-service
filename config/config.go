@@ -1,6 +1,10 @@
 package config
 
 import (
+	"context"
+	"fmt"
+	"github.com/ONSdigital/log.go/v2/log"
+	"net/url"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -31,10 +35,26 @@ type Config struct {
 	MinioSecretKey             string        `envconfig:"MINIO_SECRET_KEY"`   // TODO remove replacing minio with localstack in component tests
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
 	EncryptionDisabled         bool          `envconfig:"ENCRYPTION_DISABLED"` // TODO remove encryption always required
-	PublicBucketURL            string        `envconfig:"PUBLIC_BUCKET_URL"`
+	PublicBucketURL            ConfigUrl     `envconfig:"PUBLIC_BUCKET_URL"`
 }
 
 var cfg *Config
+
+type ConfigUrl struct {
+	url.URL
+}
+
+func (c *ConfigUrl) Decode(value string) error {
+	parsedURL, err := url.Parse(value)
+	if err != nil {
+		log.Error(context.Background(), fmt.Sprintf("Bad public bucket url: %s", value), err)
+		return err
+	}
+
+	c.URL = *parsedURL
+
+	return nil
+}
 
 // Get retrieves the config from the environment for the dp-download-service
 func Get() (*Config, error) {
@@ -65,7 +85,7 @@ func Get() (*Config, error) {
 		MinioSecretKey:             "",
 		IsPublishing:               true,
 		EncryptionDisabled:         false,
-		PublicBucketURL:            "http://public-bucket.com/",
+		PublicBucketURL:            ConfigUrl{},
 	}
 
 	if err := envconfig.Process("", cfg); err != nil {
