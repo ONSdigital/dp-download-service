@@ -37,3 +37,7 @@ func (m Metadata) GetContentLength() string {
 func (m Metadata) Unpublished() bool {
 	return m.State == UPLOADED || m.State == CREATED
 }
+
+func (m Metadata) Decrypted() bool {
+	return m.State == DECRYPTED
+}
