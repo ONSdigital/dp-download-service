@@ -7,16 +7,34 @@ import (
 	"github.com/gorilla/mux"
 	"io"
 	"net/http"
+	"net/url"
+	"path"
 )
 
 // DoDownload handles download generic file requests.
-func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile files.FileDownloader) http.HandlerFunc {
+func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile files.FileDownloader, publicBucketURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		filePath := mux.Vars(req)["path"]
 
 		metadata, err := fetchMetadata(filePath)
 		if err != nil {
 			handleError(w, err)
+			return
+		}
+
+		if metadata.Decrypted() {
+			log.Info(req.Context(), "File already decrypted, redirecting")
+			parsedURL, err := url.Parse(publicBucketURL)
+
+			if err != nil {
+				log.Error(req.Context(), fmt.Sprintf("Bad public bucket url: %s", publicBucketURL), err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			parsedURL.Path = path.Join(filePath)
+			w.Header().Set("Location", parsedURL.String())
+			w.WriteHeader(http.StatusMovedPermanently)
 			return
 		}
 
