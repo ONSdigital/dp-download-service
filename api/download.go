@@ -2,17 +2,17 @@ package api
 
 import (
 	"fmt"
+	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/files"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 	"io"
 	"net/http"
-	"net/url"
 	"path"
 )
 
 // DoDownload handles download generic file requests.
-func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile files.FileDownloader, publicBucketURL string) http.HandlerFunc {
+func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile files.FileDownloader, publicBucketURL config.ConfigUrl) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		filePath := mux.Vars(req)["path"]
 
@@ -24,16 +24,8 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile f
 
 		if metadata.Decrypted() {
 			log.Info(req.Context(), "File already decrypted, redirecting")
-			parsedURL, err := url.Parse(publicBucketURL)
-
-			if err != nil {
-				log.Error(req.Context(), fmt.Sprintf("Bad public bucket url: %s", publicBucketURL), err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			parsedURL.Path = path.Join(filePath)
-			w.Header().Set("Location", parsedURL.String())
+			publicBucketURL.Path = path.Join(filePath)
+			w.Header().Set("Location", publicBucketURL.String())
 			w.WriteHeader(http.StatusMovedPermanently)
 			return
 		}
