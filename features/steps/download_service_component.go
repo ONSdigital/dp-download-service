@@ -54,6 +54,8 @@ func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent
 	fakeService.NewHandler().Get("/health").Reply(http.StatusOK)
 	os.Setenv("ZEBEDEE_URL", fakeService.ResolveURL(""))
 	os.Setenv("PUBLIC_BUCKET_URL", "http://public-bucket.com/")
+	os.Setenv("IS_PUBLISHING", "false")
+
 	d.cfg, _ = config.Get()
 
 	d.deps = &External{Server: d.DpHttpServer}
