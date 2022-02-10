@@ -1,7 +1,7 @@
 Feature: ONS Public Website Download files
 
   Background:
-    Given we are in web mode
+    Given the application is in web mode
 
   Scenario: Download a file that has been published
     Given the file "data/populations.csv" metadata:
