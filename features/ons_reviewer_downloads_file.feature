@@ -1,4 +1,6 @@
 Feature: Download preview feature
+#    Background:
+#        Given the application is in "preview" mode
 #
 #  Background:
 #    Given I am authorised
