@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/kelseyhightower/envconfig"
 	"net/url"
 	"os"
 	"testing"
@@ -59,7 +60,8 @@ func TestSpec(t *testing.T) {
 
 		os.Setenv("PUBLIC_BUCKET_URL", "http://test")
 
-		cfg, err := Get()
+
+		config, err := Get()
 
 		Convey("when the config variables are retrieved", func() {
 
@@ -68,29 +70,50 @@ func TestSpec(t *testing.T) {
 			})
 
 			Convey("the values should be set to the expected defaults", func() {
-				So(cfg.BindAddr, ShouldEqual, "localhost:23600")
-				So(cfg.BucketName, ShouldEqual, "csv-exported")
-				So(cfg.DatasetAPIURL, ShouldEqual, "http://localhost:22000")
-				So(cfg.DatasetAuthToken, ShouldEqual, "FD0108EA-825D-411C-9B1D-41EF7727F465")
-				So(cfg.DownloadServiceToken, ShouldEqual, "QB0108EZ-825D-412C-9B1D-41EF7747F462")
-				So(cfg.FilterAPIURL, ShouldEqual, "http://localhost:22100")
-				So(cfg.ImageAPIURL, ShouldEqual, "http://localhost:24700")
-				So(cfg.GracefulShutdownTimeout, ShouldEqual, 5*time.Second)
-				So(cfg.HealthCheckInterval, ShouldEqual, 30*time.Second)
-				So(cfg.HealthCheckCriticalTimeout, ShouldEqual, 90*time.Second)
-				So(cfg.VaultToken, ShouldEqual, "")
-				So(cfg.VaultPath, ShouldEqual, "secret/shared/psk")
-				So(cfg.ServiceAuthToken, ShouldEqual, "c60198e9-1864-4b68-ad0b-1e858e5b46a4")
-				So(cfg.ZebedeeURL, ShouldEqual, "http://localhost:8082")
-				So(cfg.LocalObjectStore, ShouldEqual, "")
-				So(cfg.MinioAccessKey, ShouldEqual, "")
-				So(cfg.MinioSecretKey, ShouldEqual, "")
-				So(cfg.IsPublishing, ShouldBeTrue)
-				So(cfg.EncryptionDisabled, ShouldBeFalse)
+				So(config.BindAddr, ShouldEqual, "localhost:23600")
+				So(config.BucketName, ShouldEqual, "csv-exported")
+				So(config.DatasetAPIURL, ShouldEqual, "http://localhost:22000")
+				So(config.DatasetAuthToken, ShouldEqual, "FD0108EA-825D-411C-9B1D-41EF7727F465")
+				So(config.DownloadServiceToken, ShouldEqual, "QB0108EZ-825D-412C-9B1D-41EF7747F462")
+				So(config.FilterAPIURL, ShouldEqual, "http://localhost:22100")
+				So(config.ImageAPIURL, ShouldEqual, "http://localhost:24700")
+				So(config.GracefulShutdownTimeout, ShouldEqual, 5*time.Second)
+				So(config.HealthCheckInterval, ShouldEqual, 30*time.Second)
+				So(config.HealthCheckCriticalTimeout, ShouldEqual, 90*time.Second)
+				So(config.VaultToken, ShouldEqual, "")
+				So(config.VaultPath, ShouldEqual, "secret/shared/psk")
+				So(config.ServiceAuthToken, ShouldEqual, "c60198e9-1864-4b68-ad0b-1e858e5b46a4")
+				So(config.ZebedeeURL, ShouldEqual, "http://localhost:8082")
+				So(config.LocalObjectStore, ShouldEqual, "")
+				So(config.MinioAccessKey, ShouldEqual, "")
+				So(config.MinioSecretKey, ShouldEqual, "")
+				So(config.IsPublishing, ShouldBeTrue)
+				So(config.EncryptionDisabled, ShouldBeFalse)
 
 				expectedUrl, _ := url.Parse("http://test")
-				So(cfg.PublicBucketURL, ShouldResemble, ConfigUrl{*expectedUrl})
+				So(config.PublicBucketURL, ShouldResemble, ConfigUrl{*expectedUrl})
 			})
+		})
+	})
+}
+
+func TestBadPublicBucketUrl(t *testing.T) {
+	Convey("Given an environment variable with a bad public-bucket url", t, func() {
+		originalConfigEnv := getConfigEnv()
+		defer setConfigEnv(originalConfigEnv)
+
+		for k := range originalConfigEnv {
+			os.Unsetenv(k)
+		}
+
+		os.Setenv("PUBLIC_BUCKET_URL", "://test")
+
+		cfg = nil
+
+		_, err := Get()
+
+		Convey("getting config values should result in parse error", func() {
+			So(err, ShouldHaveSameTypeAs, &envconfig.ParseError{})
 		})
 	})
 }
