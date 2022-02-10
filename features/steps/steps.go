@@ -30,7 +30,7 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I download the file "([^"]*)"$`, d.iDownloadTheFile)
 	ctx.Step(`^the file "([^"]*)" metadata:$`, d.theFileMetadata)
 	ctx.Step(`^the S3 file "([^"]*)" with content:$`, d.theS3FileWithContent)
-	ctx.Step(`^we are in web mode$`, d.weAreInWebMode)
+	ctx.Step(`^the application is in web mode$`, d.weAreInWebMode)
 	ctx.Step(`^the headers should be:$`, d.theHeadersShouldBe)
 	ctx.Step(`^the file content should be:$`, d.theFileContentShouldBe)
 	ctx.Step(`^the file "([^"]*)" has not been uploaded$`, d.theFileHasNotBeenUploaded)
