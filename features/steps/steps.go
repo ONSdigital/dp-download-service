@@ -43,6 +43,7 @@ func (d *DownloadServiceComponent) weAreInWebMode(mode string) error {
 	d.cfg.IsPublishing = mode == "publishing"
 	return nil
 }
+
 func (d *DownloadServiceComponent) theHeadersShouldBe(expectedHeaders *godog.Table) error {
 	headers, _ := assistdog.NewDefault().ParseMap(expectedHeaders)
 	for key, value := range headers {
