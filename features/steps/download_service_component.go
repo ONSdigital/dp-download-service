@@ -16,6 +16,7 @@ import (
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
 	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	vault "github.com/ONSdigital/dp-vault"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
@@ -29,11 +30,13 @@ type DownloadServiceComponent struct {
 	ApiFeature   *componenttest.APIFeature
 	errChan      chan error
 	cfg          *config.Config
-	deps *External
+	vaultClient  *vault.Client
+	deps         *External
 }
 
 func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent {
 	//os.Setenv("ZEBEDEE_URL", fake_auth_url)
+	var err error
 
 	s := dphttp.NewServer("", http.NewServeMux())
 	s.HandleOSSignals = false
@@ -49,8 +52,14 @@ func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent
 
 	os.Setenv("ZEBEDEE_URL", fake_auth_url)
 	os.Setenv("PUBLIC_BUCKET_URL", "http://public-bucket.com/")
+	os.Setenv("IS_PUBLISHING", "false")
 
 	d.cfg, _ = config.Get()
+
+	d.vaultClient, err = vault.CreateClient(d.cfg.VaultToken, d.cfg.VaultAddress, 1)
+	if err != nil {
+		return nil
+	}
 
 	d.deps = &External{Server: d.DpHttpServer}
 
@@ -66,10 +75,9 @@ func (d *DownloadServiceComponent) Initialiser() (http.Handler, error) {
 }
 
 func (d *DownloadServiceComponent) Reset() {
-	os.Setenv("IS_PUBLISHING", "false")
+	cfg, _ := config.Get()
 
 	// clear out test bucket
-	cfg, _ := config.Get()
 	s, _ := session.NewSession(&aws.Config{
 		Endpoint:         aws.String(localStackHost),
 		Region:           aws.String(cfg.AwsRegion),
