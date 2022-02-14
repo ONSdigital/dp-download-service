@@ -26,7 +26,8 @@ services:
       SERVICE_AUTH_TOKEN: ''
       SECRET_KEY: ''
       ZEBEDEE_URL: ''
-      IS_PUBLISHING: ''
+      IS_PUBLISHING: 'false'
+      PUBLIC_BUCKET_URL: 'https://csv-exported.s3.eu-west-1.amazonaws.com/'
     volumes:
       - ./:/service
 
