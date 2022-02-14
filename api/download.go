@@ -4,16 +4,22 @@ import (
 	"fmt"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/files"
+	"github.com/ONSdigital/dp-net/v2/request"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 	"io"
 	"net/http"
-	"path"
 )
 
 // DoDownload handles download generic file requests.
-func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile files.FileDownloader, publicBucketURL config.ConfigUrl) http.HandlerFunc {
+func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile files.FileDownloader, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+
+		callerPresent := request.IsCallerPresent(req.Context())
+		fmt.Printf("caller present: %v\n", callerPresent)
+		fmt.Printf("caller identity: %v\n", req.Context().Value(request.CallerIdentityKey))
+		fmt.Printf("is publishing mode: %v\n", cfg.IsPublishing)
+
 		filePath := mux.Vars(req)["path"]
 
 		metadata, err := fetchMetadata(filePath)
@@ -22,18 +28,20 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile f
 			return
 		}
 
-		if metadata.Decrypted() {
-			log.Info(req.Context(), "File already decrypted, redirecting")
-			publicBucketURL.Path = path.Join(filePath)
-			w.Header().Set("Location", publicBucketURL.String())
-			w.WriteHeader(http.StatusMovedPermanently)
-			return
-		}
+		// if its not UPLOADED && IS_PUBLISHING && IS CALLER PRESENT
+			if metadata.Decrypted() {
+				log.Info(req.Context(), "File already decrypted, redirecting")
+				w.Header().Set("Location", cfg.PublicBucketURL.String() + filePath)
+				w.WriteHeader(http.StatusMovedPermanently)
+				return
+			}
 
-		if metadata.Unpublished() {
-			log.Info(req.Context(), "File is not published yet")
-			w.WriteHeader(http.StatusNotFound)
-			return
+		if isWebMode(cfg) {
+			if metadata.Unpublished() {
+				log.Info(req.Context(), "File is not published yet")
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 		}
 
 		setHeaders(w, metadata)
@@ -57,6 +65,10 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile f
 			return
 		}
 	}
+}
+
+func isWebMode(cfg *config.Config) bool {
+	return cfg.IsPublishing == false
 }
 
 func setHeaders(w http.ResponseWriter, m files.Metadata) {
