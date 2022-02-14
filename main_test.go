@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
@@ -38,6 +39,7 @@ func (t *ComponentTest) InitializeScenario(ctx *godog.ScenarioContext) {
 		component.Reset()
 		apiFeature.Reset()
 		authorizationFeature.Reset()
+		authorizationFeature.FakeAuthService.NewHandler().Get("/health").Reply(http.StatusOK)
 
 		return ctx, nil
 	})
