@@ -142,7 +142,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	downloadHandler := api.CreateV1DownloadHandler(
 		files.FetchMetadata(cfg.FilesApiURL, http.DefaultClient),
 		files.DownloadFile(svc.s3Client, vc, cfg.VaultPath),
-		cfg.PublicBucketURL,
+		cfg,
 	)
 
 	// And tie routes to download hander methods.

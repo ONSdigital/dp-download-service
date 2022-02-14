@@ -30,7 +30,7 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I download the file "([^"]*)"$`, d.iDownloadTheFile)
 	ctx.Step(`^the file "([^"]*)" metadata:$`, d.theFileMetadata)
 	ctx.Step(`^the S3 file "([^"]*)" with content:$`, d.theS3FileWithContent)
-	ctx.Step(`^the application is in web mode$`, d.weAreInWebMode)
+	ctx.Step(`^the application is in "([^"]*)" mode$`, d.weAreInWebMode)
 	ctx.Step(`^the headers should be:$`, d.theHeadersShouldBe)
 	ctx.Step(`^the file content should be:$`, d.theFileContentShouldBe)
 	ctx.Step(`^the file "([^"]*)" has not been uploaded$`, d.theFileHasNotBeenUploaded)
@@ -39,8 +39,8 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 
 }
 
-func (d *DownloadServiceComponent) weAreInWebMode() error {
-	d.cfg.IsPublishing = false
+func (d *DownloadServiceComponent) weAreInWebMode(mode string) error {
+	d.cfg.IsPublishing = mode == "publishing"
 	return nil
 }
 func (d *DownloadServiceComponent) theHeadersShouldBe(expectedHeaders *godog.Table) error {
@@ -60,7 +60,6 @@ func (d *DownloadServiceComponent) iShouldReceiveThePrivateFile(filename string)
 	assert.Equal(d.ApiFeature, http.StatusOK, d.ApiFeature.HttpResponse.StatusCode)
 	assert.Equal(d.ApiFeature, "attachment; filename="+filename, d.ApiFeature.HttpResponse.Header.Get("Content-Disposition"))
 
-	//return errors.New("BROKE")
 	return d.ApiFeature.StepError()
 }
 
