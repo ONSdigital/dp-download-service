@@ -16,7 +16,7 @@ services:
       VAULT_TOKEN: '0000-0000-0000-0000'
       VAULT_ADDR: 'http://vault:8200'
       VAULT_PATH: 'secret/shared/psk'
-
+      PUBLIC_BUCKET_URL: 'https://csv-exported.s3.eu-west-1.amazonaws.com/'
   vault:
     image: hashicorp/vault:latest
     restart: always
