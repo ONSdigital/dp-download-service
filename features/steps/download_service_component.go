@@ -47,12 +47,8 @@ func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent
 
 	log.Namespace = "dp-download-service"
 
-	//assert.NoError(&componenttest.ErrorFeature{}, err, "error getting config")
-	//fakeService := httpfake.New()
-	//fakeService.NewHandler().Get("/health").Reply(http.StatusOK)
 	os.Setenv("ZEBEDEE_URL", fake_auth_url)
 	os.Setenv("PUBLIC_BUCKET_URL", "http://public-bucket.com/")
-	os.Setenv("IS_PUBLISHING", "true")
 
 	d.cfg, _ = config.Get()
 
@@ -70,6 +66,8 @@ func (d *DownloadServiceComponent) Initialiser() (http.Handler, error) {
 }
 
 func (d *DownloadServiceComponent) Reset() {
+	os.Setenv("IS_PUBLISHING", "false")
+
 	// clear out test bucket
 	cfg, _ := config.Get()
 	s, _ := session.NewSession(&aws.Config{
