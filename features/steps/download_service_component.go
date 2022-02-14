@@ -12,8 +12,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/maxcnunes/httpfake"
-
 	componenttest "github.com/ONSdigital/dp-component-test"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
@@ -50,11 +48,11 @@ func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent
 	log.Namespace = "dp-download-service"
 
 	//assert.NoError(&componenttest.ErrorFeature{}, err, "error getting config")
-	fakeService := httpfake.New()
-	fakeService.NewHandler().Get("/health").Reply(http.StatusOK)
-	os.Setenv("ZEBEDEE_URL", fakeService.ResolveURL(""))
+	//fakeService := httpfake.New()
+	//fakeService.NewHandler().Get("/health").Reply(http.StatusOK)
+	os.Setenv("ZEBEDEE_URL", fake_auth_url)
 	os.Setenv("PUBLIC_BUCKET_URL", "http://public-bucket.com/")
-	os.Setenv("IS_PUBLISHING", "false")
+	os.Setenv("IS_PUBLISHING", "true")
 
 	d.cfg, _ = config.Get()
 
