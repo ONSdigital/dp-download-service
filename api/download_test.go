@@ -44,7 +44,7 @@ func TestHandlingErrorForMetadata(t *testing.T) {
 	fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: "PUBLISHED"}, nil}
 	downloadFile := func(path string) (io.ReadCloser, error) {return DummyReadCloser{}, nil}
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, config.ConfigUrl{})
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{})
 
 	h.ServeHTTP(rec, req)
 
@@ -58,7 +58,7 @@ func TestHandlingErrorGettingFileContent(t *testing.T) {
 	fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: "PUBLISHED"}, nil}
 	downloadFile := func(path string) (io.ReadCloser, error) {return nil, errors.New("error downloading file")}
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, config.ConfigUrl{})
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{})
 
 	h.ServeHTTP(rec, req)
 
@@ -85,7 +85,7 @@ func TestHandleFileNotPublished(t *testing.T) {
 			fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: tt.state}, nil}
 			downloadFile := func(path string) (io.ReadCloser, error) {return nil, nil}
 
-			h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, config.ConfigUrl{})
+			h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{})
 
 			h.ServeHTTP(rec, req)
 
