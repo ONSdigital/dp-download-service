@@ -5,13 +5,13 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"fmt"
+	"github.com/ONSdigital/dp-download-service/files"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
 	"github.com/ONSdigital/dp-download-service/config"
-	vault "github.com/ONSdigital/dp-vault"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -29,7 +29,6 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the file "([^"]*)" has been uploaded$`, d.theFileHasBeenUploaded)
 	ctx.Step(`^I download the file "([^"]*)"$`, d.iDownloadTheFile)
 	ctx.Step(`^the file "([^"]*)" metadata:$`, d.theFileMetadata)
-	ctx.Step(`^the S3 file "([^"]*)" with content:$`, d.theS3FileWithContent)
 	ctx.Step(`^the application is in "([^"]*)" mode$`, d.weAreInWebMode)
 	ctx.Step(`^the headers should be:$`, d.theHeadersShouldBe)
 	ctx.Step(`^the file content should be:$`, d.theFileContentShouldBe)
@@ -104,13 +103,8 @@ func (d *DownloadServiceComponent) theFileEncryptedUsingKeyFromVaultStoredInSWit
 
 	vaultPath := fmt.Sprintf("%s/%s", cfg.VaultPath, filepath)
 
-	vaultClient, err := vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 1)
-	if err != nil {
-		return err
-	}
-
 	// store encryptionkey key in vault against the path <filepath>
-	if err := vaultClient.WriteKey(vaultPath, "key", encryptionkey); err != nil {
+	if err := d.vaultClient.WriteKey(vaultPath, files.VAULT_KEY, encryptionkey); err != nil {
 		return err
 	}
 
