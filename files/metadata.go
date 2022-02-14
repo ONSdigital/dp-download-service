@@ -41,3 +41,7 @@ func (m Metadata) Unpublished() bool {
 func (m Metadata) Decrypted() bool {
 	return m.State == DECRYPTED
 }
+
+func (m Metadata) Uploaded() bool {
+	return m.State == UPLOADED
+}
