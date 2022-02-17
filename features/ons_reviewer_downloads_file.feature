@@ -27,10 +27,3 @@ Feature: Download preview feature
         """
         When I download the file "data/populations.csv"
         Then the HTTP status code should be "200"
-
-#
-##  Scenario: ONS previewer requests data-file that has been uploaded and published
-##    Given the file "cpih01-time-series-v5.csv" has been uploaded
-##    And has been published
-##    When I request to download the file "cpih01-time-series-v5.csv"
-##    Then I should redirected to the public file "cpih01-time-series-v5.csv"
