@@ -14,7 +14,7 @@ import (
 func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile files.FileDownloader, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		filePath := mux.Vars(req)["path"]
-		log.Info(req.Context(), "Handling request for " + filePath)
+		log.Info(req.Context(), fmt.Sprintf("Handling request for %s", filePath))
 
 		metadata, err := fetchMetadata(filePath)
 		if err != nil {
@@ -27,17 +27,15 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile f
 
 		if metadata.Decrypted() {
 			log.Info(req.Context(), "File already decrypted, redirecting")
-			w.Header().Set("Location", cfg.PublicBucketURL.String()+filePath)
+			w.Header().Set("Location", fmt.Sprintf("%s%s", cfg.PublicBucketURL.String(), filePath))
 			w.WriteHeader(http.StatusMovedPermanently)
 			return
 		}
 
-		if isWebMode(cfg) {
-			if metadata.Unpublished() {
-				log.Info(req.Context(), "File is not published yet")
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
+		if isWebMode(cfg) && metadata.Unpublished() {
+			log.Info(req.Context(), "File is not published yet")
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 
 		setHeaders(w, metadata)
