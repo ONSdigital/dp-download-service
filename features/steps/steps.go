@@ -69,7 +69,7 @@ func (d *DownloadServiceComponent) isNotYetPublished() error {
 
 func (d *DownloadServiceComponent) theFileHasNotBeenUploaded(filename string) error {
 	server := httpfake.New()
-	server.NewHandler().Get(fmt.Sprintf("/v1/files/%s", filename)).Reply(http.StatusNotFound).BodyString("")
+	server.NewHandler().Get(fmt.Sprintf("/files/%s", filename)).Reply(http.StatusNotFound).BodyString("")
 
 	d.cfg.FilesApiURL = server.ResolveURL("")
 
@@ -78,7 +78,7 @@ func (d *DownloadServiceComponent) theFileHasNotBeenUploaded(filename string) er
 
 func (d *DownloadServiceComponent) theFileHasBeenUploaded(filename string, metadata *godog.DocString) error {
 	server := httpfake.New()
-	server.NewHandler().Get(fmt.Sprintf("/v1/files/%s", filename)).Reply(http.StatusOK).BodyString(metadata.Content)
+	server.NewHandler().Get(fmt.Sprintf("/files/%s", filename)).Reply(http.StatusOK).BodyString(metadata.Content)
 
 	d.cfg.FilesApiURL = server.ResolveURL("")
 
@@ -86,12 +86,12 @@ func (d *DownloadServiceComponent) theFileHasBeenUploaded(filename string, metad
 }
 
 func (d *DownloadServiceComponent) iDownloadTheFile(filepath string) error {
-	return d.ApiFeature.IGet(fmt.Sprintf("/v1/downloads/%s", filepath))
+	return d.ApiFeature.IGet(fmt.Sprintf("/downloads-new/%s", filepath))
 }
 
 func (d *DownloadServiceComponent) theFileMetadata(filepath string, metadata *godog.DocString) error {
 	server := httpfake.New()
-	server.NewHandler().Get(fmt.Sprintf("/v1/files/%s", filepath)).Reply(http.StatusOK).BodyString(metadata.Content)
+	server.NewHandler().Get(fmt.Sprintf("/files/%s", filepath)).Reply(http.StatusOK).BodyString(metadata.Content)
 
 	d.cfg.FilesApiURL = server.ResolveURL("")
 
