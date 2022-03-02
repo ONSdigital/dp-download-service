@@ -27,7 +27,7 @@ func FetchMetadata(filesApiUrl string, httpClient HTTPClient) MetadataFetcher {
 	return func (path string) (Metadata, error) {
 		m := Metadata{}
 
-		resp, _ := httpClient.Get(fmt.Sprintf("%s/v1/files/%s", filesApiUrl, path))
+		resp, _ := httpClient.Get(fmt.Sprintf("%s/files/%s", filesApiUrl, path))
 		if resp.StatusCode == http.StatusNotFound {
 			return m, ErrFileNotRegistered
 		}
