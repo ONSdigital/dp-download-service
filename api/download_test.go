@@ -38,7 +38,7 @@ func (d DummyReadCloser) Close() error {
 }
 
 func TestHandlingErrorForMetadata(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/v1/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
 	rec := &ErrorWriter{}
 
 	fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: "PUBLISHED"}, nil}
@@ -52,7 +52,7 @@ func TestHandlingErrorForMetadata(t *testing.T) {
 }
 
 func TestHandlingErrorGettingFileContent(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/v1/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
 	rec := &ErrorWriter{}
 
 	fetchMetadata := func(path string) (files.Metadata, error) {return files.Metadata{State: "PUBLISHED"}, nil}
@@ -66,7 +66,7 @@ func TestHandlingErrorGettingFileContent(t *testing.T) {
 }
 
 func TestHandleFileNotPublished(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/v1/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
 	rec := &ErrorWriter{}
 
 	type args struct {
