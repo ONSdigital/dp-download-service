@@ -6,7 +6,7 @@ info:
   license:
     name: "Open Government Licence v3.0"
     url: "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
-
+basePath: http://localhost:23600/
 tags:
   - name: "Public"
 schemes:
@@ -54,13 +54,41 @@ parameters:
     in: path
     required: true
     type: string
+  file_path:
+    name: filepath
+    in: path
+    required: true
+    description: filepath of required file
 securityDefinitions:
   FlorenceAPIKey:
     name: X-Florence-Token
     description: "API key used to allow florence users to be able to access a full download for an unpublished version."
     in: header
     type: apiKey
+
 paths:
+  /downloads-new/{filepath}:
+    get:
+      tags:
+        - Download file
+      summary: "Download a file"
+      description: "Request a download for a file."
+      parameters:
+        - $ref: '#/parameters/file_path'
+      produces:
+        - "*/*"
+      responses:
+        200:
+          $ref: '#/responses/StreamedResponse'
+        301:
+          $ref: '#/responses/RequestRedirect'
+        400:
+          $ref: '#/responses/InvalidRequestError'
+        404:
+          $ref: '#/responses/NotFoundError'
+        500:
+          $ref: '#/responses/InternalError'
+
   /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv:
     get:
       tags:
