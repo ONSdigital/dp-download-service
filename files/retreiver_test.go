@@ -2,13 +2,14 @@ package files
 
 import (
 	"bytes"
-	"github.com/ONSdigital/dp-download-service/content/mocks"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
+	"encoding/hex"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/ONSdigital/dp-download-service/content/mocks"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/suite"
 )
 
 type RetrieverTestSuite struct {
@@ -17,9 +18,9 @@ type RetrieverTestSuite struct {
 	vc  *mocks.MockVaultClient
 }
 
-func (suite *RetrieverTestSuite) SetupTest() {
-	suite.s3c = mocks.NewMockS3Client(gomock.NewController(suite.T()))
-	suite.vc = mocks.NewMockVaultClient(gomock.NewController(suite.T()))
+func (s *RetrieverTestSuite) SetupTest() {
+	s.s3c = mocks.NewMockS3Client(gomock.NewController(s.T()))
+	s.vc = mocks.NewMockVaultClient(gomock.NewController(s.T()))
 }
 
 func TestRetrieverTestSuite(t *testing.T) {
@@ -46,38 +47,50 @@ func (f fakeHttpClient) Get(url string) (resp *http.Response, err error) {
 	}, nil
 }
 
-func (suite *RetrieverTestSuite) TestReturnsBadJSONResponseWhenCannotParseJSON() {
+func (s *RetrieverTestSuite) TestReturnsBadJSONResponseWhenCannotParseJSON() {
 
 	fhc := newFakeHttpClient(200, "{bad json")
 
 	_, err := FetchMetadata("", fhc)("data/file.csv")
 
-	assert.Equal(suite.T(), ErrBadJSONResponse, err)
+	s.Equal(ErrBadJSONResponse, err)
 }
 
-func (suite *RetrieverTestSuite) TestFetchMetadata() {
+func (s *RetrieverTestSuite) TestFetchMetadata() {
 	filePath := "data/file.csv"
 
 	fhc := newFakeHttpClient(200, "{}")
 
 	metadata, err := FetchMetadata("", fhc)(filePath)
 
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), Metadata{}, metadata)
+	s.NoError(err)
+	s.Equal(Metadata{}, metadata)
 }
 
-func (suite *RetrieverTestSuite) TestDownloadFile() {
+func (s *RetrieverTestSuite) TestDownloadFile() {
 	filePath := "data/file.csv"
-	psk := "psk"
+	psk := "123456789123456789"
+	encryptionKey, _ := hex.DecodeString(psk)
 
 	fileContent := ioutil.NopCloser(bytes.NewBuffer([]byte("file content")))
 
-	suite.s3c.EXPECT().GetWithPSK(filePath, []byte(psk)).Return(fileContent, nil, nil)
+	s.s3c.EXPECT().GetWithPSK(filePath, encryptionKey).Return(fileContent, nil, nil)
 
-	suite.vc.EXPECT().ReadKey("/"+filePath, VAULT_KEY).Return(psk, nil)
+	s.vc.EXPECT().ReadKey("/"+filePath, VAULT_KEY).Return(psk, nil)
 
-	file, err := DownloadFile(suite.s3c, suite.vc, "")(filePath)
+	file, err := DownloadFile(s.s3c, s.vc, "")(filePath)
 
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), fileContent, file)
+	s.NoError(err)
+	s.Equal(fileContent, file)
+}
+
+func (s *RetrieverTestSuite) TestDownloadFileEncyptionKeyContainNonHexCharacter() {
+	filePath := "data/file.csv"
+	psk := "NON HEX CHARACTERS"
+
+	s.vc.EXPECT().ReadKey("/"+filePath, VAULT_KEY).Return(psk, nil)
+
+	_, err := DownloadFile(s.s3c, s.vc, "")(filePath)
+
+	s.Error(err)
 }
