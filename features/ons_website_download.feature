@@ -28,7 +28,7 @@ Feature: ONS Public Website Download files
     When I download the file "data/populations.csv"
     Then the HTTP status code should be "200"
     And the headers should be:
-      | Content-Type        | application/octet-stream             |
+      | Content-Type        | text/csv                             |
       | Content-Length      | 29                                   |
       | Content-Disposition | attachment; filename=populations.csv |
     And the file content should be:
@@ -67,7 +67,7 @@ Feature: ONS Public Website Download files
     Then the HTTP status code should be "404"
 
   Scenario: Redirecting public to decrypted bucket when file is published & decrypted
-      Given the file "data/populations.csv" has been uploaded
+    Given the file "data/populations.csv" has been uploaded
         """
         {
           "path": "data/populations.csv",
@@ -81,9 +81,9 @@ Feature: ONS Public Website Download files
           "state": "DECRYPTED"
         }
         """
-      And the file "data/populations.csv" is encrypted in S3 with content:
+    And the file "data/populations.csv" is encrypted in S3 with content:
         """
         mark,1
         """
-      When I download the file "data/populations.csv"
-      Then I should be redirected to "http://public-bucket.com/data/populations.csv"
+    When I download the file "data/populations.csv"
+    Then I should be redirected to "http://public-bucket.com/data/populations.csv"
