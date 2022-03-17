@@ -2,12 +2,13 @@ package api
 
 import (
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/files"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
-	"io"
-	"net/http"
 )
 
 // DoDownload handles download generic file requests.
@@ -18,7 +19,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile f
 
 		metadata, err := fetchMetadata(filePath)
 		if err != nil {
-			log.Error(req.Context(), "Error fetching metadata" , err)
+			log.Error(req.Context(), "Error fetching metadata", err)
 			handleError(w, err)
 			return
 		}
@@ -67,7 +68,7 @@ func isWebMode(cfg *config.Config) bool {
 }
 
 func setHeaders(w http.ResponseWriter, m files.Metadata) {
-	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Type", m.Type)
 	w.Header().Set("Content-Length", m.GetContentLength())
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", m.GetFilename()))
 }
