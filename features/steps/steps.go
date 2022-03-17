@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
-	"github.com/ONSdigital/dp-download-service/files"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/ONSdigital/dp-download-service/files"
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/aws/aws-sdk-go/aws"
@@ -33,7 +36,7 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the headers should be:$`, d.theHeadersShouldBe)
 	ctx.Step(`^the file content should be:$`, d.theFileContentShouldBe)
 	ctx.Step(`^the file "([^"]*)" has not been uploaded$`, d.theFileHasNotBeenUploaded)
-	ctx.Step(`^the file "([^"]*)" encrypted using key "([^"]*)" from Vault stored in S3 with content:$`, d.theFileEncryptedUsingKeyFromVaultStoredInSWithContent)
+	ctx.Step(`^the file "([^"]*)" is encrypted in S3 with content:$`, d.theFileEncryptedUsingKeyFromVaultStoredInSWithContent)
 	ctx.Step(`^I should be redirected to "([^"]*)"$`, d.iShouldBeRedirectedTo)
 
 }
@@ -98,20 +101,23 @@ func (d *DownloadServiceComponent) theFileMetadata(filepath string, metadata *go
 	return d.ApiFeature.StepError()
 }
 
-func (d *DownloadServiceComponent) theFileEncryptedUsingKeyFromVaultStoredInSWithContent(filepath string, encryptionkey string, content *godog.DocString) error {
+func (d *DownloadServiceComponent) theFileEncryptedUsingKeyFromVaultStoredInSWithContent(filepath string, content *godog.DocString) error {
 	cfg, _ := config.Get()
 
 	vaultPath := fmt.Sprintf("%s/%s", cfg.VaultPath, filepath)
 
+	encryptionKey := make([]byte, 16)
+	rand.Read(encryptionKey)
+
 	// store encryptionkey key in vault against the path <filepath>
-	if err := d.vaultClient.WriteKey(vaultPath, files.VAULT_KEY, encryptionkey); err != nil {
+	if err := d.vaultClient.WriteKey(vaultPath, files.VAULT_KEY, hex.EncodeToString(encryptionKey)); err != nil {
 		return err
 	}
 
 	c := bytes.NewBuffer([]byte(content.Content))
 
 	// encrypt
-	encryptedContent, err := encryptObjectContent([]byte(encryptionkey), c)
+	encryptedContent, err := encryptObjectContent(encryptionKey, c)
 	if err != nil {
 		fmt.Printf("encryption has failed: %v", err)
 		panic("encryption has failed")
