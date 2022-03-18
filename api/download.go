@@ -62,7 +62,13 @@ func handleUnsupportedMetadataStates(ctx context.Context, metadata files.Metadat
 		return true
 	}
 
-	if isWebMode(cfg) && metadata.Unpublished() {
+	if metadata.UploadIncomplete() {
+		log.Info(ctx, "File has not finished uploading")
+		setStatusNotFound(w)
+		return true
+	}
+
+	if metadata.Unpublished() && isWebMode(cfg) {
 		log.Info(ctx, "File is not published yet")
 		setStatusNotFound(w)
 		return true
