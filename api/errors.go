@@ -1,8 +1,10 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/ONSdigital/dp-download-service/files"
+	"github.com/ONSdigital/log.go/v2/log"
 	"net/http"
 )
 
@@ -18,7 +20,9 @@ type jsonErrors struct {
 }
 
 //nolint:golint,unused
-func handleError(w http.ResponseWriter, err error) {
+func handleError(ctx context.Context, event string, w http.ResponseWriter, err error) {
+	log.Error(ctx, event, err)
+
 	switch err {
 	case files.ErrFileNotRegistered:
 		writeError(w, buildErrors(err, "FileNotRegistered"), http.StatusNotFound)
