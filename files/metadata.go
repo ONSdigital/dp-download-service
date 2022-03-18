@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	UPLOADED  State = "UPLOADED"
-	CREATED   State = "CREATED"
-	PUBLISHED State = "PUBLISHED"
-	DECRYPTED State = "DECRYPTED"
+	CREATED   State = "CREATED"   // first chunk uploaded
+	UPLOADED  State = "UPLOADED"  // all chunks uploaded
+	PUBLISHED State = "PUBLISHED" // published - authorized for public download
+	DECRYPTED State = "DECRYPTED" // available decrypted from S3/CDN
 )
 
 type State string
@@ -35,7 +35,11 @@ func (m Metadata) GetContentLength() string {
 }
 
 func (m Metadata) Unpublished() bool {
-	return m.State == UPLOADED || m.State == CREATED
+	return !(m.State == PUBLISHED || m.State == DECRYPTED)
+}
+
+func (m Metadata) UploadIncomplete() bool {
+	return m.State == CREATED
 }
 
 func (m Metadata) Decrypted() bool {
