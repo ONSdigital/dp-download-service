@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,63 +12,104 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// DoDownload handles download generic file requests.
-func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFile files.FileDownloader, cfg *config.Config) http.HandlerFunc {
+// CreateV1DownloadHandler handles generic download file requests.
+func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		filePath := mux.Vars(req)["path"]
-		log.Info(req.Context(), fmt.Sprintf("Handling request for %s", filePath))
+		ctx, requestedFilePath := parseRequest(req)
+		log.Info(ctx, fmt.Sprintf("Handling request for %s", requestedFilePath))
 
-		metadata, err := fetchMetadata(filePath)
+		metadata, err := fetchMetadata(requestedFilePath)
 		if err != nil {
-			log.Error(req.Context(), "Error fetching metadata", err)
-			handleError(w, err)
+			handleError(ctx, "Error fetching metadata", w, err)
+			return
+		}
+		log.Info(ctx, fmt.Sprintf("Found metadata for file %s", requestedFilePath), log.Data{"metadata": metadata})
+
+		if handleUnsupportedMetadataStates(ctx, metadata, cfg, requestedFilePath, w) {
 			return
 		}
 
-		log.Info(req.Context(), "Found metadata for file ", log.Data{"metadata": metadata})
+		setContentHeaders(w, metadata)
 
-		if metadata.Decrypted() {
-			log.Info(req.Context(), "File already decrypted, redirecting")
-			w.Header().Set("Location", fmt.Sprintf("%s%s", cfg.PublicBucketURL.String(), filePath))
-			w.WriteHeader(http.StatusMovedPermanently)
-			return
-		}
-
-		if isWebMode(cfg) && metadata.Unpublished() {
-			log.Info(req.Context(), "File is not published yet")
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		setHeaders(w, metadata)
-
-		file, err := downloadFile(filePath)
+		file, err := downloadFileFromBucket(requestedFilePath)
 		if err != nil {
-			log.Error(req.Context(), "Error downloading file", err)
-			handleError(w, err)
+			handleError(ctx, fmt.Sprintf("Error downloading file %s", requestedFilePath), w, err)
 			return
 		}
 
-		defer func() {
-			if err := file.Close(); err != nil {
-				log.Error(req.Context(), "error closing io.Closer for file streaming", err)
-			}
-		}()
+		defer closeDownloadedFile(ctx, file)
 
-		_, err = io.Copy(w, file)
+		err = writeFileToResponse(w, file)
 		if err != nil {
-			log.Error(req.Context(), "failed to stream file content", err)
-			w.WriteHeader(http.StatusInternalServerError)
+			log.Error(ctx, "Failed to stream file content", err)
+			setStatusInternalServerError(w)
 			return
 		}
 	}
+}
+
+func parseRequest(req *http.Request) (context.Context, string) {
+	ctx := req.Context()
+	filePath := mux.Vars(req)["path"]
+
+	return ctx, filePath
+}
+
+func handleUnsupportedMetadataStates(ctx context.Context, metadata files.Metadata, cfg *config.Config, filePath string, w http.ResponseWriter) bool {
+	if metadata.Decrypted() {
+		log.Info(ctx, "File already decrypted, redirecting")
+		setStatusMovedPermanently(redirectLocation(cfg, filePath), w)
+		return true
+	}
+
+	if metadata.UploadIncomplete() {
+		log.Info(ctx, "File has not finished uploading")
+		setStatusNotFound(w)
+		return true
+	}
+
+	if metadata.Unpublished() && isWebMode(cfg) {
+		log.Info(ctx, "File is not published yet")
+		setStatusNotFound(w)
+		return true
+	}
+
+	return false
+}
+
+func closeDownloadedFile(ctx context.Context, file io.ReadCloser) {
+	if err := file.Close(); err != nil {
+		log.Error(ctx, "error closing io.Closer for file streaming", err)
+	}
+}
+
+func setStatusMovedPermanently(location string, w http.ResponseWriter) {
+	w.Header().Set("Location", location)
+	w.WriteHeader(http.StatusMovedPermanently)
+}
+
+func setStatusNotFound(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNotFound)
+}
+
+func setStatusInternalServerError(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusInternalServerError)
+}
+
+func redirectLocation(cfg *config.Config, filePath string) string {
+	return fmt.Sprintf("%s%s", cfg.PublicBucketURL.String(), filePath)
+}
+
+func writeFileToResponse(w http.ResponseWriter, file io.ReadCloser) error {
+	_, err := io.Copy(w, file)
+	return err
 }
 
 func isWebMode(cfg *config.Config) bool {
 	return !cfg.IsPublishing
 }
 
-func setHeaders(w http.ResponseWriter, m files.Metadata) {
+func setContentHeaders(w http.ResponseWriter, m files.Metadata) {
 	w.Header().Set("Content-Type", m.Type)
 	w.Header().Set("Content-Length", m.GetContentLength())
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", m.GetFilename()))
