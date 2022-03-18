@@ -27,13 +27,6 @@ The endpoint `/healthcheck` checks the health of vault and the dataset api and r
 | Environment variable         | Default                                     | Description
 | ---------------------------- | --------------------------------------------| -----------
 | BIND_ADDR                    | :23600                                      | The host and port to bind to
-| ENABLE_MONGO                 | false                                       | Set to true to enable mongo connections
-| MONGODB_BIND_ADDR            | localhost:27017                             | The MongoDB bind address
-| MONGODB_DATABASE             | _empty_                                     | The MongoDB dataset database
-| MONGODB_COLLECTION           | _empty_                                     | MongoDB collection
-| MONGODB_USERNAME             | _empty_                                     | MongoDB Username
-| MONGODB_PASSWORD             | _empty_                                     | MongoDB Password
-| MONGODB_IS_SSL               | false                                       | is SSL enabled for mongo server?
 | BUCKET_NAME                  | "csv-exported"                              | The s3 bucket to decrypt files from
 | DATASET_API_URL              | http://localhost:22000                      | The dataset api url
 | DOWNLOAD_SERVICE_TOKEN       | QB0108EZ-825D-412C-9B1D-41EF7747F462        | The token to request public/private links from dataset api
