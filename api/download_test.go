@@ -102,7 +102,9 @@ func TestContentTypeHeader(t *testing.T) {
 
 	expectedType := "text/csv"
 
-	fetchMetadata := func(path string) (files.Metadata, error) { return files.Metadata{Type: expectedType}, nil }
+	fetchMetadata := func(path string) (files.Metadata, error) {
+		return files.Metadata{Type: expectedType, State: files.PUBLISHED}, nil
+	}
 	downloadFile := func(path string) (io.ReadCloser, error) { return DummyReadCloser{}, nil }
 
 	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{})
