@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/ONSdigital/dp-download-service/api"
@@ -29,13 +30,13 @@ func (e *ErrorWriter) WriteHeader(statusCode int) {
 	e.status = statusCode
 }
 
-type DummyReadCloser struct{}
+type FailingReadCloser struct{}
 
-func (d DummyReadCloser) Read(p []byte) (n int, err error) {
+func (d FailingReadCloser) Read(p []byte) (n int, err error) {
 	return 0, errors.New("broken")
 }
 
-func (d DummyReadCloser) Close() error {
+func (d FailingReadCloser) Close() error {
 	return nil
 }
 
@@ -44,7 +45,7 @@ func TestHandlingErrorForMetadata(t *testing.T) {
 	rec := &ErrorWriter{}
 
 	fetchMetadata := func(path string) (files.Metadata, error) { return files.Metadata{State: "PUBLISHED"}, nil }
-	downloadFile := func(path string) (io.ReadCloser, error) { return DummyReadCloser{}, nil }
+	downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
 
 	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{})
 
@@ -80,7 +81,7 @@ func TestHandleFileNotPublished(t *testing.T) {
 		state          files.State
 	}{
 		{"Test CREATED", http.StatusNotFound, files.CREATED},
-		{"Test UPDATED", http.StatusNotFound, files.UPLOADED},
+		{"Test UPLOADED", http.StatusNotFound, files.UPLOADED},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -96,6 +97,34 @@ func TestHandleFileNotPublished(t *testing.T) {
 	}
 }
 
+func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+
+	t.Run("Test CREATED", func(t *testing.T) {
+		rec := &ErrorWriter{}
+		fetchMetadata := func(path string) (files.Metadata, error) { return files.Metadata{State: files.CREATED}, nil }
+		downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
+
+		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{IsPublishing: true})
+
+		h.ServeHTTP(rec, req)
+
+		assert.Equalf(t, http.StatusNotFound, rec.status, "CreateV1DownloadHandler(%v)", "Test CREATED")
+	})
+
+	t.Run("Test UPLOADED", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		fetchMetadata := func(path string) (files.Metadata, error) { return files.Metadata{State: files.UPLOADED}, nil }
+		downloadFile := func(path string) (io.ReadCloser, error) { return io.NopCloser(strings.NewReader("testing")), nil }
+
+		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{IsPublishing: true})
+
+		h.ServeHTTP(rec, req)
+
+		assert.Equalf(t, http.StatusOK, rec.Code, "CreateV1DownloadHandler(%v)", "Test UPLOADED")
+	})
+}
+
 func TestContentTypeHeader(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
 	rec := httptest.NewRecorder()
@@ -105,7 +134,7 @@ func TestContentTypeHeader(t *testing.T) {
 	fetchMetadata := func(path string) (files.Metadata, error) {
 		return files.Metadata{Type: expectedType, State: files.PUBLISHED}, nil
 	}
-	downloadFile := func(path string) (io.ReadCloser, error) { return DummyReadCloser{}, nil }
+	downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
 
 	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{})
 
