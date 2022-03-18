@@ -91,8 +91,7 @@ func setStatusInternalServerError(w http.ResponseWriter) {
 }
 
 func redirectLocation(cfg *config.Config, filePath string) string {
-	redirectLocation := fmt.Sprintf("%s%s", cfg.PublicBucketURL.String(), filePath)
-	return redirectLocation
+	return fmt.Sprintf("%s%s", cfg.PublicBucketURL.String(), filePath)
 }
 
 func writeFileToResponse(w http.ResponseWriter, file io.ReadCloser) error {
