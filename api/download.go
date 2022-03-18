@@ -25,7 +25,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		}
 		log.Info(ctx, fmt.Sprintf("Found metadata for file %s", requestedFilePath), log.Data{"metadata": metadata})
 
-		if handleInvalidMetadataStates(ctx, metadata, cfg, requestedFilePath, w) {
+		if handleUnsupportedMetadataStates(ctx, metadata, cfg, requestedFilePath, w) {
 			return
 		}
 
@@ -55,7 +55,7 @@ func parseRequest(req *http.Request) (context.Context, string) {
 	return ctx, filePath
 }
 
-func handleInvalidMetadataStates(ctx context.Context, metadata files.Metadata, cfg *config.Config, filePath string, w http.ResponseWriter) bool {
+func handleUnsupportedMetadataStates(ctx context.Context, metadata files.Metadata, cfg *config.Config, filePath string, w http.ResponseWriter) bool {
 	if metadata.Decrypted() {
 		log.Info(ctx, "File already decrypted, redirecting")
 		setStatusMovedPermanently(redirectLocation(cfg, filePath), w)
