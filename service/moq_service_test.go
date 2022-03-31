@@ -5,7 +5,6 @@ package service_test
 
 import (
 	"context"
-	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
@@ -25,9 +24,6 @@ var _ service.Dependencies = &DependenciesMock{}
 //
 // 		// make and configure a mocked service.Dependencies
 // 		mockedDependencies := &DependenciesMock{
-// 			AuthMiddlewareFunc: func(contextMoqParam context.Context, configMoqParam *config.Config) (auth.Middleware, error) {
-// 				panic("mock out the AuthMiddleware method")
-// 			},
 // 			DatasetClientFunc: func(s string) downloads.DatasetClient {
 // 				panic("mock out the DatasetClient method")
 // 			},
@@ -56,9 +52,6 @@ var _ service.Dependencies = &DependenciesMock{}
 //
 // 	}
 type DependenciesMock struct {
-	// AuthMiddlewareFunc mocks the AuthMiddleware method.
-	AuthMiddlewareFunc func(contextMoqParam context.Context, configMoqParam *config.Config) (auth.Middleware, error)
-
 	// DatasetClientFunc mocks the DatasetClient method.
 	DatasetClientFunc func(s string) downloads.DatasetClient
 
@@ -82,13 +75,6 @@ type DependenciesMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// AuthMiddleware holds details about calls to the AuthMiddleware method.
-		AuthMiddleware []struct {
-			// ContextMoqParam is the contextMoqParam argument value.
-			ContextMoqParam context.Context
-			// ConfigMoqParam is the configMoqParam argument value.
-			ConfigMoqParam *config.Config
-		}
 		// DatasetClient holds details about calls to the DatasetClient method.
 		DatasetClient []struct {
 			// S is the s argument value.
@@ -133,49 +119,13 @@ type DependenciesMock struct {
 			ConfigMoqParam *config.Config
 		}
 	}
-	lockAuthMiddleware sync.RWMutex
-	lockDatasetClient  sync.RWMutex
-	lockFilterClient   sync.RWMutex
-	lockHealthCheck    sync.RWMutex
-	lockHttpServer     sync.RWMutex
-	lockImageClient    sync.RWMutex
-	lockS3Client       sync.RWMutex
-	lockVaultClient    sync.RWMutex
-}
-
-// AuthMiddleware calls AuthMiddlewareFunc.
-func (mock *DependenciesMock) AuthMiddleware(contextMoqParam context.Context, configMoqParam *config.Config) (auth.Middleware, error) {
-	if mock.AuthMiddlewareFunc == nil {
-		panic("DependenciesMock.AuthMiddlewareFunc: method is nil but Dependencies.AuthMiddleware was just called")
-	}
-	callInfo := struct {
-		ContextMoqParam context.Context
-		ConfigMoqParam  *config.Config
-	}{
-		ContextMoqParam: contextMoqParam,
-		ConfigMoqParam:  configMoqParam,
-	}
-	mock.lockAuthMiddleware.Lock()
-	mock.calls.AuthMiddleware = append(mock.calls.AuthMiddleware, callInfo)
-	mock.lockAuthMiddleware.Unlock()
-	return mock.AuthMiddlewareFunc(contextMoqParam, configMoqParam)
-}
-
-// AuthMiddlewareCalls gets all the calls that were made to AuthMiddleware.
-// Check the length with:
-//     len(mockedDependencies.AuthMiddlewareCalls())
-func (mock *DependenciesMock) AuthMiddlewareCalls() []struct {
-	ContextMoqParam context.Context
-	ConfigMoqParam  *config.Config
-} {
-	var calls []struct {
-		ContextMoqParam context.Context
-		ConfigMoqParam  *config.Config
-	}
-	mock.lockAuthMiddleware.RLock()
-	calls = mock.calls.AuthMiddleware
-	mock.lockAuthMiddleware.RUnlock()
-	return calls
+	lockDatasetClient sync.RWMutex
+	lockFilterClient  sync.RWMutex
+	lockHealthCheck   sync.RWMutex
+	lockHttpServer    sync.RWMutex
+	lockImageClient   sync.RWMutex
+	lockS3Client      sync.RWMutex
+	lockVaultClient   sync.RWMutex
 }
 
 // DatasetClient calls DatasetClientFunc.
