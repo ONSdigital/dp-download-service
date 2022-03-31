@@ -9,6 +9,9 @@ import (
 	"testing"
 	"time"
 
+	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
+	authMock "github.com/ONSdigital/dp-authorisation/v2/authorisation/mock"
+
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
@@ -72,6 +75,8 @@ func TestNew(t *testing.T) {
 
 		mockedHttpServer := &HTTPServerMock{}
 
+		mockAuth := &authMock.MiddlewareMock{}
+
 		mockedDependencies := &DependenciesMock{
 			DatasetClientFunc: func(s string) downloads.DatasetClient {
 				return mockedDatasetClient
@@ -93,6 +98,9 @@ func TestNew(t *testing.T) {
 			},
 			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
 				return mockedHttpServer
+			},
+			AuthMiddlewareFunc: func(ctx context.Context, cfg *config.Config) (auth.Middleware, error) {
+				return mockAuth, nil
 			},
 		}
 
