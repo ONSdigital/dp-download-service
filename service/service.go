@@ -10,6 +10,8 @@ import (
 	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/files"
 
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/middleware"
 	"github.com/ONSdigital/dp-download-service/config"
@@ -141,12 +143,12 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	}
 
 	downloadHandler := api.CreateV1DownloadHandler(
-		files.FetchMetadata(cfg.FilesApiURL, http.DefaultClient),
+		files.FetchMetadata(cfg.FilesApiURL, dphttp.DefaultClient),
 		files.DownloadFile(svc.s3Client, vc, cfg.VaultPath),
 		cfg,
 	)
 
-	// And tie routes to download hander methods.
+	// And tie routes to download handler methods.
 	//
 	router := mux.NewRouter()
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.DoDatasetVersion("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))

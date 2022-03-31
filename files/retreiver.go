@@ -1,6 +1,7 @@
 package files
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -16,20 +17,20 @@ const (
 )
 
 type HTTPClient interface {
-	Get(url string) (resp *http.Response, err error)
+	Get(ctx context.Context, url string) (resp *http.Response, err error)
 }
 
 var ErrFileNotRegistered = errors.New("file not registered")
 var ErrBadJSONResponse = errors.New("could not decode JSON response from files api")
 
 type FileDownloader func(path string) (io.ReadCloser, error)
-type MetadataFetcher func(path string) (Metadata, error)
+type MetadataFetcher func(ctx context.Context, path string) (Metadata, error)
 
 func FetchMetadata(filesApiUrl string, httpClient HTTPClient) MetadataFetcher {
-	return func(path string) (Metadata, error) {
+	return func(ctx context.Context, path string) (Metadata, error) {
 		m := Metadata{}
 
-		resp, _ := httpClient.Get(fmt.Sprintf("%s/files/%s", filesApiUrl, path))
+		resp, _ := httpClient.Get(ctx, fmt.Sprintf("%s/files/%s", filesApiUrl, path))
 		if resp.StatusCode == http.StatusNotFound {
 			return m, ErrFileNotRegistered
 		}
