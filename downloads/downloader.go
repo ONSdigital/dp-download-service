@@ -55,7 +55,7 @@ type Model struct {
 	PrivateFilename  string
 }
 
-// Parameters is the union of required paramters to perform all downloads
+// Parameters is the union of required parameters to perform all downloads
 type Parameters struct {
 	UserAuthToken        string
 	ServiceAuthToken     string
