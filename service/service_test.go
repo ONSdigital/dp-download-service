@@ -75,7 +75,11 @@ func TestNew(t *testing.T) {
 
 		mockedHttpServer := &HTTPServerMock{}
 
-		mockAuth := &authMock.MiddlewareMock{}
+		mockAuth := &authMock.MiddlewareMock{
+			RequireFunc: func(permission string, handlerFunc http.HandlerFunc) http.HandlerFunc {
+				return handlerFunc
+			},
+		}
 
 		mockedDependencies := &DependenciesMock{
 			DatasetClientFunc: func(s string) downloads.DatasetClient {

@@ -28,7 +28,8 @@ import (
 )
 
 type External struct {
-	Server *dphttp.Server
+	Server       *dphttp.Server
+	isAuthorised bool
 }
 
 func (e *External) AuthMiddleware(ctx context.Context, c *config.Config) (auth.Middleware, error) {
@@ -36,6 +37,15 @@ func (e *External) AuthMiddleware(ctx context.Context, c *config.Config) (auth.M
 		HealthCheckFunc: func(ctx context.Context, state *healthcheck.CheckState) error {
 			state.Update("OK", "is healthy", 0)
 			return nil
+		},
+		RequireFunc: func(permission string, handlerFunc http.HandlerFunc) http.HandlerFunc {
+			if e.isAuthorised {
+				return handlerFunc
+			}
+
+			return func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusForbidden)
+			}
 		},
 	}, nil
 }

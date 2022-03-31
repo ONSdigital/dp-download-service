@@ -27,6 +27,8 @@ import (
 )
 
 func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
+	ctx.Step(`^I am an authorised user$`, d.iAmAnAuthorisedUser)
+	ctx.Step(`^I am not an authorised user$`, d.iAmNotAnAuthorisedUser)
 	ctx.Step(`^I should receive the private file "([^"]*)"$`, d.iShouldReceiveThePrivateFile)
 	ctx.Step(`^is not yet published$`, d.isNotYetPublished)
 	ctx.Step(`^the file "([^"]*)" has been uploaded$`, d.theFileHasBeenUploaded)
@@ -39,6 +41,18 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the file "([^"]*)" is encrypted in S3 with content:$`, d.theFileEncryptedUsingKeyFromVaultStoredInSWithContent)
 	ctx.Step(`^I should be redirected to "([^"]*)"$`, d.iShouldBeRedirectedTo)
 
+}
+
+func (d *DownloadServiceComponent) iAmAnAuthorisedUser() error {
+	d.deps.isAuthorised = true
+
+	return nil
+}
+
+func (d *DownloadServiceComponent) iAmNotAnAuthorisedUser() error {
+	d.deps.isAuthorised = false
+	
+	return nil
 }
 
 func (d *DownloadServiceComponent) weAreInWebMode(mode string) error {
