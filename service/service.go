@@ -3,17 +3,17 @@ package service
 import (
 	"context"
 	"errors"
-	clientsidentity "github.com/ONSdigital/dp-api-clients-go/v2/identity"
-	"github.com/ONSdigital/dp-download-service/api"
-	"github.com/ONSdigital/dp-download-service/files"
 	"net/http"
 	"time"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/middleware"
+	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
+	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
+	"github.com/ONSdigital/dp-download-service/files"
 	"github.com/ONSdigital/dp-download-service/handlers"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphandlers "github.com/ONSdigital/dp-net/v2/handlers"
@@ -30,6 +30,7 @@ type Download struct {
 	imageClient         downloads.ImageClient
 	vaultClient         content.VaultClient
 	s3Client            content.S3Client
+	authMiddle          auth.Middleware
 	zebedeeHealthClient *health.Client
 	router              *mux.Router
 	server              HTTPServer
@@ -54,6 +55,7 @@ type Dependencies interface {
 	S3Client(*config.Config) (content.S3Client, error)
 	HealthCheck(*config.Config, string, string, string) (HealthChecker, error)
 	HttpServer(*config.Config, http.Handler) HTTPServer
+	AuthMiddleware(context.Context, *config.Config) (auth.Middleware, error)
 }
 
 // HealthChecker abstracts healthcheck.HealthCheck so we can create a mock.
@@ -75,16 +77,25 @@ type HTTPServer interface {
 // New returns a new Download service with dependencies initialised based on cfg and deps.
 //
 func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.Config, deps Dependencies) (*Download, error) {
+	var authMiddleware auth.Middleware
+	var err error
+
+	authMiddleware, err = deps.AuthMiddleware(ctx, cfg)
+	if err != nil {
+		log.Fatal(ctx, "could not create a authorisation middleware", err)
+		return nil, err
+	}
+
 	svc := &Download{
 		datasetClient: deps.DatasetClient(cfg.DatasetAPIURL),
 		filterClient:  deps.FilterClient(cfg.FilterAPIURL),
 		imageClient:   deps.ImageClient(cfg.ImageAPIURL),
+		authMiddle:    authMiddleware,
 		shutdown:      cfg.GracefulShutdownTimeout,
 	}
 
 	// Vault client is set up only when encryption is enabled.
 	//
-	var err error
 	var vc content.VaultClient
 	if !cfg.EncryptionDisabled {
 		vc, err = deps.VaultClient(cfg)
@@ -145,7 +156,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		cfg,
 	)
 
-	// And tie routes to download hander methods.
+	// And tie routes to download handler methods.
 	//
 	router := mux.NewRouter()
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.DoDatasetVersion("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
@@ -167,8 +178,8 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	//
 	if cfg.IsPublishing {
 		log.Info(ctx, "private endpoints are enabled. using identity middleware")
-		identityHandler := dphandlers.IdentityWithHTTPClient(clientsidentity.NewWithHealthClient(zc))
-		middlewareChain = middlewareChain.Append(identityHandler)
+		//identityHandler := dphandlers.IdentityWithHTTPClient(clientsidentity.NewWithHealthClient(zc))
+		//middlewareChain = middlewareChain.Append(identityHandler)
 	} else {
 		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))
 		middlewareChain = middlewareChain.Append(corsHandler)
@@ -191,6 +202,11 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 	if err := hc.AddCheck("Dataset API", svc.datasetClient.Checker); err != nil {
 		hasErrors = true
 		log.Error(ctx, "error adding check for dataset api", err)
+	}
+
+	if err := hc.AddCheck("Authorisation Middleware", svc.authMiddle.HealthCheck); err != nil {
+		hasErrors = true
+		log.Error(ctx, "error adding check for authorisation middleware", err)
 	}
 
 	if svc.vaultClient != nil {
