@@ -1,9 +1,13 @@
 package external
 
 import (
+	"context"
 	"fmt"
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"net/http"
+
+	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
+
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
@@ -84,4 +88,21 @@ func (*External) HttpServer(cfg *config.Config, r http.Handler) service.HTTPServ
 	s.HandleOSSignals = false
 
 	return s
+}
+
+func (e *External) AuthMiddleware(ctx context.Context, cfg *config.Config) (auth.Middleware, error) {
+	// TODO get values from config
+	c := &auth.Config{
+		Enabled:                             false,
+		JWTVerificationPublicKeys:           nil,
+		PermissionsAPIURL:                   "",
+		PermissionsCacheUpdateInterval:      0,
+		PermissionsMaxCacheTime:             0,
+		PermissionsCacheExpiryCheckInterval: 0,
+		ZebedeeURL:                          "",
+		IdentityWebKeySetURL:                "",
+		IdentityClientMaxRetries:            0,
+	}
+
+	return auth.NewMiddlewareFromConfig(ctx, c, nil)
 }

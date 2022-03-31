@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 
+	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
+	authMock "github.com/ONSdigital/dp-authorisation/v2/authorisation/mock"
+
 	vault "github.com/ONSdigital/dp-vault"
 
 	s3client "github.com/ONSdigital/dp-s3"
@@ -26,6 +29,15 @@ import (
 
 type External struct {
 	Server *dphttp.Server
+}
+
+func (e *External) AuthMiddleware(ctx context.Context, c *config.Config) (auth.Middleware, error) {
+	return &authMock.MiddlewareMock{
+		HealthCheckFunc: func(ctx context.Context, state *healthcheck.CheckState) error {
+			state.Update("OK", "is healthy", 0)
+			return nil
+		},
+	}, nil
 }
 
 func (e *External) FilterClient(s string) downloads.FilterClient {
