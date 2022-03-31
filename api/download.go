@@ -18,7 +18,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		ctx, requestedFilePath := parseRequest(req)
 		log.Info(ctx, fmt.Sprintf("Handling request for %s", requestedFilePath))
 
-		metadata, err := fetchMetadata(requestedFilePath)
+		metadata, err := fetchMetadata(ctx, requestedFilePath)
 		if err != nil {
 			handleError(ctx, "Error fetching metadata", w, err)
 			return

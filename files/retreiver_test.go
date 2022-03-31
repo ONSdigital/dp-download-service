@@ -2,6 +2,7 @@ package files
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"io/ioutil"
 	"net/http"
@@ -40,7 +41,7 @@ func newFakeHttpClient(statusCode int, body string) HTTPClient {
 	}
 }
 
-func (f fakeHttpClient) Get(url string) (resp *http.Response, err error) {
+func (f fakeHttpClient) Get(ctx context.Context, url string) (resp *http.Response, err error) {
 	return &http.Response{
 		StatusCode: f.statusCode,
 		Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(f.body))),
@@ -51,7 +52,7 @@ func (s *RetrieverTestSuite) TestReturnsBadJSONResponseWhenCannotParseJSON() {
 
 	fhc := newFakeHttpClient(200, "{bad json")
 
-	_, err := FetchMetadata("", fhc)("data/file.csv")
+	_, err := FetchMetadata("", fhc)(context.Background(), "data/file.csv")
 
 	s.Equal(ErrBadJSONResponse, err)
 }
@@ -61,7 +62,7 @@ func (s *RetrieverTestSuite) TestFetchMetadata() {
 
 	fhc := newFakeHttpClient(200, "{}")
 
-	metadata, err := FetchMetadata("", fhc)(filePath)
+	metadata, err := FetchMetadata("", fhc)(context.Background(), filePath)
 
 	s.NoError(err)
 	s.Equal(Metadata{}, metadata)
