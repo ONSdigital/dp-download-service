@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/middleware"
 	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
@@ -148,7 +150,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	}
 
 	downloadHandler := api.CreateV1DownloadHandler(
-		files.FetchMetadata(cfg.FilesApiURL, http.DefaultClient),
+		files.FetchMetadata(cfg.FilesApiURL, dphttp.DefaultClient),
 		files.DownloadFile(svc.s3Client, vc, cfg.VaultPath),
 		cfg,
 	)
