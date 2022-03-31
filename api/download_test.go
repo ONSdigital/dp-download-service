@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -44,7 +45,9 @@ func TestHandlingErrorForMetadata(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
 	rec := &ErrorWriter{}
 
-	fetchMetadata := func(path string) (files.Metadata, error) { return files.Metadata{State: "PUBLISHED"}, nil }
+	fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
+		return files.Metadata{State: "PUBLISHED"}, nil
+	}
 	downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
 
 	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{})
@@ -58,7 +61,9 @@ func TestHandlingErrorGettingFileContent(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
 	rec := &ErrorWriter{}
 
-	fetchMetadata := func(path string) (files.Metadata, error) { return files.Metadata{State: "PUBLISHED"}, nil }
+	fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
+		return files.Metadata{State: "PUBLISHED"}, nil
+	}
 	downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
 
 	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{})
@@ -85,7 +90,9 @@ func TestHandleFileNotPublished(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fetchMetadata := func(path string) (files.Metadata, error) { return files.Metadata{State: tt.state}, nil }
+			fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
+				return files.Metadata{State: tt.state}, nil
+			}
 			downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
 
 			h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{})
@@ -102,7 +109,9 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 
 	t.Run("Test CREATED", func(t *testing.T) {
 		rec := &ErrorWriter{}
-		fetchMetadata := func(path string) (files.Metadata, error) { return files.Metadata{State: files.CREATED}, nil }
+		fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
+			return files.Metadata{State: files.CREATED}, nil
+		}
 		downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
 
 		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{IsPublishing: true})
@@ -114,7 +123,9 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 
 	t.Run("Test UPLOADED", func(t *testing.T) {
 		rec := httptest.NewRecorder()
-		fetchMetadata := func(path string) (files.Metadata, error) { return files.Metadata{State: files.UPLOADED}, nil }
+		fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
+			return files.Metadata{State: files.UPLOADED}, nil
+		}
 		downloadFile := func(path string) (io.ReadCloser, error) { return io.NopCloser(strings.NewReader("testing")), nil }
 
 		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{IsPublishing: true})
@@ -131,7 +142,7 @@ func TestContentTypeHeader(t *testing.T) {
 
 	expectedType := "text/csv"
 
-	fetchMetadata := func(path string) (files.Metadata, error) {
+	fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
 		return files.Metadata{Type: expectedType, State: files.PUBLISHED}, nil
 	}
 	downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
