@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 
 	"github.com/ONSdigital/dp-download-service/files"
@@ -19,8 +20,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/maxcnunes/httpfake"
-
 	"github.com/cucumber/godog"
 	"github.com/rdumont/assistdog"
 	"github.com/stretchr/testify/assert"
@@ -71,19 +70,23 @@ func (d *DownloadServiceComponent) isNotYetPublished() error {
 }
 
 func (d *DownloadServiceComponent) theFileHasNotBeenUploaded(filename string) error {
-	server := httpfake.New()
-	server.NewHandler().Get(fmt.Sprintf("/files/%s", filename)).Reply(http.StatusNotFound).BodyString("")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
 
-	d.cfg.FilesApiURL = server.ResolveURL("")
+	}))
+
+	d.cfg.FilesApiURL = server.URL
 
 	return d.ApiFeature.StepError()
 }
 
 func (d *DownloadServiceComponent) theFileHasBeenUploaded(filename string, metadata *godog.DocString) error {
-	server := httpfake.New()
-	server.NewHandler().Get(fmt.Sprintf("/files/%s", filename)).Reply(http.StatusOK).BodyString(metadata.Content)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(metadata.Content))
+	}))
 
-	d.cfg.FilesApiURL = server.ResolveURL("")
+	d.cfg.FilesApiURL = server.URL
 
 	return d.ApiFeature.StepError()
 }
@@ -93,10 +96,12 @@ func (d *DownloadServiceComponent) iDownloadTheFile(filepath string) error {
 }
 
 func (d *DownloadServiceComponent) theFileMetadata(filepath string, metadata *godog.DocString) error {
-	server := httpfake.New()
-	server.NewHandler().Get(fmt.Sprintf("/files/%s", filepath)).Reply(http.StatusOK).BodyString(metadata.Content)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(metadata.Content))
+	}))
 
-	d.cfg.FilesApiURL = server.ResolveURL("")
+	d.cfg.FilesApiURL = server.URL
 
 	return d.ApiFeature.StepError()
 }

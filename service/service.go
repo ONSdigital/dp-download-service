@@ -3,11 +3,12 @@ package service
 import (
 	"context"
 	"errors"
+	"net/http"
+	"time"
+
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/files"
-	"net/http"
-	"time"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/middleware"
@@ -155,7 +156,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoFilterOutput("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads-new/{path:[a-zA-Z0-9_\\.\\-\\/]+}").HandlerFunc(downloadHandler)
+	router.Path("/downloads-new/{path:.*}").HandlerFunc(downloadHandler)
 	router.HandleFunc("/health", hc.Handler)
 	svc.router = router
 
