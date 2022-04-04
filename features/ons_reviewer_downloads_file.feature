@@ -24,6 +24,11 @@ Feature: Download preview feature
         And the file "data/populations.csv" is encrypted in S3 with content:
         """
         mark,1
+        russ,2
+        dan,3
+        saul,3.5
+        brian,4
+        jon,5
         """
         When I download the file "data/populations.csv"
         Then the HTTP status code should be "200"
@@ -47,6 +52,11 @@ Feature: Download preview feature
         And the file "interactives/87a3dde3-wéî®∂-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" is encrypted in S3 with content:
         """
         mark,1
+        russ,2
+        dan,3
+        saul,3.5
+        brian,4
+        jon,5
         """
         When I download the file "interactives/87a3dde3-wéî®∂-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png"
         Then the HTTP status code should be "200"
