@@ -98,6 +98,11 @@ Feature: ONS Public Website Download files
     And the file "data/populations.csv" is encrypted in S3 with content:
         """
         mark,1
+        russ,2
+        dan,3
+        saul,3.5
+        brian,4
+        jon,5
         """
     When I download the file "data/populations.csv"
     Then the HTTP status code should be "404"
@@ -120,6 +125,11 @@ Feature: ONS Public Website Download files
     And the file "data/populations.csv" is encrypted in S3 with content:
         """
         mark,1
+        russ,2
+        dan,3
+        saul,3.5
+        brian,4
+        jon,5
         """
     When I download the file "data/populations.csv"
     Then I should be redirected to "http://public-bucket.com/data/populations.csv"
