@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
 	"io"
 	"net/http"
 
@@ -51,6 +52,12 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 func parseRequest(req *http.Request) (context.Context, string) {
 	ctx := req.Context()
 	filePath := mux.Vars(req)["path"]
+
+	authHeaderValue := req.Header.Get(dprequest.AuthHeaderKey)
+	if authHeaderValue != "" {
+		const key files.ContextKey = dprequest.AuthHeaderKey
+		ctx = context.WithValue(ctx, key, authHeaderValue)
+	}
 
 	return ctx, filePath
 }
