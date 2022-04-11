@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -25,18 +26,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var requests map[string]string
+
 func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I should receive the private file "([^"]*)"$`, d.iShouldReceiveThePrivateFile)
 	ctx.Step(`^is not yet published$`, d.isNotYetPublished)
-	ctx.Step(`^the file "([^"]*)" has been uploaded$`, d.theFileHasBeenUploaded)
 	ctx.Step(`^I download the file "([^"]*)"$`, d.iDownloadTheFile)
-	ctx.Step(`^the file "([^"]*)" metadata:$`, d.theFileMetadata)
+	ctx.Step(`^the file "([^"]*)" has the metadata:$`, d.theFileMetadata)
 	ctx.Step(`^the application is in "([^"]*)" mode$`, d.weAreInWebMode)
 	ctx.Step(`^the headers should be:$`, d.theHeadersShouldBe)
 	ctx.Step(`^the file content should be:$`, d.theFileContentShouldBe)
 	ctx.Step(`^the file "([^"]*)" has not been uploaded$`, d.theFileHasNotBeenUploaded)
 	ctx.Step(`^the file "([^"]*)" is encrypted in S3 with content:$`, d.theFileEncryptedUsingKeyFromVaultStoredInSWithContent)
 	ctx.Step(`^I should be redirected to "([^"]*)"$`, d.iShouldBeRedirectedTo)
+	ctx.Step(`^the GET request with path \("([^"]*)"\) should contain an authorization header containing "([^"]*)"$`, d.theGETRequestWithPathShouldContainAnAuthorizationHeaderContaining)
 
 }
 
@@ -80,23 +83,14 @@ func (d *DownloadServiceComponent) theFileHasNotBeenUploaded(filename string) er
 	return d.ApiFeature.StepError()
 }
 
-func (d *DownloadServiceComponent) theFileHasBeenUploaded(filename string, metadata *godog.DocString) error {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(metadata.Content))
-	}))
-
-	d.cfg.FilesApiURL = server.URL
-
-	return d.ApiFeature.StepError()
-}
-
 func (d *DownloadServiceComponent) iDownloadTheFile(filepath string) error {
 	return d.ApiFeature.IGet(fmt.Sprintf("/downloads-new/%s", filepath))
 }
 
 func (d *DownloadServiceComponent) theFileMetadata(filepath string, metadata *godog.DocString) error {
+	requests = make(map[string]string)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests[r.URL.Path] = r.Header.Get(dprequest.AuthHeaderKey)
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(metadata.Content))
 	}))
@@ -184,4 +178,9 @@ func encryptObjectContent(psk []byte, b io.Reader) ([]byte, error) {
 	stream.XORKeyStream(encryptedBytes, unencryptedBytes)
 
 	return encryptedBytes, nil
+}
+
+func (d *DownloadServiceComponent) theGETRequestWithPathShouldContainAnAuthorizationHeaderContaining(filepath, expectedAuthHeader string) error {
+	assert.Equal(d.ApiFeature, expectedAuthHeader, requests[fmt.Sprintf("/files/%s", filepath)])
+	return d.ApiFeature.StepError()
 }

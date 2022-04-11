@@ -4,7 +4,7 @@ Feature: ONS Public Website Download files
     Given the application is in "web" mode
 
   Scenario: Download a file that has been published
-    Given the file "data/populations.csv" metadata:
+    Given the file "data/populations.csv" has the metadata:
         """
         {
           "path": "data/populations.csv",
@@ -40,7 +40,7 @@ Feature: ONS Public Website Download files
       """
 
   Scenario: Download a file with weird characters that has been published
-    Given the file "interactives/87a3dde3-wéî®∂-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" metadata:
+    Given the file "interactives/87a3dde3-wéî®∂-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" has the metadata:
         """
         {
           "path": "interactives/87a3dde3-wéî®∂-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png",
@@ -81,7 +81,7 @@ Feature: ONS Public Website Download files
     Then the HTTP status code should be "404"
 
   Scenario: ONS previewer requests data-file that has been uploaded but not yet published
-    Given the file "data/populations.csv" has been uploaded
+    Given the file "data/populations.csv" has the metadata:
         """
         {
           "path": "data/populations.csv",
@@ -108,7 +108,7 @@ Feature: ONS Public Website Download files
     Then the HTTP status code should be "404"
 
   Scenario: Redirecting public to decrypted bucket when file is published & decrypted
-    Given the file "data/populations.csv" has been uploaded
+    Given the file "data/populations.csv" has the metadata:
         """
         {
           "path": "data/populations.csv",
