@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	"io"
 	"net/http"
 
@@ -17,7 +18,7 @@ const (
 )
 
 type HTTPClient interface {
-	Get(ctx context.Context, url string) (resp *http.Response, err error)
+	Do(ctx context.Context, req *http.Request) (*http.Response, error)
 }
 
 var ErrFileNotRegistered = errors.New("file not registered")
@@ -26,11 +27,21 @@ var ErrBadJSONResponse = errors.New("could not decode JSON response from files a
 type FileDownloader func(path string) (io.ReadCloser, error)
 type MetadataFetcher func(ctx context.Context, path string) (Metadata, error)
 
+type ContextKey string
+
 func FetchMetadata(filesApiUrl string, httpClient HTTPClient) MetadataFetcher {
 	return func(ctx context.Context, path string) (Metadata, error) {
 		m := Metadata{}
 
-		resp, _ := httpClient.Get(ctx, fmt.Sprintf("%s/files/%s", filesApiUrl, path))
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/files/%s", filesApiUrl, path), nil)
+		const authKey ContextKey = dprequest.AuthHeaderKey
+		authHeaderValue := ctx.Value(authKey)
+		if authHeaderValue != nil {
+			req.Header.Add(dprequest.AuthHeaderKey, authHeaderValue.(string))
+		}
+
+		resp, _ := httpClient.Do(ctx, req)
+
 		if resp.StatusCode == http.StatusNotFound {
 			return m, ErrFileNotRegistered
 		}
