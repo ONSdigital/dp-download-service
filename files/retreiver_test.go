@@ -41,7 +41,7 @@ func newFakeHttpClient(statusCode int, body string) HTTPClient {
 	}
 }
 
-func (f fakeHttpClient) Get(ctx context.Context, url string) (resp *http.Response, err error) {
+func (f fakeHttpClient) Do(ctx context.Context, req *http.Request) (resp *http.Response, err error) {
 	return &http.Response{
 		StatusCode: f.statusCode,
 		Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(f.body))),
