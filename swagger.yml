@@ -6,11 +6,13 @@ info:
   license:
     name: "Open Government Licence v3.0"
     url: "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
-basePath: http://localhost:23600/
+
 tags:
   - name: "Public"
 schemes:
   - "http"
+host: localhost:23600
+
 parameters:
   datasetID:
     name: datasetID
@@ -75,6 +77,7 @@ paths:
       description: "Request a download for a file."
       parameters:
         - $ref: '#/parameters/file_path'
+          required: true
       produces:
         - "*/*"
       responses:
@@ -91,6 +94,7 @@ paths:
 
   /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv:
     get:
+      deprecated: true
       tags:
         - "Public"
       summary: "Download the full csv for a given datasetID, edition and version"
@@ -114,6 +118,7 @@ paths:
           $ref: '#/responses/InternalError'
   /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json:
     get:
+      deprecated: true
       tags:
         - "Public"
       summary: "Download the csv metadata for a given datasetID, edition and version"
@@ -137,6 +142,7 @@ paths:
           $ref: '#/responses/InternalError'
   /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx:
     get:
+      deprecated: true
       tags:
         - "Public"
       summary: "Download the full excel file for a given datasetID, edition and version"
@@ -160,6 +166,7 @@ paths:
           $ref: '#/responses/InternalError'
   /downloads/filter-outputs/{filterOutputID}.csv:
     get:
+      deprecated: true
       tags:
         - "Public"
       summary: "Download a filtered csv file for a given filter output id"
@@ -181,6 +188,7 @@ paths:
           $ref: '#/responses/InternalError'
   /downloads/filter-outputs/{filterOutputID}.xlsx:
     get:
+      deprecated: true
       tags:
         - "Public"
       summary: "Download a filtered excel file for a given filter output id"
@@ -202,6 +210,7 @@ paths:
           $ref: '#/responses/InternalError'
   /images/{imageID}/{variant}/{filename}:
     get:
+      deprecated: true
       tags:
         - "Public"
       summary: "Download an image variant"
