@@ -57,6 +57,38 @@ func TestHandlingErrorForMetadata(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, rec.status)
 }
 
+func TestHandlingAuthErrorFetchingMetadata(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	rec := &ErrorWriter{}
+
+	fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
+		return files.Metadata{}, files.ErrNotAuthorised
+	}
+	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
+
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{})
+
+	h.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusForbidden, rec.status)
+}
+
+func TestHandlingUnexpectedErrorFetchingMetadata(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	rec := &ErrorWriter{}
+
+	fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
+		return files.Metadata{}, files.ErrUnknown
+	}
+	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
+
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{})
+
+	h.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.status)
+}
+
 func TestHandlingErrorGettingFileContent(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
 	rec := &ErrorWriter{}
