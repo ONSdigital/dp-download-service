@@ -23,6 +23,9 @@ type HTTPClient interface {
 
 var ErrFileNotRegistered = errors.New("file not registered")
 var ErrBadJSONResponse = errors.New("could not decode JSON response from files api")
+var ErrNotAuthorised = errors.New("the request was not authorised - check token and user's permissions")
+var ErrInternalServerError = errors.New("internal server error")
+var ErrUnknown = errors.New("an unknown error occurred")
 
 type FileDownloader func(path string) (io.ReadCloser, error)
 type MetadataFetcher func(ctx context.Context, path string) (Metadata, error)
@@ -42,16 +45,22 @@ func FetchMetadata(filesApiUrl string, httpClient HTTPClient) MetadataFetcher {
 
 		resp, _ := httpClient.Do(ctx, req)
 
-		if resp.StatusCode == http.StatusNotFound {
+		switch resp.StatusCode {
+		case http.StatusOK:
+			err := json.NewDecoder(resp.Body).Decode(&m)
+			if err != nil {
+				return m, ErrBadJSONResponse
+			}
+			return m, nil
+		case http.StatusNotFound:
 			return m, ErrFileNotRegistered
+		case http.StatusInternalServerError:
+			return m, ErrInternalServerError
+		case http.StatusForbidden:
+			return m, ErrNotAuthorised
+		default:
+			return m, ErrUnknown
 		}
-
-		err := json.NewDecoder(resp.Body).Decode(&m)
-		if err != nil {
-			return Metadata{}, ErrBadJSONResponse
-		}
-
-		return m, nil
 	}
 }
 
