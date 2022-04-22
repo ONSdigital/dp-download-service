@@ -47,8 +47,7 @@ func FetchMetadata(filesApiUrl string, httpClient HTTPClient) MetadataFetcher {
 
 		switch resp.StatusCode {
 		case http.StatusOK:
-			err := json.NewDecoder(resp.Body).Decode(&m)
-			if err != nil {
+			if json.NewDecoder(resp.Body).Decode(&m) != nil {
 				return m, ErrBadJSONResponse
 			}
 			return m, nil
