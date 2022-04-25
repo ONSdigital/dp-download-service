@@ -63,10 +63,10 @@ Feature: Download preview feature
         And the GET request with path ("data/authors.csv") should contain an authorization header containing "auth-header-total-secure"
 
     Scenario: ONS previewer requests data-file with weird characters that has been uploaded but not yet published
-        Given the file "interactives/87a3dde3-wéî®∂-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" has the metadata:
+        Given the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" has the metadata:
         """
         {
-          "path": "interactives/87a3dde3-wéî®∂-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png",
+          "path": "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png",
           "is_publishable": true,
           "collection_id": "1234-asdfg-54321-qwerty",
           "title": "The number of people",
@@ -78,7 +78,7 @@ Feature: Download preview feature
         }
         """
 
-        And the file "interactives/87a3dde3-wéî®∂-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" is encrypted in S3 with content:
+        And the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" is encrypted in S3 with content:
         """
         mark,1
         russ,2
@@ -87,5 +87,5 @@ Feature: Download preview feature
         brian,4
         jon,5
         """
-        When I download the file "interactives/87a3dde3-wéî®∂-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png"
+        When I download the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png"
         Then the HTTP status code should be "200"
