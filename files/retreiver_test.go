@@ -32,6 +32,7 @@ type fakeHttpClient struct {
 	HTTPClient
 	statusCode int
 	body       string
+	err error
 }
 
 func newFakeFilesApiHttpClient(statusCode int, body string) HTTPClient {
@@ -41,11 +42,17 @@ func newFakeFilesApiHttpClient(statusCode int, body string) HTTPClient {
 	}
 }
 
+func newFakeFilesApiErroringHttpClient(err error) HTTPClient {
+	return &fakeHttpClient{
+		err: err,
+	}
+}
+
 func (f fakeHttpClient) Do(ctx context.Context, req *http.Request) (resp *http.Response, err error) {
 	return &http.Response{
 		StatusCode: f.statusCode,
 		Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(f.body))),
-	}, nil
+	}, err
 }
 
 func (s *RetrieverTestSuite) TestReturnsBadJSONResponseWhenCannotParseJSON() {
