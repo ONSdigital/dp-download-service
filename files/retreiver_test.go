@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -32,7 +33,7 @@ type fakeHttpClient struct {
 	HTTPClient
 	statusCode int
 	body       string
-	err error
+	err        error
 }
 
 func newFakeFilesApiHttpClient(statusCode int, body string) HTTPClient {
@@ -52,7 +53,7 @@ func (f fakeHttpClient) Do(ctx context.Context, req *http.Request) (resp *http.R
 	return &http.Response{
 		StatusCode: f.statusCode,
 		Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(f.body))),
-	}, err
+	}, f.err
 }
 
 func (s *RetrieverTestSuite) TestReturnsBadJSONResponseWhenCannotParseJSON() {
@@ -87,6 +88,22 @@ func (s *RetrieverTestSuite) TestReturnsUnknownErrorWhenFilesResponds418() {
 	_, err := FetchMetadata("", fhc)(context.Background(), "data/file.csv")
 
 	s.Equal(ErrUnknown, err)
+}
+
+func (s *RetrieverTestSuite) TestReturnsErrorWhenHttpClientErrors() {
+	fhc := newFakeFilesApiErroringHttpClient(errors.New("broken"))
+
+	_, err := FetchMetadata("", fhc)(context.Background(), "data/file.csv")
+
+	s.Equal(ErrRequest, err)
+}
+
+func (s *RetrieverTestSuite) TestReturnsErrorWhenHostnameBad() {
+	fhc := newFakeFilesApiHttpClient(500, `{}`)
+
+	_, err := FetchMetadata(":::::::::::::::", fhc)(context.Background(), "data/file.csv")
+
+	s.Equal(ErrRequest, err)
 }
 
 func (s *RetrieverTestSuite) TestFetchMetadata() {
