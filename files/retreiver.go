@@ -6,9 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	dprequest "github.com/ONSdigital/dp-net/request"
 	"io"
 	"net/http"
+
+	"github.com/ONSdigital/log.go/v2/log"
+
+	dprequest "github.com/ONSdigital/dp-net/request"
 
 	"github.com/ONSdigital/dp-download-service/content"
 )
@@ -26,6 +29,7 @@ var ErrBadJSONResponse = errors.New("could not decode JSON response from files a
 var ErrNotAuthorised = errors.New("the request was not authorised - check token and user's permissions")
 var ErrInternalServerError = errors.New("internal server error")
 var ErrUnknown = errors.New("an unknown error occurred")
+var ErrRequest = errors.New("an error occurred making a request to files api")
 
 type FileDownloader func(path string) (io.ReadCloser, error)
 type MetadataFetcher func(ctx context.Context, path string) (Metadata, error)
@@ -36,14 +40,23 @@ func FetchMetadata(filesApiUrl string, httpClient HTTPClient) MetadataFetcher {
 	return func(ctx context.Context, path string) (Metadata, error) {
 		m := Metadata{}
 
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/files/%s", filesApiUrl, path), nil)
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/files/%s", filesApiUrl, path), nil)
+		if err != nil {
+			log.Error(ctx, "create get file request", err)
+			return m, ErrRequest
+		}
+
 		const authKey ContextKey = dprequest.AuthHeaderKey
 		authHeaderValue := ctx.Value(authKey)
 		if authHeaderValue != nil {
 			req.Header.Add(dprequest.AuthHeaderKey, authHeaderValue.(string))
 		}
 
-		resp, _ := httpClient.Do(ctx, req)
+		resp, err := httpClient.Do(ctx, req)
+		if err != nil {
+			log.Error(ctx, "send file request", err)
+			return m, ErrRequest
+		}
 
 		switch resp.StatusCode {
 		case http.StatusOK:
