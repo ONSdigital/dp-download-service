@@ -1,28 +1,47 @@
-# dp-download-service
+# DP Download Service
 
-An ONS service used to either redirect requests to public-accessible links or stream decrypt non public-accessible links
+## Introduction
 
-### Installation
+The Download Service is part of the [Static Files System](https://github.com/ONSdigital/dp-static-files-compose).
+This service is responsible for storing the metadata and state of files.
+
+The service uses the [Files API](https://github.com/ONSdigital/dp-files-api) to retrieve a files metadata, whether is 
+it web or publishing mode and the users role to work out how it should respond to the request to download a file.
+
+If the download service is in pubishing mode and the user is allowed to review a file then the file is viewable at any 
+time as long as the file state is not CREATED (File is still being uploaded)
+
+In web mode the services response differently depending of the state of the file. The table below show the HTTP response
+for each state and why the Download Service responds in such a way.
+
+| State     | HTTP Response           | Notes                                                      |
+|-----------|-------------------------|------------------------------------------------------------|
+| CREATED   | 404 - Not Found         | File is being uploaded do not expose file exists to public |
+| UPLOADED  | 404 - Not Found         | File is being reviewed do not expose file exists to public |
+| PUBLISHED | 200 - OK                | File is published decrypt & stream content from S3         |
+| DECRYPTED | 301 - Moved Permanently | File is decrypted redirect request to public location      | 
+
+## Installation
 
 Service is authenticated against zebedee, one can run [dp-auth-api-stub](https://github.com/ONSdigital/dp-auth-api-stub) to mimic service identity check in zebedee.
 
-#### Vault
+### Vault
 
 - Run `brew install vault`
 - Run `vault server -dev`
 
-#### AWS credentials
+### AWS credentials
 
 The app uses the default provider chain. When running locally this typically means they are provided by the `~/.aws/credentials` file.  Alternatively you can inject the credentials via environment variables as described in the configuration section
 
-### Healthcheck
+## Healthcheck
 
 The endpoint `/healthcheck` checks the health of vault and the dataset api and returns one of:
 
 - success (200, JSON "status": "OK")
 - failure (500, JSON "status": "error").
 
-### Configuration
+## Configuration
 
 | Environment variable         | Default                                     | Description
 | ---------------------------- | --------------------------------------------| -----------
@@ -47,11 +66,11 @@ The endpoint `/healthcheck` checks the health of vault and the dataset api and r
 | IS_PUBLISHING                | true                                        | Determines if the instance is publishing or not
 | ENCRYPTION_DISABLED          | false                                       | Determines whether vault is used and whether files are encrypted on S3
 
-### Contributing
+## Contributing
 
 See [CONTRIBUTING](CONTRIBUTING.md) for details.
 
-### License
+## License
 
 Copyright © 2016-2018, Office for National Statistics (https://www.ons.gov.uk)
 
