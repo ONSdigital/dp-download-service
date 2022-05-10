@@ -74,7 +74,7 @@ The endpoint `/healthcheck` checks the health of vault and the dataset api and r
 
 ## API Client 
 
-There is an [API Client](https://github.com/ONSdigital/dp-api-clients-go/tree/main/download) for the File API this is part
+There is an [API Client](https://github.com/ONSdigital/dp-api-clients-go/tree/main/download) for the Download API this is part
 of [dp-api-clients-go](https://github.com/ONSdigital/dp-api-clients-go) package.
 
 ## Contributing
