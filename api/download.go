@@ -95,7 +95,7 @@ func closeDownloadedFile(ctx context.Context, file io.ReadCloser) {
 }
 
 func setStatusMovedPermanently(location string, w http.ResponseWriter) {
-	w.Header().Set("Cache-Control", "max-age=31536000git s")
+	w.Header().Set("Cache-Control", "max-age=31536000")
 	w.Header().Set("Location", location)
 	w.WriteHeader(http.StatusMovedPermanently)
 }
