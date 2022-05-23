@@ -34,9 +34,9 @@ func handleError(ctx context.Context, event string, w http.ResponseWriter, err e
 }
 
 func writeError(w http.ResponseWriter, errs jsonErrors, httpCode int) {
-	encoder := json.NewEncoder(w)
+	w.Header().Set("Cache-Control", "no-cache")
 	w.WriteHeader(httpCode)
-	encoder.Encode(&errs) // nolint
+	json.NewEncoder(w).Encode(&errs) // nolint
 }
 
 func buildErrors(err error, code string) jsonErrors {

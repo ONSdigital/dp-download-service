@@ -16,6 +16,10 @@ import (
 // CreateV1DownloadHandler handles generic download file requests.
 func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		if cfg.IsPublishing {
+			w.Header().Set("Cache-Control", "no-cache")
+		}
+
 		ctx, requestedFilePath := parseRequest(req)
 		log.Info(ctx, fmt.Sprintf("Handling request for %s", requestedFilePath))
 
@@ -96,10 +100,12 @@ func setStatusMovedPermanently(location string, w http.ResponseWriter) {
 }
 
 func setStatusNotFound(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-cache")
 	w.WriteHeader(http.StatusNotFound)
 }
 
 func setStatusInternalServerError(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-cache")
 	w.WriteHeader(http.StatusInternalServerError)
 }
 

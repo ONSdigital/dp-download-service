@@ -10,6 +10,7 @@ require (
 	github.com/ONSdigital/dp-api-clients-go/v2 v2.1.14
 	github.com/ONSdigital/dp-component-test v0.6.0
 	github.com/ONSdigital/dp-healthcheck v1.2.3
+	github.com/ONSdigital/dp-net v1.0.12
 	github.com/ONSdigital/dp-net/v2 v2.2.0-beta
 	github.com/ONSdigital/dp-s3 v1.7.0
 	github.com/ONSdigital/dp-vault v1.1.1
@@ -21,7 +22,6 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/justinas/alice v1.2.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/maxcnunes/httpfake v1.2.4
 	github.com/rdumont/assistdog v0.0.0-20201106100018-168b06230d14
 	github.com/smartystreets/goconvey v1.7.2
 	github.com/stretchr/testify v1.7.0
@@ -30,8 +30,6 @@ require (
 require (
 	github.com/ONSdigital/dp-api-clients-go v1.41.1 // indirect
 	github.com/ONSdigital/dp-mongodb-in-memory v1.0.0 // indirect
-	github.com/ONSdigital/dp-net v1.0.12 // indirect
-	github.com/ONSdigital/dp-s3/v2 v2.0.0-beta.2 // indirect
 	github.com/ONSdigital/log.go v1.0.1 // indirect
 	github.com/ONSdigital/s3crypto v0.0.0-20180725145621-f8943119a487 // indirect
 	github.com/cucumber/gherkin-go/v19 v19.0.3 // indirect
@@ -62,6 +60,7 @@ require (
 	github.com/klauspost/compress v1.13.5 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/maxcnunes/httpfake v1.2.4 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
