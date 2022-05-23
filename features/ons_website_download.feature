@@ -79,6 +79,7 @@ Feature: ONS Public Website Download files
     Given the file "data/populations.csv" has not been uploaded
     When I download the file "data/populations.csv"
     Then the HTTP status code should be "404"
+    And the response header "Cache-Control" should be "no-cache"
 
   Scenario: ONS previewer requests data-file that has been uploaded but not yet published
     Given the file "data/populations.csv" has the metadata:
@@ -106,6 +107,7 @@ Feature: ONS Public Website Download files
         """
     When I download the file "data/populations.csv"
     Then the HTTP status code should be "404"
+    And the response header "Cache-Control" should be "no-cache"
 
   Scenario: Redirecting public to decrypted bucket when file is published & decrypted
     Given the file "data/populations.csv" has the metadata:
