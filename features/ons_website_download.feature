@@ -135,3 +135,4 @@ Feature: ONS Public Website Download files
         """
     When I download the file "data/populations.csv"
     Then I should be redirected to "http://public-bucket.com/data/populations.csv"
+    And the response header "Cache-Control" should be "max-age=31536000"
