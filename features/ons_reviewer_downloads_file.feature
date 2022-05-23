@@ -32,6 +32,7 @@ Feature: Download preview feature
         """
         When I download the file "data/populations.csv"
         Then the HTTP status code should be "200"
+        And the response header "Cache-Control" should be "no-cache"
 
     Scenario: ONS previewer requests data-file that has been uploaded but not yet published using an authorisation header
         Given the file "data/authors.csv" has the metadata:
@@ -61,6 +62,7 @@ Feature: Download preview feature
         When I download the file "data/authors.csv"
         Then the HTTP status code should be "200"
         And the GET request with path ("data/authors.csv") should contain an authorization header containing "auth-header-total-secure"
+        And the response header "Cache-Control" should be "no-cache"
 
     Scenario: ONS previewer requests data-file with weird characters that has been uploaded but not yet published
         Given the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" has the metadata:
@@ -89,3 +91,4 @@ Feature: Download preview feature
         """
         When I download the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png"
         Then the HTTP status code should be "200"
+        And the response header "Cache-Control" should be "no-cache"

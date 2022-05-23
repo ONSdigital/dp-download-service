@@ -17,10 +17,11 @@ import (
 
 type ErrorWriter struct {
 	status int
+	header http.Header
 }
 
 func (e *ErrorWriter) Header() http.Header {
-	return http.Header{}
+	return e.header
 }
 
 func (e *ErrorWriter) Write(i []byte) (int, error) {
@@ -43,7 +44,7 @@ func (d FailingReadCloser) Close() error {
 
 func TestHandlingErrorForMetadata(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
-	rec := &ErrorWriter{}
+	rec := &ErrorWriter{header: make(http.Header)}
 
 	fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
 		return files.Metadata{State: "PUBLISHED"}, nil
@@ -55,11 +56,12 @@ func TestHandlingErrorForMetadata(t *testing.T) {
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.status)
+	assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
 }
 
 func TestHandlingAuthErrorFetchingMetadata(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
-	rec := &ErrorWriter{}
+	rec := &ErrorWriter{header: make(http.Header)}
 
 	fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
 		return files.Metadata{}, files.ErrNotAuthorised
@@ -71,11 +73,12 @@ func TestHandlingAuthErrorFetchingMetadata(t *testing.T) {
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusForbidden, rec.status)
+	assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
 }
 
 func TestHandlingUnexpectedErrorFetchingMetadata(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
-	rec := &ErrorWriter{}
+	rec := &ErrorWriter{header: make(http.Header)}
 
 	fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
 		return files.Metadata{}, files.ErrUnknown
@@ -91,7 +94,7 @@ func TestHandlingUnexpectedErrorFetchingMetadata(t *testing.T) {
 
 func TestHandlingErrorGettingFileContent(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
-	rec := &ErrorWriter{}
+	rec := &ErrorWriter{header: make(http.Header)}
 
 	fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
 		return files.Metadata{State: "PUBLISHED"}, nil
@@ -103,11 +106,12 @@ func TestHandlingErrorGettingFileContent(t *testing.T) {
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.status)
+	assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
 }
 
 func TestHandleFileNotPublished(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
-	rec := &ErrorWriter{}
+	rec := &ErrorWriter{header: make(http.Header)}
 
 	type args struct {
 		retrieve files.FileDownloader
@@ -132,6 +136,7 @@ func TestHandleFileNotPublished(t *testing.T) {
 			h.ServeHTTP(rec, req)
 
 			assert.Equalf(t, tt.expectedStatus, rec.status, "CreateV1DownloadHandler(%v)", tt.name)
+			assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
 		})
 	}
 }
@@ -140,7 +145,7 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
 
 	t.Run("Test CREATED", func(t *testing.T) {
-		rec := &ErrorWriter{}
+		rec := &ErrorWriter{header: make(http.Header)}
 		fetchMetadata := func(ctx context.Context, path string) (files.Metadata, error) {
 			return files.Metadata{State: files.CREATED}, nil
 		}
@@ -151,6 +156,7 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 		h.ServeHTTP(rec, req)
 
 		assert.Equalf(t, http.StatusNotFound, rec.status, "CreateV1DownloadHandler(%v)", "Test CREATED")
+		assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
 	})
 
 	t.Run("Test UPLOADED", func(t *testing.T) {
