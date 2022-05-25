@@ -3,9 +3,12 @@ package api
 import (
 	"context"
 	"fmt"
-	dprequest "github.com/ONSdigital/dp-net/v2/request"
 	"io"
 	"net/http"
+	"net/url"
+	"path"
+
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/files"
@@ -69,7 +72,7 @@ func parseRequest(req *http.Request) (context.Context, string) {
 func handleUnsupportedMetadataStates(ctx context.Context, metadata files.Metadata, cfg *config.Config, filePath string, w http.ResponseWriter) bool {
 	if metadata.Decrypted() {
 		log.Info(ctx, "File already decrypted, redirecting")
-		setStatusMovedPermanently(redirectLocation(cfg, filePath), w)
+		setStatusMovedPermanently(RedirectLocation(cfg, filePath), w)
 		return true
 	}
 
@@ -110,8 +113,14 @@ func setStatusInternalServerError(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusInternalServerError)
 }
 
-func redirectLocation(cfg *config.Config, filePath string) string {
-	return fmt.Sprintf("%s%s", cfg.PublicBucketURL.String(), filePath)
+func RedirectLocation(cfg *config.Config, filePath string) string {
+	redirectURL, err := url.Parse(cfg.PublicBucketURL.String())
+	if err != nil {
+		ctx := context.Background()
+		log.Error(ctx, "error parsing public bucket URL", err)
+	}
+	redirectURL.Path = path.Join(redirectURL.Path, filePath)
+	return redirectURL.String()
 }
 
 func writeFileToResponse(w http.ResponseWriter, file io.ReadCloser) error {
