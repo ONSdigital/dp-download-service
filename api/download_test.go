@@ -3,9 +3,11 @@ package api_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -190,4 +192,40 @@ func TestContentTypeHeader(t *testing.T) {
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, expectedType, rec.Header().Get("Content-Type"))
+}
+
+func TestRedirectLocation(t *testing.T) {
+	expectedUrl := "https://my-public-url.com/my-file.txt"
+	var tests = []struct {
+		desc         string
+		publicUrlStr string
+		filepath     string
+	}{
+		{
+			desc:         "RedirectLocation correctly concatenates URL from parts with no trailing or leading slash",
+			publicUrlStr: "https://my-public-url.com",
+			filepath:     "my-file.txt",
+		},
+		{
+			desc:         "RedirectLocation correctly concatenates URL with trailing slash but no leading slash",
+			publicUrlStr: "https://my-public-url.com/",
+			filepath:     "my-file.txt",
+		},
+		{
+			desc:         "RedirectLocation correctly concatenates URL with leading slash but no trailing slash",
+			publicUrlStr: "https://my-public-url.com",
+			filepath:     "/my-file.txt",
+		},
+		{
+			desc:         "RedirectLocation correctly concatenates URL with both trailing and leading slash",
+			publicUrlStr: "https://my-public-url.com/",
+			filepath:     "/my-file.txt",
+		},
+	}
+	for _, test := range tests {
+		publicUrl, _ := url.Parse(test.publicUrlStr)
+		configUrl := config.ConfigUrl{*publicUrl}
+		concatenatedUrl := api.RedirectLocation(&config.Config{PublicBucketURL: configUrl}, test.filepath)
+		assert.Equal(t, expectedUrl, concatenatedUrl, fmt.Sprintf("testing %s: expected %s, got %s", test.desc, expectedUrl, concatenatedUrl))
+	}
 }
