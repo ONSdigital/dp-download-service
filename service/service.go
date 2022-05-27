@@ -157,6 +157,8 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.DoDatasetVersion("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoFilterOutput("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.txt").HandlerFunc(d.DoFilterOutput("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.csv-metadata.json").HandlerFunc(d.DoFilterOutput("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads-new/{path:.*}").HandlerFunc(downloadHandler)
 	router.HandleFunc("/health", hc.Handler)
