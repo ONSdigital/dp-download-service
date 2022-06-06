@@ -8,10 +8,10 @@ This service is responsible for storing the metadata and state of files.
 The service uses the [Files API](https://github.com/ONSdigital/dp-files-api) to retrieve a files metadata, whether it
 is web or publishing mode and the users role to work out how it should respond to the request to download a file.
 
-If the download service is in pubishing mode and the user is allowed to review a file then the file is viewable at any
+If the download service is in publishing mode and the user is allowed to review a file then the file is viewable at any
 time as long as the file state is not CREATED (File is still being uploaded)
 
-In web mode the services response differently depending of the state of the file. The table below show the HTTP response
+In web mode the services respond differently depending on the state of the file. The table below show the HTTP response
 for each state and why the Download Service responds in such a way.
 
 | context                      | State       | HTTP Response           | Notes                                                      |
