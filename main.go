@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-download-service/service/external"
 	"github.com/ONSdigital/log.go/v2/log"
-	"os"
-	"os/signal"
 )
 
 var (
@@ -21,19 +23,19 @@ var (
 
 const serviceName = "dp-download-service"
 
-func main()  {
+func main() {
 	log.Namespace = serviceName
 	ctx := context.Background()
 
 	if err := run(ctx); err != nil {
-		log.Fatal(nil, "fatal runtime error", err)
+		log.Fatal(ctx, "fatal runtime error", err)
 		os.Exit(1)
 	}
 }
 
 func run(ctx context.Context) error {
 	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt, os.Kill)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
 
 	cfg, err := config.Get()
 	if err != nil {
@@ -50,11 +52,8 @@ func run(ctx context.Context) error {
 
 	svc.Run(ctx)
 
-	// blocks until an os interrupt or a fatal error occurs
-	select {
-	case sig := <-signals:
-		log.Info(ctx, "os signal received", log.Data{"signal": sig})
-	}
+	sig := <-signals // blocks until an os interrupt or a fatal error occurs
+	log.Info(ctx, "os signal received", log.Data{"signal": sig})
 
 	return svc.Close(ctx)
 }

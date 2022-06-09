@@ -1,6 +1,10 @@
 package config
 
 import (
+	"context"
+	"fmt"
+	"github.com/ONSdigital/log.go/v2/log"
+	"net/url"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -16,6 +20,7 @@ type Config struct {
 	DatasetAuthToken           string        `envconfig:"DATASET_AUTH_TOKEN"         json:"-"`
 	FilterAPIURL               string        `envconfig:"FILTER_API_URL"`
 	ImageAPIURL                string        `envconfig:"IMAGE_API_URL"`
+	FilesApiURL                string        `envconfig:"FILES_API_URL"`
 	GracefulShutdownTimeout    time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"  json:"-"`
 	HealthCheckInterval        time.Duration `envconfig:"HEALTHCHECK_INTERVAL"`
 	HealthCheckCriticalTimeout time.Duration `envconfig:"HEALTHCHECK_CRITICAL_TIMEOUT"`
@@ -25,26 +30,31 @@ type Config struct {
 	VaultAddress               string        `envconfig:"VAULT_ADDR"`
 	VaultPath                  string        `envconfig:"VAULT_PATH"`
 	ZebedeeURL                 string        `envconfig:"ZEBEDEE_URL"`
-	LocalObjectStore           string        `envconfig:"LOCAL_OBJECT_STORE"`
-	MinioAccessKey             string        `envconfig:"MINIO_ACCESS_KEY"`
-	MinioSecretKey             string        `envconfig:"MINIO_SECRET_KEY"`
+	LocalObjectStore           string        `envconfig:"LOCAL_OBJECT_STORE"` // TODO remove replacing minio with localstack in component tests
+	MinioAccessKey             string        `envconfig:"MINIO_ACCESS_KEY"`   // TODO remove replacing minio with localstack in component tests
+	MinioSecretKey             string        `envconfig:"MINIO_SECRET_KEY"`   // TODO remove replacing minio with localstack in component tests
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
-	EncryptionDisabled         bool          `envconfig:"ENCRYPTION_DISABLED"`
-	EnableMongo                bool          `envconfig:"ENABLE_MONGO"`
-	MongoConfig                MongoConfig
-}
-
-// MongoConfig contains the config required to connect to MongoDB.
-type MongoConfig struct {
-	BindAddr   string `envconfig:"MONGODB_BIND_ADDR"   json:"-"`
-	Collection string `envconfig:"MONGODB_COLLECTION"`
-	Database   string `envconfig:"MONGODB_DATABASE"`
-	Username   string `envconfig:"MONGODB_USERNAME"    json:"-"`
-	Password   string `envconfig:"MONGODB_PASSWORD"    json:"-"`
-	IsSSL      bool   `envconfig:"MONGODB_IS_SSL"`
+	EncryptionDisabled         bool          `envconfig:"ENCRYPTION_DISABLED"` // TODO remove encryption always required
+	PublicBucketURL            ConfigUrl     `envconfig:"PUBLIC_BUCKET_URL"`
 }
 
 var cfg *Config
+
+type ConfigUrl struct {
+	url.URL
+}
+
+func (c *ConfigUrl) Decode(value string) error {
+	parsedURL, err := url.Parse(value)
+	if err != nil {
+		log.Error(context.Background(), fmt.Sprintf("Bad public bucket url: %s", value), err)
+		return err
+	}
+
+	c.URL = *parsedURL
+
+	return nil
+}
 
 // Get retrieves the config from the environment for the dp-download-service
 func Get() (*Config, error) {
@@ -59,6 +69,7 @@ func Get() (*Config, error) {
 		DatasetAPIURL:              "http://localhost:22000",
 		FilterAPIURL:               "http://localhost:22100",
 		ImageAPIURL:                "http://localhost:24700",
+		FilesApiURL:                "http://localhost:26900",
 		DatasetAuthToken:           "FD0108EA-825D-411C-9B1D-41EF7727F465",
 		DownloadServiceToken:       "QB0108EZ-825D-412C-9B1D-41EF7747F462",
 		GracefulShutdownTimeout:    5 * time.Second,
@@ -74,15 +85,7 @@ func Get() (*Config, error) {
 		MinioSecretKey:             "",
 		IsPublishing:               true,
 		EncryptionDisabled:         false,
-		EnableMongo:                false,
-		MongoConfig: MongoConfig{
-			BindAddr:   "localhost:27017",
-			Collection: "",
-			Database:   "",
-			Username:   "",
-			Password:   "",
-			IsSSL:      false,
-		},
+		PublicBucketURL:            ConfigUrl{},
 	}
 
 	if err := envconfig.Process("", cfg); err != nil {

@@ -55,7 +55,7 @@ type Model struct {
 	PrivateFilename  string
 }
 
-// Parameters is the union of required paramters to perform all downloads
+// Parameters is the union of required parameters to perform all downloads
 type Parameters struct {
 	UserAuthToken        string
 	ServiceAuthToken     string
@@ -112,7 +112,7 @@ func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType, va
 	}
 }
 
-//getFilterOutputDownload gets the Model for a filter output job.
+// getFilterOutputDownload gets the Model for a filter output job.
 func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, variant string) (Model, error) {
 	var downloads Model
 
@@ -141,7 +141,7 @@ func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, v
 	return model, nil
 }
 
-//getDatasetVersionDownload gets the Model for a dataset version
+// getDatasetVersionDownload gets the Model for a dataset version
 func (d Downloader) getDatasetVersionDownload(ctx context.Context, p Parameters, variant string) (Model, error) {
 	var downloads Model
 

@@ -6,11 +6,13 @@ info:
   license:
     name: "Open Government Licence v3.0"
     url: "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
-basePath: "/v1"
+
 tags:
   - name: "Public"
 schemes:
   - "http"
+host: localhost:23600
+
 parameters:
   datasetID:
     name: datasetID
@@ -54,15 +56,45 @@ parameters:
     in: path
     required: true
     type: string
+  file_path:
+    name: filepath
+    in: path
+    required: true
+    description: filepath of required file
 securityDefinitions:
   FlorenceAPIKey:
     name: X-Florence-Token
     description: "API key used to allow florence users to be able to access a full download for an unpublished version."
     in: header
     type: apiKey
+
 paths:
+  /downloads-new/{filepath}:
+    get:
+      tags:
+        - Download file
+      summary: "Download a file"
+      description: "Request a download for a file."
+      parameters:
+        - $ref: '#/parameters/file_path'
+          required: true
+      produces:
+        - "*/*"
+      responses:
+        200:
+          $ref: '#/responses/StreamedResponse'
+        301:
+          $ref: '#/responses/RequestRedirect'
+        400:
+          $ref: '#/responses/InvalidRequestError'
+        404:
+          $ref: '#/responses/NotFoundError'
+        500:
+          $ref: '#/responses/InternalError'
+
   /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv:
     get:
+      deprecated: true
       tags:
         - "Public"
       summary: "Download the full csv for a given datasetID, edition and version"
@@ -86,6 +118,7 @@ paths:
           $ref: '#/responses/InternalError'
   /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json:
     get:
+      deprecated: true
       tags:
         - "Public"
       summary: "Download the csv metadata for a given datasetID, edition and version"
@@ -109,6 +142,7 @@ paths:
           $ref: '#/responses/InternalError'
   /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx:
     get:
+      deprecated: true
       tags:
         - "Public"
       summary: "Download the full excel file for a given datasetID, edition and version"
@@ -132,6 +166,7 @@ paths:
           $ref: '#/responses/InternalError'
   /downloads/filter-outputs/{filterOutputID}.csv:
     get:
+      deprecated: true
       tags:
         - "Public"
       summary: "Download a filtered csv file for a given filter output id"
@@ -153,6 +188,7 @@ paths:
           $ref: '#/responses/InternalError'
   /downloads/filter-outputs/{filterOutputID}.xlsx:
     get:
+      deprecated: true
       tags:
         - "Public"
       summary: "Download a filtered excel file for a given filter output id"
@@ -174,6 +210,7 @@ paths:
           $ref: '#/responses/InternalError'
   /images/{imageID}/{variant}/{filename}:
     get:
+      deprecated: true
       tags:
         - "Public"
       summary: "Download an image variant"

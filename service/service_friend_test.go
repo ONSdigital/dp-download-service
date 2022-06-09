@@ -35,10 +35,6 @@ func (svc *Download) GetZebedeeHealthClient() *health.Client {
 	return svc.zebedeeHealthClient
 }
 
-func (svc *Download) GetMongoClient() MongoClient {
-	return svc.mongoClient
-}
-
 func (svc *Download) GetShutdownTimeout() time.Duration {
 	return svc.shutdown
 }
