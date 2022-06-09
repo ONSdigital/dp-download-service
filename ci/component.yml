@@ -1,0 +1,21 @@
+---
+
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: taylorsilva/dcind
+    tag: latest
+
+inputs:
+  - name: dp-download-service
+
+run:
+  path: bash
+  args:
+    - -exc
+    - |
+      source /docker-lib.sh
+      start_docker
+      dp-download-service/ci/scripts/component.sh

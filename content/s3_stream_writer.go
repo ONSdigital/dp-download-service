@@ -2,9 +2,9 @@ package content
 
 import (
 	"context"
-	"fmt"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"

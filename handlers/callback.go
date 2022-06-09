@@ -2,39 +2,12 @@ package handlers
 
 import (
 	"errors"
-	"github.com/ONSdigital/log.go/v2/log"
-	"net/http"
-)
 
-type coder interface {
-	Code() int
-}
+	"github.com/ONSdigital/log.go/v2/log"
+)
 
 type dataLogger interface {
 	LogData() map[string]interface{}
-}
-
-// statusCode is a callback function that allows you to extract
-// a status code from an error, or returns 500 as a default
-func statusCode(err error) int {
-	var cerr coder
-	if errors.As(err, &cerr) {
-		return cerr.Code()
-	}
-
-	return http.StatusInternalServerError
-}
-
-// logData returns logData for an error if there is any. This is used
-// to extract log.Data embedded in an error if it implements the dataLogger
-// interface
-func logData(err error) log.Data {
-	var lderr dataLogger
-	if errors.As(err, &lderr) {
-		return lderr.LogData()
-	}
-
-	return nil
 }
 
 // unwrapLogData recursively unwraps logData from an error. This allows an

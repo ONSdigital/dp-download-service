@@ -1,8 +1,11 @@
 package service_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log"
+	"net/http"
 	"testing"
 	"time"
 
@@ -11,6 +14,7 @@ import (
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -18,6 +22,9 @@ func TestNew(t *testing.T) {
 	buildTime := "buildTime"
 	gitCommit := "gitCommit"
 	version := "version"
+
+	buf := bytes.NewBufferString("")
+	log.SetOutput(buf)
 
 	// We are not testing the checker function or its return value; we only need
 	// a valid function to attach to clients.
@@ -34,7 +41,6 @@ func TestNew(t *testing.T) {
 		cfg := &config.Config{
 			GracefulShutdownTimeout: 5 * time.Minute,
 			IsPublishing:            true,
-			EnableMongo:             true,
 			EncryptionDisabled:      false, // just to be explicit
 		}
 
@@ -64,12 +70,7 @@ func TestNew(t *testing.T) {
 			},
 		}
 
-		mockedMongoClient := &MongoClientMock{
-			CheckerFunc: checker,
-			URIFunc: func() string {
-				return "fakemongohost:port"
-			},
-		}
+		mockedHttpServer := &HTTPServerMock{}
 
 		mockedDependencies := &DependenciesMock{
 			DatasetClientFunc: func(s string) downloads.DatasetClient {
@@ -87,11 +88,11 @@ func TestNew(t *testing.T) {
 			S3ClientFunc: func(cfg *config.Config) (content.S3Client, error) {
 				return mockedS3Client, nil
 			},
-			MongoClientFunc: func(ctx context.Context, cfg *config.Config) (service.MongoClient, error) {
-				return mockedMongoClient, nil
-			},
 			HealthCheckFunc: func(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
 				return mockedHealthChecker, nil
+			},
+			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
+				return mockedHttpServer
 			},
 		}
 
@@ -107,7 +108,6 @@ func TestNew(t *testing.T) {
 				So(svc.GetVaultClient(), ShouldEqual, mockedVaultClient)
 				So(svc.GetS3Client(), ShouldEqual, mockedS3Client)
 				So(svc.GetZebedeeHealthClient(), ShouldNotBeNil)
-				So(svc.GetMongoClient(), ShouldEqual, mockedMongoClient)
 				So(svc.GetShutdownTimeout(), ShouldEqual, cfg.GracefulShutdownTimeout)
 				So(svc.GetHealthChecker(), ShouldEqual, mockedHealthChecker)
 			})
@@ -139,20 +139,6 @@ func TestNew(t *testing.T) {
 			Convey("New should fail", func() {
 				So(svc, ShouldBeNil)
 				So(err.Error(), ShouldContainSubstring, "s3 failure")
-			})
-		})
-
-		Convey("When mongo setup fails", func() {
-			mockedDependencies.MongoClientFunc = func(ctx context.Context, cfg *config.Config) (service.MongoClient, error) {
-				return nil, errors.New("mongo failure")
-			}
-
-			cfg.EnableMongo = true
-			svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
-
-			Convey("New should fail", func() {
-				So(svc, ShouldBeNil)
-				So(err.Error(), ShouldContainSubstring, "mongo failure")
 			})
 		})
 
@@ -257,20 +243,6 @@ func TestNew(t *testing.T) {
 			})
 		})
 
-		Convey("When mongo healthcheck setup fails", func() {
-			mockedHealthChecker.AddCheckFunc = func(name string, checker healthcheck.Checker) error {
-				return failIfNameMatches(name, "Mongo")
-			}
-
-			cfg.EnableMongo = true
-			svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
-
-			Convey("New should fail", func() {
-				So(svc, ShouldBeNil)
-				So(err.Error(), ShouldContainSubstring, "registering checkers for healthcheck")
-			})
-		})
-
 		// Some feature flag tests
 		//
 
@@ -310,28 +282,6 @@ func TestNew(t *testing.T) {
 				So(svc, ShouldNotBeNil)
 				So(err, ShouldBeNil)
 				So(svc.GetZebedeeHealthClient(), ShouldBeNil)
-			})
-		})
-
-		// Ensure Mongo client not created if mongo not enabled
-		//
-		Convey("When Mongo is not enabled", func() {
-			// fail New() if mongo client setup is called
-			mockedDependencies.MongoClientFunc = func(ctx context.Context, cfg *config.Config) (service.MongoClient, error) {
-				return nil, errors.New("vault failure")
-			}
-			// fail New() if mongo checker added
-			mockedHealthChecker.AddCheckFunc = func(name string, checker healthcheck.Checker) error {
-				return failIfNameMatches(name, "Mongo")
-			}
-
-			cfg.EnableMongo = false // just to be explicit
-			svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
-
-			Convey("Mongo should not be set up", func() {
-				So(svc, ShouldNotBeNil)
-				So(err, ShouldBeNil)
-				So(svc.GetMongoClient(), ShouldBeNil)
 			})
 		})
 	})

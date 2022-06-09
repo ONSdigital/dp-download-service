@@ -3,5 +3,6 @@ debug
 *.tar.gz
 build
 .idea
+vendor
 
 .go/

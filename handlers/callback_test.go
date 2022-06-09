@@ -39,19 +39,6 @@ func (e *testError) Unwrap() error {
 
 func TestCallbackHappy(t *testing.T) {
 
-	Convey("Given an error with embedded logData", t, func() {
-		err := &testError{
-			logData: log.Data{
-				"log": "data",
-			},
-		}
-
-		Convey("When logData(err) is called", func() {
-			ld := logData(err)
-			So(ld, ShouldResemble, log.Data{"log": "data"})
-		})
-	})
-
 	Convey("Given an error chain with wrapped logData", t, func() {
 		err1 := &testError{
 			err: errors.New("original error"),
