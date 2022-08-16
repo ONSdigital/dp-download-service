@@ -36,6 +36,7 @@ type Config struct {
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
 	EncryptionDisabled         bool          `envconfig:"ENCRYPTION_DISABLED"` // TODO remove encryption always required
 	PublicBucketURL            ConfigUrl     `envconfig:"PUBLIC_BUCKET_URL"`
+	DoCors                     bool          `envconfig:"DO_CORS"`
 }
 
 var cfg *Config
@@ -86,6 +87,7 @@ func Get() (*Config, error) {
 		IsPublishing:               true,
 		EncryptionDisabled:         false,
 		PublicBucketURL:            ConfigUrl{},
+		DoCors:                     false,
 	}
 
 	if err := envconfig.Process("", cfg); err != nil {

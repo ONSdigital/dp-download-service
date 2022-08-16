@@ -175,8 +175,10 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		identityHandler := dphandlers.IdentityWithHTTPClient(clientsidentity.NewWithHealthClient(zc))
 		middlewareChain = middlewareChain.Append(identityHandler)
 	} else {
-		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))
-		middlewareChain = middlewareChain.Append(corsHandler)
+		if cfg.DoCors {
+			corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))
+			middlewareChain = middlewareChain.Append(corsHandler)
+		}
 	}
 
 	r := middlewareChain.

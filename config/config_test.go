@@ -39,6 +39,7 @@ func getConfigEnv() map[string]string {
 		"MONGODB_PASSWORD":             os.Getenv("MONGODB_PASSWORD"),
 		"MONGODB_IS_SSL":               os.Getenv("MONGODB_IS_SSL"),
 		"PUBLIC_BUCKET_URL":            os.Getenv("PUBLIC_BUCKET_URL"),
+		"DO_CORS":                      os.Getenv("DO_CORS"),
 	}
 }
 
@@ -92,6 +93,7 @@ func TestSpec(t *testing.T) {
 
 				expectedUrl, _ := url.Parse("http://test")
 				So(config.PublicBucketURL, ShouldResemble, ConfigUrl{*expectedUrl})
+				So(config.DoCors, ShouldBeFalse)
 			})
 		})
 	})
