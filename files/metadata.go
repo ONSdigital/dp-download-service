@@ -3,49 +3,37 @@ package files
 import (
 	"path/filepath"
 	"strconv"
+
+	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 )
 
 const (
-	CREATED   State = "CREATED"   // first chunk uploaded
-	UPLOADED  State = "UPLOADED"  // all chunks uploaded
-	PUBLISHED State = "PUBLISHED" // published - authorized for public download
-	DECRYPTED State = "DECRYPTED" // available decrypted from S3/CDN
+	CREATED   string = "CREATED"   // first chunk uploaded
+	UPLOADED  string = "UPLOADED"  // all chunks uploaded
+	PUBLISHED string = "PUBLISHED" // published - authorized for public download
+	DECRYPTED string = "DECRYPTED" // available decrypted from S3/CDN
 )
 
-type State string
-
-type Metadata struct {
-	Path          string `json:"path"`
-	IsPublishable *bool  `json:"is_publishable,omitempty"`
-	CollectionID  string `json:"collection_id"`
-	Title         string `json:"title"`
-	SizeInBytes   uint64 `json:"size_in_bytes"`
-	Type          string `json:"type"`
-	Licence       string `json:"licence"`
-	LicenceUrl    string `json:"licence_url"`
-	State         State  `json:"state"`
-}
-
-func (m Metadata) GetFilename() string {
+func GetFilename(m *files.FileMetaData) string {
 	return filepath.Base(m.Path)
 }
 
-func (m Metadata) GetContentLength() string {
+func GetContentLength(m *files.FileMetaData) string {
 	return strconv.FormatUint(m.SizeInBytes, 10)
 }
 
-func (m Metadata) Unpublished() bool {
+func Unpublished(m *files.FileMetaData) bool {
 	return !(m.State == PUBLISHED || m.State == DECRYPTED)
 }
 
-func (m Metadata) UploadIncomplete() bool {
+func UploadIncomplete(m *files.FileMetaData) bool {
 	return m.State == CREATED
 }
 
-func (m Metadata) Decrypted() bool {
+func Decrypted(m *files.FileMetaData) bool {
 	return m.State == DECRYPTED
 }
 
-func (m Metadata) Uploaded() bool {
+func Uploaded(m *files.FileMetaData) bool {
 	return m.State == UPLOADED
 }

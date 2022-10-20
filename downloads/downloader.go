@@ -9,13 +9,14 @@ import (
 	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
+	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/downloads FilterClient,DatasetClient,ImageClient
+//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/downloads FilterClient,DatasetClient,ImageClient,FilesClient
 
 // FilterClient is an interface to represent methods called to action on the filter api
 type FilterClient interface {
@@ -34,6 +35,12 @@ type DatasetClient interface {
 type ImageClient interface {
 	GetDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (m image.ImageDownload, err error)
 	Checker(ctx context.Context, check *healthcheck.CheckState) error
+}
+
+// FilesClient is interface to the files api
+type FilesClient interface {
+	GetFile(ctx context.Context, path string, authToken string) (files.FileMetaData, error)
+	Checker(ctx context.Context, state *healthcheck.CheckState) error
 }
 
 // FileType - iota enum of possible file types that can be download

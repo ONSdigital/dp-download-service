@@ -23,6 +23,10 @@ func (svc *Download) GetImageClient() downloads.ImageClient {
 	return svc.imageClient
 }
 
+func (svc *Download) GetFilesClient() downloads.FilesClient {
+	return svc.filesClient
+}
+
 func (svc *Download) GetVaultClient() content.VaultClient {
 	return svc.vaultClient
 }

@@ -27,6 +27,9 @@ var _ service.Dependencies = &DependenciesMock{}
 // 			DatasetClientFunc: func(s string) downloads.DatasetClient {
 // 				panic("mock out the DatasetClient method")
 // 			},
+// 			FilesClientFunc: func(configMoqParam *config.Config) downloads.FilesClient {
+// 				panic("mock out the FilesClient method")
+// 			},
 // 			FilterClientFunc: func(s string) downloads.FilterClient {
 // 				panic("mock out the FilterClient method")
 // 			},
@@ -55,6 +58,9 @@ type DependenciesMock struct {
 	// DatasetClientFunc mocks the DatasetClient method.
 	DatasetClientFunc func(s string) downloads.DatasetClient
 
+	// FilesClientFunc mocks the FilesClient method.
+	FilesClientFunc func(configMoqParam *config.Config) downloads.FilesClient
+
 	// FilterClientFunc mocks the FilterClient method.
 	FilterClientFunc func(s string) downloads.FilterClient
 
@@ -79,6 +85,11 @@ type DependenciesMock struct {
 		DatasetClient []struct {
 			// S is the s argument value.
 			S string
+		}
+		// FilesClient holds details about calls to the FilesClient method.
+		FilesClient []struct {
+			// ConfigMoqParam is the configMoqParam argument value.
+			ConfigMoqParam *config.Config
 		}
 		// FilterClient holds details about calls to the FilterClient method.
 		FilterClient []struct {
@@ -120,6 +131,7 @@ type DependenciesMock struct {
 		}
 	}
 	lockDatasetClient sync.RWMutex
+	lockFilesClient   sync.RWMutex
 	lockFilterClient  sync.RWMutex
 	lockHealthCheck   sync.RWMutex
 	lockHttpServer    sync.RWMutex
@@ -156,6 +168,37 @@ func (mock *DependenciesMock) DatasetClientCalls() []struct {
 	mock.lockDatasetClient.RLock()
 	calls = mock.calls.DatasetClient
 	mock.lockDatasetClient.RUnlock()
+	return calls
+}
+
+// FilesClient calls FilesClientFunc.
+func (mock *DependenciesMock) FilesClient(configMoqParam *config.Config) downloads.FilesClient {
+	if mock.FilesClientFunc == nil {
+		panic("DependenciesMock.FilesClientFunc: method is nil but Dependencies.FilesClient was just called")
+	}
+	callInfo := struct {
+		ConfigMoqParam *config.Config
+	}{
+		ConfigMoqParam: configMoqParam,
+	}
+	mock.lockFilesClient.Lock()
+	mock.calls.FilesClient = append(mock.calls.FilesClient, callInfo)
+	mock.lockFilesClient.Unlock()
+	return mock.FilesClientFunc(configMoqParam)
+}
+
+// FilesClientCalls gets all the calls that were made to FilesClient.
+// Check the length with:
+//     len(mockedDependencies.FilesClientCalls())
+func (mock *DependenciesMock) FilesClientCalls() []struct {
+	ConfigMoqParam *config.Config
+} {
+	var calls []struct {
+		ConfigMoqParam *config.Config
+	}
+	mock.lockFilesClient.RLock()
+	calls = mock.calls.FilesClient
+	mock.lockFilesClient.RUnlock()
 	return calls
 }
 
