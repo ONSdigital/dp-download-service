@@ -1,14 +1,16 @@
 package files_test
 
 import (
+	"testing"
+
+	fclient "github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-download-service/files"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestUnpublished(t *testing.T) {
 	testFiles := []struct {
-		State               files.State
+		State               string
 		ExpectedUnpublished bool
 	}{
 		{State: files.CREATED, ExpectedUnpublished: true},
@@ -18,10 +20,10 @@ func TestUnpublished(t *testing.T) {
 	}
 
 	for _, file := range testFiles {
-		metadata := files.Metadata{
+		m := fclient.FileMetaData{
 			State: file.State,
 		}
 
-		assert.Equal(t, file.ExpectedUnpublished, metadata.Unpublished())
+		assert.Equal(t, file.ExpectedUnpublished, !(m.State == files.PUBLISHED || m.State == files.DECRYPTED))
 	}
 }

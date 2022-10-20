@@ -10,8 +10,6 @@ import (
 	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/files"
 
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
-
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/middleware"
 	"github.com/ONSdigital/dp-download-service/config"
@@ -32,6 +30,7 @@ type Download struct {
 	filterClient        downloads.FilterClient
 	imageClient         downloads.ImageClient
 	vaultClient         content.VaultClient
+	filesClient         downloads.FilesClient
 	s3Client            content.S3Client
 	zebedeeHealthClient *health.Client
 	router              *mux.Router
@@ -43,7 +42,7 @@ type Download struct {
 // Generate mocks of dependencies
 //
 //go:generate moq -pkg service_test -out moq_service_test.go . Dependencies HealthChecker HTTPServer
-//go:generate moq -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilterClient ImageClient
+//go:generate moq -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilterClient ImageClient FilesClient
 //go:generate moq -pkg service_test -out moq_content_test.go ../content S3Client VaultClient
 
 // Dependencies holds constructors/factories for all external dependencies
@@ -55,6 +54,7 @@ type Dependencies interface {
 	ImageClient(string) downloads.ImageClient
 	VaultClient(*config.Config) (content.VaultClient, error)
 	S3Client(*config.Config) (content.S3Client, error)
+	FilesClient(*config.Config) downloads.FilesClient
 	HealthCheck(*config.Config, string, string, string) (HealthChecker, error)
 	HttpServer(*config.Config, http.Handler) HTTPServer
 }
@@ -82,6 +82,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		datasetClient: deps.DatasetClient(cfg.DatasetAPIURL),
 		filterClient:  deps.FilterClient(cfg.FilterAPIURL),
 		imageClient:   deps.ImageClient(cfg.ImageAPIURL),
+		filesClient:   deps.FilesClient(cfg),
 		shutdown:      cfg.GracefulShutdownTimeout,
 	}
 
@@ -143,7 +144,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	}
 
 	downloadHandler := api.CreateV1DownloadHandler(
-		files.FetchMetadata(cfg.FilesApiURL, dphttp.DefaultClient),
+		files.FetchMetadata(svc.filesClient, cfg.ServiceAuthToken),
 		files.DownloadFile(svc.s3Client, vc, cfg.VaultPath),
 		cfg,
 	)

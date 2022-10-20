@@ -50,6 +50,17 @@ func (e *External) ImageClient(s string) downloads.ImageClient {
 	return m
 }
 
+func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
+	t := &testing.T{}
+	c := gomock.NewController(t)
+	m := mocks.NewMockFilesClient(c)
+	m.EXPECT().Checker(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, check *healthcheck.CheckState) error {
+		check.Update("OK", "MsgHealthy", 0)
+		return nil
+	})
+	return m
+}
+
 func (e *External) VaultClient(cfg *config.Config) (content.VaultClient, error) {
 
 	v, err := vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 5)

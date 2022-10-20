@@ -10,6 +10,7 @@ import (
 
 	dprequest "github.com/ONSdigital/dp-net/v2/request"
 
+	fclient "github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/files"
 	"github.com/ONSdigital/log.go/v2/log"
@@ -69,20 +70,20 @@ func parseRequest(req *http.Request) (context.Context, string) {
 	return ctx, filePath
 }
 
-func handleUnsupportedMetadataStates(ctx context.Context, metadata files.Metadata, cfg *config.Config, filePath string, w http.ResponseWriter) bool {
-	if metadata.Decrypted() {
+func handleUnsupportedMetadataStates(ctx context.Context, m fclient.FileMetaData, cfg *config.Config, filePath string, w http.ResponseWriter) bool {
+	if files.Decrypted(&m) {
 		log.Info(ctx, "File already decrypted, redirecting")
 		setStatusMovedPermanently(RedirectLocation(cfg, filePath), w)
 		return true
 	}
 
-	if metadata.UploadIncomplete() {
+	if files.UploadIncomplete(&m) {
 		log.Info(ctx, "File has not finished uploading")
 		setStatusNotFound(w)
 		return true
 	}
 
-	if metadata.Unpublished() && isWebMode(cfg) {
+	if files.Unpublished(&m) && isWebMode(cfg) {
 		log.Info(ctx, "File is not published yet")
 		setStatusNotFound(w)
 		return true
@@ -132,8 +133,8 @@ func isWebMode(cfg *config.Config) bool {
 	return !cfg.IsPublishing
 }
 
-func setContentHeaders(w http.ResponseWriter, m files.Metadata) {
+func setContentHeaders(w http.ResponseWriter, m fclient.FileMetaData) {
 	w.Header().Set("Content-Type", m.Type)
-	w.Header().Set("Content-Length", m.GetContentLength())
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", m.GetFilename()))
+	w.Header().Set("Content-Length", files.GetContentLength(&m))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", files.GetFilename(&m)))
 }

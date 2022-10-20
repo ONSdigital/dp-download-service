@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -54,67 +53,6 @@ func (f fakeHttpClient) Do(ctx context.Context, req *http.Request) (resp *http.R
 		StatusCode: f.statusCode,
 		Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(f.body))),
 	}, f.err
-}
-
-func (s *RetrieverTestSuite) TestReturnsBadJSONResponseWhenCannotParseJSON() {
-
-	fhc := newFakeFilesApiHttpClient(200, "{bad json")
-
-	_, err := FetchMetadata("", fhc)(context.Background(), "data/file.csv")
-
-	s.Equal(ErrBadJSONResponse, err)
-}
-
-func (s *RetrieverTestSuite) TestReturns403ResponseWhenFilesResponds403() {
-
-	fhc := newFakeFilesApiHttpClient(403, `{"errors": [{"errorCode": "403", "description": "Not Authorized"}]}`)
-
-	_, err := FetchMetadata("", fhc)(context.Background(), "data/file.csv")
-
-	s.Equal(ErrNotAuthorised, err)
-}
-
-func (s *RetrieverTestSuite) TestReturns500ResponseWhenFilesResponds500() {
-	fhc := newFakeFilesApiHttpClient(500, `{"errors": [{"errorCode": "500", "description": "Internal Server Error"}]}`)
-
-	_, err := FetchMetadata("", fhc)(context.Background(), "data/file.csv")
-
-	s.Equal(ErrInternalServerError, err)
-}
-
-func (s *RetrieverTestSuite) TestReturnsUnknownErrorWhenFilesResponds418() {
-	fhc := newFakeFilesApiHttpClient(418, `{"errors": [{"errorCode": "418", "description": "I'm a Teapot"}]}`)
-
-	_, err := FetchMetadata("", fhc)(context.Background(), "data/file.csv")
-
-	s.Equal(ErrUnknown, err)
-}
-
-func (s *RetrieverTestSuite) TestReturnsErrorWhenHttpClientErrors() {
-	fhc := newFakeFilesApiErroringHttpClient(errors.New("broken"))
-
-	_, err := FetchMetadata("", fhc)(context.Background(), "data/file.csv")
-
-	s.Equal(ErrRequest, err)
-}
-
-func (s *RetrieverTestSuite) TestReturnsErrorWhenHostnameBad() {
-	fhc := newFakeFilesApiHttpClient(500, `{}`)
-
-	_, err := FetchMetadata(":::::::::::::::", fhc)(context.Background(), "data/file.csv")
-
-	s.Equal(ErrRequest, err)
-}
-
-func (s *RetrieverTestSuite) TestFetchMetadata() {
-	filePath := "data/file.csv"
-
-	fhc := newFakeFilesApiHttpClient(200, "{}")
-
-	metadata, err := FetchMetadata("", fhc)(context.Background(), filePath)
-
-	s.NoError(err)
-	s.Equal(Metadata{}, metadata)
 }
 
 func (s *RetrieverTestSuite) TestDownloadFile() {

@@ -8,6 +8,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
+	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
@@ -42,6 +43,10 @@ func (*External) ImageClient(imageAPIURL string) downloads.ImageClient {
 
 func (*External) VaultClient(cfg *config.Config) (content.VaultClient, error) {
 	return vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 3)
+}
+
+func (*External) FilesClient(cfg *config.Config) downloads.FilesClient {
+	return files.NewAPIClient(cfg.FilesApiURL, cfg.ServiceAuthToken)
 }
 
 // S3Client obtains a new S3 client, or a local storage client if a non-empty LocalObjectStore is provided
