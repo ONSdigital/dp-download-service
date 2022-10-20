@@ -56,6 +56,10 @@ func TestNew(t *testing.T) {
 			CheckerFunc: checker,
 		}
 
+		mockedFilesClient := &FilesClientMock{
+			CheckerFunc: checker,
+		}
+
 		mockedVaultClient := &VaultClientMock{
 			CheckerFunc: checker,
 		}
@@ -94,6 +98,9 @@ func TestNew(t *testing.T) {
 			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
 				return mockedHttpServer
 			},
+			FilesClientFunc: func(configMoqParam *config.Config) downloads.FilesClient {
+				return mockedFilesClient
+			},
 		}
 
 		Convey("When all is well", func() {
@@ -107,6 +114,7 @@ func TestNew(t *testing.T) {
 				So(svc.GetImageClient(), ShouldEqual, mockedImageClient)
 				So(svc.GetVaultClient(), ShouldEqual, mockedVaultClient)
 				So(svc.GetS3Client(), ShouldEqual, mockedS3Client)
+				So(svc.GetFilesClient(), ShouldEqual, mockedFilesClient)
 				So(svc.GetZebedeeHealthClient(), ShouldNotBeNil)
 				So(svc.GetShutdownTimeout(), ShouldEqual, cfg.GracefulShutdownTimeout)
 				So(svc.GetHealthChecker(), ShouldEqual, mockedHealthChecker)

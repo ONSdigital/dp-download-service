@@ -3,21 +3,18 @@ package files
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
-	"github.com/ONSdigital/log.go/v2/log"
-
-	dprequest "github.com/ONSdigital/dp-net/request"
-
+	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-download-service/content"
+	"github.com/ONSdigital/dp-download-service/downloads"
 )
 
 const (
-	VAULT_KEY = "key"
+	VAULT_KEY        = "key"
 )
 
 type HTTPClient interface {
@@ -32,47 +29,13 @@ var ErrUnknown = errors.New("an unknown error occurred")
 var ErrRequest = errors.New("an error occurred making a request to files api")
 
 type FileDownloader func(path string) (io.ReadCloser, error)
-type MetadataFetcher func(ctx context.Context, path string) (Metadata, error)
+type MetadataFetcher func(ctx context.Context, path string) (files.FileMetaData, error)
 
 type ContextKey string
 
-func FetchMetadata(filesApiUrl string, httpClient HTTPClient) MetadataFetcher {
-	return func(ctx context.Context, path string) (Metadata, error) {
-		m := Metadata{}
-
-		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/files/%s", filesApiUrl, path), nil)
-		if err != nil {
-			log.Error(ctx, "create get file request", err)
-			return m, ErrRequest
-		}
-
-		const authKey ContextKey = dprequest.AuthHeaderKey
-		authHeaderValue := ctx.Value(authKey)
-		if authHeaderValue != nil {
-			req.Header.Add(dprequest.AuthHeaderKey, authHeaderValue.(string))
-		}
-
-		resp, err := httpClient.Do(ctx, req)
-		if err != nil {
-			log.Error(ctx, "send file request", err)
-			return m, ErrRequest
-		}
-
-		switch resp.StatusCode {
-		case http.StatusOK:
-			if json.NewDecoder(resp.Body).Decode(&m) != nil {
-				return m, ErrBadJSONResponse
-			}
-			return m, nil
-		case http.StatusNotFound:
-			return m, ErrFileNotRegistered
-		case http.StatusInternalServerError:
-			return m, ErrInternalServerError
-		case http.StatusForbidden:
-			return m, ErrNotAuthorised
-		default:
-			return m, ErrUnknown
-		}
+func FetchMetadata(filesClient downloads.FilesClient, authToken string) MetadataFetcher {
+	return func(ctx context.Context, path string) (files.FileMetaData, error) {
+		return filesClient.GetFile(ctx, path, authToken)
 	}
 }
 
