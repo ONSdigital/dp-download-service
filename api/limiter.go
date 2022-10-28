@@ -10,10 +10,14 @@ func Limiter(n int) func(http.Handler) http.Handler {
 				h.ServeHTTP(w, r)
 				return
 			}
-			counter <- struct{}{}
-			defer func() { <-counter }()
-
-			h.ServeHTTP(w, r)
+			select {
+			case counter <- struct{}{}:
+				defer func() { <-counter }()
+				h.ServeHTTP(w, r)
+			default:
+				w.WriteHeader(http.StatusTooManyRequests)
+				return
+			}
 		})
 	}
 }
