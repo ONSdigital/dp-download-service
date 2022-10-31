@@ -168,6 +168,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	// Create new middleware chain with whitelisted handler for /health endpoint
 	//
 	middlewareChain := alice.New(middleware.Whitelist(middleware.HealthcheckFilter(hc.Handler)))
+	middlewareChain = middlewareChain.Append(api.Limiter(cfg.MaxConcurrentHandlers))
 
 	// For non-whitelisted endpoints, do identityHandler or corsHandler
 	//
