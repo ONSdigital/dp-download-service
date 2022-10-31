@@ -3,9 +3,10 @@ package config
 import (
 	"context"
 	"fmt"
-	"github.com/ONSdigital/log.go/v2/log"
 	"net/url"
 	"time"
+
+	"github.com/ONSdigital/log.go/v2/log"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -36,6 +37,7 @@ type Config struct {
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
 	EncryptionDisabled         bool          `envconfig:"ENCRYPTION_DISABLED"` // TODO remove encryption always required
 	PublicBucketURL            ConfigUrl     `envconfig:"PUBLIC_BUCKET_URL"`
+	MaxConcurrentHandlers      int           `envconfig:"MAX_CONCURRENT_HANDLERS"`
 }
 
 var cfg *Config
@@ -86,6 +88,7 @@ func Get() (*Config, error) {
 		IsPublishing:               true,
 		EncryptionDisabled:         false,
 		PublicBucketURL:            ConfigUrl{},
+		MaxConcurrentHandlers:      0, // unlimited
 	}
 
 	if err := envconfig.Process("", cfg); err != nil {

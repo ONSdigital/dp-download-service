@@ -1,11 +1,12 @@
 package config
 
 import (
-	"github.com/kelseyhightower/envconfig"
 	"net/url"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/kelseyhightower/envconfig"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -39,6 +40,7 @@ func getConfigEnv() map[string]string {
 		"MONGODB_PASSWORD":             os.Getenv("MONGODB_PASSWORD"),
 		"MONGODB_IS_SSL":               os.Getenv("MONGODB_IS_SSL"),
 		"PUBLIC_BUCKET_URL":            os.Getenv("PUBLIC_BUCKET_URL"),
+		"MAX_CONCURRENT_HANDLERS":      os.Getenv("MAX_CONCURRENT_HANDLERS"),
 	}
 }
 
@@ -59,7 +61,6 @@ func TestSpec(t *testing.T) {
 		}
 
 		os.Setenv("PUBLIC_BUCKET_URL", "http://test")
-
 
 		config, err := Get()
 
@@ -89,6 +90,7 @@ func TestSpec(t *testing.T) {
 				So(config.MinioSecretKey, ShouldEqual, "")
 				So(config.IsPublishing, ShouldBeTrue)
 				So(config.EncryptionDisabled, ShouldBeFalse)
+				So(config.MaxConcurrentHandlers, ShouldEqual, 0)
 
 				expectedUrl, _ := url.Parse("http://test")
 				So(config.PublicBucketURL, ShouldResemble, ConfigUrl{*expectedUrl})
