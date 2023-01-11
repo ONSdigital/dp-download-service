@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"io/ioutil"
 	"os"
 
 	s3client "github.com/ONSdigital/dp-s3"
@@ -38,7 +37,7 @@ func main() {
 		return
 	}
 
-	b, err := ioutil.ReadFile("cpicoicoptest.csv")
+	b, err := os.ReadFile("cpicoicoptest.csv")
 	if err != nil {
 		log.Error(ctx, "failed to connect to vault", err, logData)
 		return

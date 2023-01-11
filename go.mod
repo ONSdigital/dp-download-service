@@ -1,19 +1,19 @@
 module github.com/ONSdigital/dp-download-service
 
-go 1.17
+go 1.19
 
 replace github.com/coreos/etcd => github.com/coreos/etcd v3.3.24+incompatible
 
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go v3.2.1-0.20210802184156-9742bd7fca1c+incompatible
 
 require (
-	github.com/ONSdigital/dp-api-clients-go/v2 v2.181.0
+	github.com/ONSdigital/dp-api-clients-go/v2 v2.187.0
 	github.com/ONSdigital/dp-component-test v0.6.0
-	github.com/ONSdigital/dp-healthcheck v1.3.0
-	github.com/ONSdigital/dp-net/v2 v2.4.0
+	github.com/ONSdigital/dp-healthcheck v1.5.0
+	github.com/ONSdigital/dp-net/v2 v2.6.0
 	github.com/ONSdigital/dp-s3 v1.7.0
 	github.com/ONSdigital/dp-vault v1.1.1
-	github.com/ONSdigital/log.go/v2 v2.2.0
+	github.com/ONSdigital/log.go/v2 v2.3.0
 	github.com/aws/aws-sdk-go v1.44.76
 	github.com/cucumber/godog v0.12.2
 	github.com/golang/mock v1.6.0
@@ -75,7 +75,7 @@ require (
 	go.mongodb.org/mongo-driver v1.7.1 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20220812174116-3211cb980234 // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
+	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 	golang.org/x/text v0.3.8 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
