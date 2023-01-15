@@ -139,10 +139,6 @@ func ConcurrencyTest(t *testing.T, hc HandlerConstructor, requestNumber int, lim
 		}()
 	}
 
-	if oopsCount > 0 {
-		fmt.Printf("Saw a number of errors, count is: %d\n", oopsCount)
-	}
-
 	var resultsWg sync.WaitGroup
 	var result ConcurrencyTestResult
 
@@ -172,6 +168,9 @@ func ConcurrencyTest(t *testing.T, hc HandlerConstructor, requestNumber int, lim
 	}()
 
 	requestsWg.Wait()
+	if oopsCount > 0 {
+		fmt.Printf("Saw a number of errors, count is: %d\n", oopsCount)
+	}
 	close(counter)
 	close(codes)
 	resultsWg.Wait()
