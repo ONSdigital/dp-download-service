@@ -1,9 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/justinas/alice"
@@ -112,6 +114,8 @@ func LightHandler(requestNumber int, limit int, counter chan<- int) http.Handler
 // and 429 Too Many Requests (denied) responses received.
 func ConcurrencyTest(t *testing.T, hc HandlerConstructor, requestNumber int, limit int) ConcurrencyTestResult {
 
+	var oopsCount uint64
+
 	counter := make(chan int)
 	codes := make(chan int)
 
@@ -126,9 +130,17 @@ func ConcurrencyTest(t *testing.T, hc HandlerConstructor, requestNumber int, lim
 		go func() {
 			res, err := http.Get(ts.URL)
 			assert.NoError(t, err)
-			codes <- res.StatusCode
+			if err == nil {
+				codes <- res.StatusCode
+			} else {
+				atomic.AddUint64(&oopsCount, 1)
+			}
 			requestsWg.Done()
 		}()
+	}
+
+	if oopsCount > 0 {
+		fmt.Printf("Saw a number of errors, count is: %d\n", oopsCount)
 	}
 
 	var resultsWg sync.WaitGroup
