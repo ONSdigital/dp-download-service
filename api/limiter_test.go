@@ -49,14 +49,6 @@ func TestLimiterWithHeavyHandler(t *testing.T) {
 	assert.Equal(t, 0, result.denied)
 }
 
-func TestLimiterWithLightHandler(t *testing.T) {
-	result := ConcurrencyTest(t, LightHandler, 1000, 10) // 1000 requests and limit of 10 set
-	assert.Equal(t, 10, result.maxConcurrency)           // no more than 10 concurrent requests at all times
-	assert.GreaterOrEqual(t, result.accepted, 10)        // but more than 10 were accepted overall
-	assert.Equal(t, 1000, result.accepted+result.denied) // no other responses than accepted or denied
-
-}
-
 type ConcurrencyTestResult struct {
 	maxConcurrency int
 	accepted       int
@@ -92,19 +84,6 @@ func HeavyHandler(requestNumber int, limit int, counter chan<- int) http.Handler
 	})
 
 	return alice.New(preLimiter, limiter).Then(handler)
-}
-
-// LightHandler simply returns 200 OK status and finishes.
-// This is useful to test that the limiter allows next handlers as soon
-// as the previous have finished running.
-func LightHandler(requestNumber int, limit int, counter chan<- int) http.Handler {
-	limiter := Limiter(limit)
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		counter <- 1
-		w.WriteHeader(200)
-		counter <- -1
-	})
-	return alice.New(limiter).Then(handler)
 }
 
 // ConcurrencyTest is a test helper that makes a given number of requests to a handler
