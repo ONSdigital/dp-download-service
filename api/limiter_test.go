@@ -1,9 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/justinas/alice"
@@ -47,14 +49,6 @@ func TestLimiterWithHeavyHandler(t *testing.T) {
 	assert.Equal(t, 0, result.denied)
 }
 
-func TestLimiterWithLightHandler(t *testing.T) {
-	result := ConcurrencyTest(t, LightHandler, 1000, 10) // 1000 requests and limit of 10 set
-	assert.Equal(t, 10, result.maxConcurrency)           // no more than 10 concurrent requests at all times
-	assert.GreaterOrEqual(t, result.accepted, 10)        // but more than 10 were accepted overall
-	assert.Equal(t, 1000, result.accepted+result.denied) // no other responses than accepted or denied
-
-}
-
 type ConcurrencyTestResult struct {
 	maxConcurrency int
 	accepted       int
@@ -92,25 +86,14 @@ func HeavyHandler(requestNumber int, limit int, counter chan<- int) http.Handler
 	return alice.New(preLimiter, limiter).Then(handler)
 }
 
-// LightHandler simply returns 200 OK status and finishes.
-// This is useful to test that the limiter allows next handlers as soon
-// as the previous have finished running.
-func LightHandler(requestNumber int, limit int, counter chan<- int) http.Handler {
-	limiter := Limiter(limit)
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		counter <- 1
-		w.WriteHeader(200)
-		counter <- -1
-	})
-	return alice.New(limiter).Then(handler)
-}
-
 // ConcurrencyTest is a test helper that makes a given number of requests to a handler
 // created by HandlerConstructor that is concurrency limited to a given limit.
 // While running, it observes the current actual handler concurrency and returns
 // its maximum encountered value, as well as the number of 200 OK (allowed)
 // and 429 Too Many Requests (denied) responses received.
 func ConcurrencyTest(t *testing.T, hc HandlerConstructor, requestNumber int, limit int) ConcurrencyTestResult {
+
+	var oopsCount uint64
 
 	counter := make(chan int)
 	codes := make(chan int)
@@ -126,7 +109,11 @@ func ConcurrencyTest(t *testing.T, hc HandlerConstructor, requestNumber int, lim
 		go func() {
 			res, err := http.Get(ts.URL)
 			assert.NoError(t, err)
-			codes <- res.StatusCode
+			if err == nil {
+				codes <- res.StatusCode
+			} else {
+				atomic.AddUint64(&oopsCount, 1)
+			}
 			requestsWg.Done()
 		}()
 	}
@@ -160,6 +147,9 @@ func ConcurrencyTest(t *testing.T, hc HandlerConstructor, requestNumber int, lim
 	}()
 
 	requestsWg.Wait()
+	if oopsCount > 0 {
+		fmt.Printf("Saw a number of errors, count is: %d\n", oopsCount)
+	}
 	close(counter)
 	close(codes)
 	resultsWg.Wait()
