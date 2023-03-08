@@ -136,6 +136,10 @@ func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, v
 		IsPublished: fo.IsPublished,
 	}
 
+	log.Info(ctx, "checking the variant", log.Data{
+		"variant": variant,
+	})
+
 	v, ok := fo.Downloads[variant]
 	if ok {
 		log.Info(ctx, "if ok", log.Data{
