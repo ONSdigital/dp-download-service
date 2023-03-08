@@ -127,7 +127,12 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 	authorised, logData := d.authenticate(req, logData)
 	logData["authorised"] = authorised
 
+	logData["publicLink"] = fileDownloads.IsPublicLinkAvailable()
+	log.Info(req.Context(), "is public link available", logData)
+
 	if fileDownloads.IsPublicLinkAvailable() {
+		logData["filePublic"] = fileDownloads.Public
+		log.Info(req.Context(), "checking what's in the public section", logData)
 		http.Redirect(w, req, fileDownloads.Public, http.StatusMovedPermanently)
 		return
 	}
