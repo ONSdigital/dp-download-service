@@ -156,7 +156,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xls").HandlerFunc(d.DoDatasetVersion("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.DoDatasetVersion("xlsx", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoFilterOutput("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.xls").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
+	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xlsx", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.txt").HandlerFunc(d.DoFilterOutput("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv-metadata.json").HandlerFunc(d.DoFilterOutput("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
