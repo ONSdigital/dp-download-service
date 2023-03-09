@@ -124,6 +124,10 @@ func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, v
 	var downloads Model
 
 	fo, err := d.FilterCli.GetOutput(ctx, p.UserAuthToken, p.ServiceAuthToken, p.DownloadServiceToken, p.CollectionID, p.FilterOutputID)
+	log.Info(ctx, "the output is", log.Data{
+		"output": fo,
+	})
+
 	if err != nil {
 		return downloads, err
 	}
@@ -132,11 +136,22 @@ func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, v
 		IsPublished: fo.IsPublished,
 	}
 
+	log.Info(ctx, "checking the variant", log.Data{
+		"variant": variant,
+	})
+
 	v, ok := fo.Downloads[variant]
 	if ok {
+		log.Info(ctx, "if ok", log.Data{
+			"variant": variant,
+		})
 		// The filter output will be considered published (available for public downloads), when it is in 'published' state.
 		model.Public = v.Public
 		s3Path, filename, err := parseURL(v.Private)
+		log.Info(ctx, "the s3 path is", log.Data{
+			"s3path": s3Path,
+			"public": v.Public,
+		})
 		if err != nil {
 			return downloads, err
 		}
@@ -145,6 +160,9 @@ func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, v
 		model.PrivateFilename = filename
 	}
 
+	log.Info(ctx, "the model is", log.Data{
+		"model": model,
+	})
 	return model, nil
 }
 
