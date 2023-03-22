@@ -124,6 +124,7 @@ func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, v
 	var downloads Model
 
 	fo, err := d.FilterCli.GetOutput(ctx, p.UserAuthToken, p.ServiceAuthToken, p.DownloadServiceToken, p.CollectionID, p.FilterOutputID)
+
 	if err != nil {
 		return downloads, err
 	}
@@ -144,7 +145,6 @@ func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, v
 		model.PrivateVaultPath = filename
 		model.PrivateFilename = filename
 	}
-
 	return model, nil
 }
 
