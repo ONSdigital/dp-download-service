@@ -2,10 +2,6 @@ module github.com/ONSdigital/dp-download-service
 
 go 1.19
 
-replace github.com/coreos/etcd => github.com/coreos/etcd v3.3.24+incompatible
-
-replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go v3.2.1-0.20210802184156-9742bd7fca1c+incompatible
-
 require (
 	github.com/ONSdigital/dp-api-clients-go/v2 v2.187.0
 	github.com/ONSdigital/dp-component-test v0.6.0
@@ -15,7 +11,7 @@ require (
 	github.com/ONSdigital/dp-vault v1.1.1
 	github.com/ONSdigital/log.go/v2 v2.3.0
 	github.com/aws/aws-sdk-go v1.44.76
-	github.com/cucumber/godog v0.12.2
+	github.com/cucumber/godog v0.12.6
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.8.0
@@ -36,14 +32,14 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/gofrs/uuid v4.0.0+incompatible // indirect
+	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
 	github.com/hashicorp/go-hclog v0.12.0 // indirect
-	github.com/hashicorp/go-immutable-radix v1.3.0 // indirect
-	github.com/hashicorp/go-memdb v1.3.0 // indirect
+	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
+	github.com/hashicorp/go-memdb v1.3.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.6.2 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
