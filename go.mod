@@ -1,10 +1,18 @@
 module github.com/ONSdigital/dp-download-service
 
-go 1.19
+go 1.21
 
-replace github.com/coreos/etcd => github.com/coreos/etcd v3.3.24+incompatible
+replace (
+	github.com/go-ldap/ldap/v3 => github.com/go-ldap/ldap/v3 v3.4.3
+	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.12.2
+	github.com/spf13/cobra => github.com/spf13/cobra v1.4.0
+	github.com/coreos/etcd => github.com/coreos/etcd v3.3.24+incompatible
+	github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go v3.2.1-0.20210802184156-9742bd7fca1c+incompatible
+)
 
-replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go v3.2.1-0.20210802184156-9742bd7fca1c+incompatible
+
+
+
 
 require (
 	github.com/ONSdigital/dp-api-clients-go/v2 v2.187.0
