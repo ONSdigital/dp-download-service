@@ -14,7 +14,7 @@ import (
 
 var filename = "2470609-cpicoicoptestcsv"
 var bucket = "dp-frontend-florence-file-uploads"
-var region = "eu-west-1"
+var region = "eu-west-2"
 
 func main() {
 	vaultAddress := os.Getenv("VAULT_ADDR")
