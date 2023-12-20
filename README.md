@@ -61,6 +61,7 @@ The endpoint `/healthcheck` checks the health of vault and the dataset api and r
 | GRACEFUL_SHUTDOWN_TIMEOUT    | 5s                                   | The graceful shutdown timeout in time duration string format                                     |
 | HEALTHCHECK_INTERVAL         | 30s                                  | The period of time between health checks                                                         |
 | HEALTHCHECK_CRITICAL_TIMEOUT | 90s                                  | The period of time after which failing checks will result in critical global check status        |
+| OTEL_BATCH_TIMEOUT           | 5s                                   | Interval between pushes to OT Collector                                                          |
 | OTEL_EXPORTER_OTLP_ENDPOINT  | http://localhost:4317                | URL for OpenTelemetry endpoint                                                                   |
 | OTEL_SERVICE_NAME            | "dp-download-service"                | Service name to report to telemetry tools                                                        |
 | VAULT_ADDR                   | http://localhost:8200                | The vault address                                                                                |
