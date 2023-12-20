@@ -9,6 +9,8 @@ import (
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/files"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/middleware"
@@ -167,6 +169,10 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	//
 	middlewareChain := alice.New(middleware.Whitelist(middleware.HealthcheckFilter(hc.Handler)))
 	middlewareChain = middlewareChain.Append(api.Limiter(cfg.MaxConcurrentHandlers))
+
+	// Add middleware for open telemetry
+	router.Use(otelmux.Middleware(cfg.OTServiceName))
+	middlewareChain = middlewareChain.Append(otelhttp.NewMiddleware(cfg.OTServiceName))
 
 	// For non-whitelisted endpoints, do identityHandler or corsHandler
 	//

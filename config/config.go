@@ -25,6 +25,8 @@ type Config struct {
 	GracefulShutdownTimeout    time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"  json:"-"`
 	HealthCheckInterval        time.Duration `envconfig:"HEALTHCHECK_INTERVAL"`
 	HealthCheckCriticalTimeout time.Duration `envconfig:"HEALTHCHECK_CRITICAL_TIMEOUT"`
+	OTExporterOTLPEndpoint     string        `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT"`
+	OTServiceName              string        `envconfig:"OTEL_SERVICE_NAME"`
 	ServiceAuthToken           string        `envconfig:"SERVICE_AUTH_TOKEN"         json:"-"`
 	SecretKey                  string        `envconfig:"SECRET_KEY"                 json:"-"`
 	VaultToken                 string        `envconfig:"VAULT_TOKEN"                json:"-"`
@@ -66,7 +68,7 @@ func Get() (*Config, error) {
 
 	cfg = &Config{
 		BindAddr:                   "localhost:23600",
-		AwsRegion:                  "eu-west-1",
+		AwsRegion:                  "eu-west-2",
 		BucketName:                 "csv-exported",
 		DatasetAPIURL:              "http://localhost:22000",
 		FilterAPIURL:               "http://localhost:22100",
@@ -77,6 +79,8 @@ func Get() (*Config, error) {
 		GracefulShutdownTimeout:    5 * time.Second,
 		HealthCheckInterval:        30 * time.Second,
 		HealthCheckCriticalTimeout: 90 * time.Second,
+		OTExporterOTLPEndpoint:     "localhost:4317",
+		OTServiceName:              "dp-download-service",
 		ServiceAuthToken:           "c60198e9-1864-4b68-ad0b-1e858e5b46a4",
 		VaultAddress:               "http://localhost:8200",
 		VaultToken:                 "",

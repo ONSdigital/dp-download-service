@@ -9,7 +9,7 @@ services:
       - "23600:23600"
     environment:
       BIND_ADDR: 'localhost:23600'
-      AWS_REGION: 'eu-west-1' # http://localstack:4572
+      AWS_REGION: 'eu-west-2' # http://localstack:4572
       BUCKET_NAME: 'testing'
       ENCRYPTION_DISABLED: 'false'
       GRACEFUL_SHUTDOWN_TIMEOUT: '5s'
@@ -27,7 +27,7 @@ services:
       SECRET_KEY: ''
       ZEBEDEE_URL: ''
       IS_PUBLISHING: ''
-      PUBLIC_BUCKET_URL: 'https://csv-exported.s3.eu-west-1.amazonaws.com/'
+      PUBLIC_BUCKET_URL: 'https://csv-exported.s3.eu-west-2.amazonaws.com/'
     volumes:
       - ./:/service
 
@@ -48,7 +48,7 @@ services:
     environment:
       - SERVICES=s3
       - DEBUG=0
-      - AWS_DEFAULT_REGION=eu-west-1
+      - AWS_DEFAULT_REGION=eu-west-2
       - EDGE_PORT=4566
     volumes:
       - ./aws:/docker-entrypoint-initaws.d
