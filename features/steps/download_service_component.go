@@ -70,7 +70,7 @@ func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent
 func (d *DownloadServiceComponent) Initialiser() (http.Handler, error) {
 	d.svc, _ = service.New(context.Background(), "1", "1", "1", d.cfg, d.deps)
 	d.svc.Run(context.Background())
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	return d.DpHttpServer.Handler, nil
 }
