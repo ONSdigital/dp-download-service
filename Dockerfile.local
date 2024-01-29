@@ -2,7 +2,7 @@ FROM golang:1.21.3-bullseye AS base
 
 ENV GOCACHE=/go/.go/cache GOPATH=/go/.go/path TZ=Europe/London
 
-RUN GOBIN=/bin go install github.com/cespare/reflex@latest
+RUN GOBIN=/bin go install github.com/cespare/reflex@v0.3.1
 
 # Map between the working directories of dev and live
 RUN ln -s /go /dp-download-service
