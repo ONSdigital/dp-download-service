@@ -64,6 +64,7 @@ The endpoint `/healthcheck` checks the health of vault and the dataset api and r
 | OTEL_BATCH_TIMEOUT           | 5s                                   | Interval between pushes to OT Collector                                                          |
 | OTEL_EXPORTER_OTLP_ENDPOINT  | http://localhost:4317                | URL for OpenTelemetry endpoint                                                                   |
 | OTEL_SERVICE_NAME            | "dp-download-service"                | Service name to report to telemetry tools                                                        |
+| OTEL_ENABLED                 | false                                | Feature flag to enable OpenTelemetry
 | VAULT_ADDR                   | http://localhost:8200                | The vault address                                                                                |
 | VAULT_TOKEN                  | -                                    | Vault token required for the client to talk to vault. (Use `make debug` to create a vault token) |
 | VAULT_PATH                   | secret/shared/psk                    | The path where the psks will be stored in for vault                                              |
