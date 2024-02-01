@@ -203,6 +203,10 @@ func (d Downloader) getImageDownload(ctx context.Context, p Parameters, variant 
 
 // IsPublicLinkAvailable return true if public URI for the requested extension is available and the object is published
 func (m Model) IsPublicLinkAvailable() bool {
+	log.Info(context.Background(), "some debugging to determine outputs from link check", log.Data{
+		"public_link":  m.Public,
+		"is_published": m.IsPublished,
+	})
 	return len(m.Public) > 0 && m.IsPublished
 }
 
