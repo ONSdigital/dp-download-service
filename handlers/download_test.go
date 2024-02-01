@@ -28,7 +28,6 @@ const (
 	testPublicImageDownload   = "http://test-public-image-download.com"
 	testPrivateCsvFilename    = "my-dataset.csv"
 	testPrivateCsvS3Path      = "/datasets/my-dataset.csv"
-	testPrivateCsvVaultPath   = "/my-dataset.csv"
 	testPrivatePngFilename    = "my-image.png"
 	testPrivatePngPath        = "/images/123/original"
 	florenceTokenHeader       = "X-Florence-Token"
@@ -56,31 +55,27 @@ var (
 	}
 
 	publishedDatasetDownloadPrivateURL = downloads.Model{
-		IsPublished:      true,
-		PrivateFilename:  testPrivateCsvFilename,
-		PrivateS3Path:    testPrivateCsvS3Path,
-		PrivateVaultPath: testPrivateCsvVaultPath,
+		IsPublished:     true,
+		PrivateFilename: testPrivateCsvFilename,
+		PrivateS3Path:   testPrivateCsvS3Path,
 	}
 
 	publishedImageDownloadPrivateURL = downloads.Model{
-		IsPublished:      true,
-		PrivateFilename:  testPrivatePngFilename,
-		PrivateS3Path:    testPrivatePngPath,
-		PrivateVaultPath: testPrivatePngPath,
+		IsPublished:     true,
+		PrivateFilename: testPrivatePngFilename,
+		PrivateS3Path:   testPrivatePngPath,
 	}
 
 	unpublishedDatasetDownloadPrivateLink = downloads.Model{
-		IsPublished:      false,
-		PrivateFilename:  testPrivateCsvFilename,
-		PrivateS3Path:    testPrivateCsvS3Path,
-		PrivateVaultPath: testPrivateCsvVaultPath,
+		IsPublished:     false,
+		PrivateFilename: testPrivateCsvFilename,
+		PrivateS3Path:   testPrivateCsvS3Path,
 	}
 
 	unpublishedImageDownloadPrivateLink = downloads.Model{
-		IsPublished:      false,
-		PrivateFilename:  testPrivatePngFilename,
-		PrivateS3Path:    testPrivatePngPath,
-		PrivateVaultPath: testPrivatePngPath,
+		IsPublished:     false,
+		PrivateFilename: testPrivatePngFilename,
+		PrivateS3Path:   testPrivatePngPath,
 	}
 
 	publishedDatasetDownloadNoURLs = downloads.Model{
@@ -227,7 +222,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeDatasetVersion, publishedDatasetDownloadPrivateURL)
-		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivateCsvS3Path, testPrivateCsvVaultPath, testCsvContent)
+		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivateCsvS3Path, testCsvContent)
 
 		d := Download{
 			Downloader: dl,
@@ -251,7 +246,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeDatasetVersion, unpublishedDatasetDownloadPrivateLink)
-		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivateCsvS3Path, testPrivateCsvVaultPath, testCsvContent)
+		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivateCsvS3Path, testCsvContent)
 
 		d := Download{
 			Downloader:   dl,
@@ -296,7 +291,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png", UserAuthToken: testUserToken}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeImage, publishedImageDownloadPrivateURL)
-		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivatePngPath, testPrivatePngPath, testImageContent)
+		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivatePngPath, testImageContent)
 
 		d := Download{
 			Downloader: dl,
@@ -320,7 +315,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png", UserAuthToken: testUserToken}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeImage, unpublishedImageDownloadPrivateLink)
-		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivatePngPath, testPrivatePngPath, testImageContent)
+		s3C := s3ContentWriterSuccessfullyWritesToResponse(mockCtrl, w, testPrivatePngPath, testImageContent)
 
 		d := Download{
 			Downloader:   dl,
@@ -559,18 +554,18 @@ func downloaderReturningError(c *gomock.Controller, p downloads.Parameters, ft d
 func s3ContentNeverInvoked(c *gomock.Controller) *mocks.MockS3Content {
 	s3C := mocks.NewMockS3Content(c)
 	s3C.EXPECT().
-		StreamAndWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		StreamAndWrite(gomock.Any(), gomock.Any(), gomock.Any()).
 		Times(0).
 		Return(nil)
 	return s3C
 }
 
-func s3ContentWriterSuccessfullyWritesToResponse(c *gomock.Controller, w io.Writer, expectedS3Path string, expectedVaultPath string, expectedBody []byte) *mocks.MockS3Content {
+func s3ContentWriterSuccessfullyWritesToResponse(c *gomock.Controller, w io.Writer, expectedS3Path string, expectedBody []byte) *mocks.MockS3Content {
 	s3C := mocks.NewMockS3Content(c)
 	s3C.EXPECT().
-		StreamAndWrite(gomock.Any(), gomock.Eq(expectedS3Path), gomock.Eq(expectedVaultPath), gomock.Eq(w)).
+		StreamAndWrite(gomock.Any(), gomock.Eq(expectedS3Path), gomock.Eq(w)).
 		Return(nil).
-		Do(func(ctx context.Context, expectedS3Path string, expectedVaultPath string, w io.Writer) {
+		Do(func(ctx context.Context, expectedS3Path string, w io.Writer) {
 			w.Write(expectedBody)
 		})
 	return s3C
@@ -579,7 +574,7 @@ func s3ContentWriterSuccessfullyWritesToResponse(c *gomock.Controller, w io.Writ
 func s3ContentReturnsAnError(c *gomock.Controller, err error) *mocks.MockS3Content {
 	s3C := mocks.NewMockS3Content(c)
 	s3C.EXPECT().
-		StreamAndWrite(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		StreamAndWrite(gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(err)
 
 	return s3C

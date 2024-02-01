@@ -15,36 +15,12 @@ import (
 // If this is not the case, regenerate this file with moq.
 var _ content.S3Client = &S3ClientMock{}
 
-// S3ClientMock is a mock implementation of content.S3Client.
-//
-// 	func TestSomethingThatUsesS3Client(t *testing.T) {
-//
-// 		// make and configure a mocked content.S3Client
-// 		mockedS3Client := &S3ClientMock{
-// 			CheckerFunc: func(ctx context.Context, check *healthcheck.CheckState) error {
-// 				panic("mock out the Checker method")
-// 			},
-// 			GetFunc: func(key string) (io.ReadCloser, *int64, error) {
-// 				panic("mock out the Get method")
-// 			},
-// 			GetWithPSKFunc: func(key string, psk []byte) (io.ReadCloser, *int64, error) {
-// 				panic("mock out the GetWithPSK method")
-// 			},
-// 		}
-//
-// 		// use mockedS3Client in code that requires content.S3Client
-// 		// and then make assertions.
-//
-// 	}
 type S3ClientMock struct {
 	// CheckerFunc mocks the Checker method.
 	CheckerFunc func(ctx context.Context, check *healthcheck.CheckState) error
 
 	// GetFunc mocks the Get method.
 	GetFunc func(key string) (io.ReadCloser, *int64, error)
-
-	// GetWithPSKFunc mocks the GetWithPSK method.
-	GetWithPSKFunc func(key string, psk []byte) (io.ReadCloser, *int64, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -60,17 +36,9 @@ type S3ClientMock struct {
 			// Key is the key argument value.
 			Key string
 		}
-		// GetWithPSK holds details about calls to the GetWithPSK method.
-		GetWithPSK []struct {
-			// Key is the key argument value.
-			Key string
-			// Psk is the psk argument value.
-			Psk []byte
-		}
 	}
 	lockChecker    sync.RWMutex
 	lockGet        sync.RWMutex
-	lockGetWithPSK sync.RWMutex
 }
 
 // Checker calls CheckerFunc.
@@ -139,157 +107,3 @@ func (mock *S3ClientMock) GetCalls() []struct {
 	return calls
 }
 
-// GetWithPSK calls GetWithPSKFunc.
-func (mock *S3ClientMock) GetWithPSK(key string, psk []byte) (io.ReadCloser, *int64, error) {
-	if mock.GetWithPSKFunc == nil {
-		panic("S3ClientMock.GetWithPSKFunc: method is nil but S3Client.GetWithPSK was just called")
-	}
-	callInfo := struct {
-		Key string
-		Psk []byte
-	}{
-		Key: key,
-		Psk: psk,
-	}
-	mock.lockGetWithPSK.Lock()
-	mock.calls.GetWithPSK = append(mock.calls.GetWithPSK, callInfo)
-	mock.lockGetWithPSK.Unlock()
-	return mock.GetWithPSKFunc(key, psk)
-}
-
-// GetWithPSKCalls gets all the calls that were made to GetWithPSK.
-// Check the length with:
-//     len(mockedS3Client.GetWithPSKCalls())
-func (mock *S3ClientMock) GetWithPSKCalls() []struct {
-	Key string
-	Psk []byte
-} {
-	var calls []struct {
-		Key string
-		Psk []byte
-	}
-	mock.lockGetWithPSK.RLock()
-	calls = mock.calls.GetWithPSK
-	mock.lockGetWithPSK.RUnlock()
-	return calls
-}
-
-// Ensure, that VaultClientMock does implement content.VaultClient.
-// If this is not the case, regenerate this file with moq.
-var _ content.VaultClient = &VaultClientMock{}
-
-// VaultClientMock is a mock implementation of content.VaultClient.
-//
-// 	func TestSomethingThatUsesVaultClient(t *testing.T) {
-//
-// 		// make and configure a mocked content.VaultClient
-// 		mockedVaultClient := &VaultClientMock{
-// 			CheckerFunc: func(ctx context.Context, check *healthcheck.CheckState) error {
-// 				panic("mock out the Checker method")
-// 			},
-// 			ReadKeyFunc: func(path string, key string) (string, error) {
-// 				panic("mock out the ReadKey method")
-// 			},
-// 		}
-//
-// 		// use mockedVaultClient in code that requires content.VaultClient
-// 		// and then make assertions.
-//
-// 	}
-type VaultClientMock struct {
-	// CheckerFunc mocks the Checker method.
-	CheckerFunc func(ctx context.Context, check *healthcheck.CheckState) error
-
-	// ReadKeyFunc mocks the ReadKey method.
-	ReadKeyFunc func(path string, key string) (string, error)
-
-	// calls tracks calls to the methods.
-	calls struct {
-		// Checker holds details about calls to the Checker method.
-		Checker []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Check is the check argument value.
-			Check *healthcheck.CheckState
-		}
-		// ReadKey holds details about calls to the ReadKey method.
-		ReadKey []struct {
-			// Path is the path argument value.
-			Path string
-			// Key is the key argument value.
-			Key string
-		}
-	}
-	lockChecker sync.RWMutex
-	lockReadKey sync.RWMutex
-}
-
-// Checker calls CheckerFunc.
-func (mock *VaultClientMock) Checker(ctx context.Context, check *healthcheck.CheckState) error {
-	if mock.CheckerFunc == nil {
-		panic("VaultClientMock.CheckerFunc: method is nil but VaultClient.Checker was just called")
-	}
-	callInfo := struct {
-		Ctx   context.Context
-		Check *healthcheck.CheckState
-	}{
-		Ctx:   ctx,
-		Check: check,
-	}
-	mock.lockChecker.Lock()
-	mock.calls.Checker = append(mock.calls.Checker, callInfo)
-	mock.lockChecker.Unlock()
-	return mock.CheckerFunc(ctx, check)
-}
-
-// CheckerCalls gets all the calls that were made to Checker.
-// Check the length with:
-//     len(mockedVaultClient.CheckerCalls())
-func (mock *VaultClientMock) CheckerCalls() []struct {
-	Ctx   context.Context
-	Check *healthcheck.CheckState
-} {
-	var calls []struct {
-		Ctx   context.Context
-		Check *healthcheck.CheckState
-	}
-	mock.lockChecker.RLock()
-	calls = mock.calls.Checker
-	mock.lockChecker.RUnlock()
-	return calls
-}
-
-// ReadKey calls ReadKeyFunc.
-func (mock *VaultClientMock) ReadKey(path string, key string) (string, error) {
-	if mock.ReadKeyFunc == nil {
-		panic("VaultClientMock.ReadKeyFunc: method is nil but VaultClient.ReadKey was just called")
-	}
-	callInfo := struct {
-		Path string
-		Key  string
-	}{
-		Path: path,
-		Key:  key,
-	}
-	mock.lockReadKey.Lock()
-	mock.calls.ReadKey = append(mock.calls.ReadKey, callInfo)
-	mock.lockReadKey.Unlock()
-	return mock.ReadKeyFunc(path, key)
-}
-
-// ReadKeyCalls gets all the calls that were made to ReadKey.
-// Check the length with:
-//     len(mockedVaultClient.ReadKeyCalls())
-func (mock *VaultClientMock) ReadKeyCalls() []struct {
-	Path string
-	Key  string
-} {
-	var calls []struct {
-		Path string
-		Key  string
-	}
-	mock.lockReadKey.RLock()
-	calls = mock.calls.ReadKey
-	mock.lockReadKey.RUnlock()
-	return calls
-}

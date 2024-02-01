@@ -41,7 +41,6 @@ func TestNew(t *testing.T) {
 		cfg := &config.Config{
 			GracefulShutdownTimeout: 5 * time.Minute,
 			IsPublishing:            true,
-			EncryptionDisabled:      false, // just to be explicit
 		}
 
 		mockedDatasetClient := &DatasetClientMock{
@@ -57,10 +56,6 @@ func TestNew(t *testing.T) {
 		}
 
 		mockedFilesClient := &FilesClientMock{
-			CheckerFunc: checker,
-		}
-
-		mockedVaultClient := &VaultClientMock{
 			CheckerFunc: checker,
 		}
 
@@ -86,9 +81,6 @@ func TestNew(t *testing.T) {
 			ImageClientFunc: func(s string) downloads.ImageClient {
 				return mockedImageClient
 			},
-			VaultClientFunc: func(cfg *config.Config) (content.VaultClient, error) {
-				return mockedVaultClient, nil
-			},
 			S3ClientFunc: func(cfg *config.Config) (content.S3Client, error) {
 				return mockedS3Client, nil
 			},
@@ -112,7 +104,6 @@ func TestNew(t *testing.T) {
 				So(svc.GetDatasetClient(), ShouldEqual, mockedDatasetClient)
 				So(svc.GetFilterClient(), ShouldEqual, mockedFilterClient)
 				So(svc.GetImageClient(), ShouldEqual, mockedImageClient)
-				So(svc.GetVaultClient(), ShouldEqual, mockedVaultClient)
 				So(svc.GetS3Client(), ShouldEqual, mockedS3Client)
 				So(svc.GetFilesClient(), ShouldEqual, mockedFilesClient)
 				So(svc.GetZebedeeHealthClient(), ShouldNotBeNil)
@@ -123,19 +114,6 @@ func TestNew(t *testing.T) {
 
 		// Ensure New fails when any of the client setups fail
 		//
-
-		Convey("When Vault setup fails", func() {
-			mockedDependencies.VaultClientFunc = func(cfg *config.Config) (content.VaultClient, error) {
-				return nil, errors.New("vault failure")
-			}
-
-			svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
-
-			Convey("New should fail", func() {
-				So(svc, ShouldBeNil)
-				So(err.Error(), ShouldContainSubstring, "vault failure")
-			})
-		})
 
 		Convey("When S3 setup fails", func() {
 			mockedDependencies.S3ClientFunc = func(cfg *config.Config) (content.S3Client, error) {
@@ -176,19 +154,6 @@ func TestNew(t *testing.T) {
 		Convey("When dataset api healthcheck setup fails", func() {
 			mockedHealthChecker.AddCheckFunc = func(name string, checker healthcheck.Checker) error {
 				return failIfNameMatches(name, "Dataset API")
-			}
-
-			svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
-
-			Convey("New should fail", func() {
-				So(svc, ShouldBeNil)
-				So(err.Error(), ShouldContainSubstring, "registering checkers for healthcheck")
-			})
-		})
-
-		Convey("When vault healthcheck setup fails", func() {
-			mockedHealthChecker.AddCheckFunc = func(name string, checker healthcheck.Checker) error {
-				return failIfNameMatches(name, "Vault")
 			}
 
 			svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
@@ -253,28 +218,6 @@ func TestNew(t *testing.T) {
 
 		// Some feature flag tests
 		//
-
-		// Ensure Vault client not created if encryption is disabled
-		//
-		Convey("When encryption is disabled", func() {
-			// fail New() if vault client setup is called
-			mockedDependencies.VaultClientFunc = func(cfg *config.Config) (content.VaultClient, error) {
-				return nil, errors.New("vault failure")
-			}
-			// fail New() if vault checker added
-			mockedHealthChecker.AddCheckFunc = func(name string, checker healthcheck.Checker) error {
-				return failIfNameMatches(name, "Vault")
-			}
-
-			cfg.EncryptionDisabled = true
-			svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
-
-			Convey("Vault should not be setup", func() {
-				So(svc, ShouldNotBeNil)
-				So(err, ShouldBeNil)
-				So(svc.GetVaultClient(), ShouldBeNil)
-			})
-		})
 
 		// Ensure Zebedee health check setup is not run when IsPublish is false
 		//

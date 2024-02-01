@@ -16,11 +16,10 @@ const (
 	testVariant = "myVariant"
 	testName    = "myImageName.png"
 
-	testImagePublicUrl        = "http://public.localhost/images/myImageID/myVariant/myImageName.png"
-	testImagePrivateUrl       = "http://private.localhost/images/myImageID/myVariant/myImageName.png"
-	testImagePrivateFilename  = "myImageName.png"
-	testImagePrivateS3Path    = "images/myImageID/myVariant"
-	testImagePrivateVaultPath = "images/myImageID/myVariant"
+	testImagePublicUrl       = "http://public.localhost/images/myImageID/myVariant/myImageName.png"
+	testImagePrivateUrl      = "http://private.localhost/images/myImageID/myVariant/myImageName.png"
+	testImagePrivateFilename = "myImageName.png"
+	testImagePrivateS3Path   = "images/myImageID/myVariant"
 )
 
 var (
@@ -55,7 +54,6 @@ func TestGetDownloadsForImage(t *testing.T) {
 		So(downloads.Public, ShouldBeBlank)
 		So(downloads.PrivateFilename, ShouldBeBlank)
 		So(downloads.PrivateS3Path, ShouldBeBlank)
-		So(downloads.PrivateVaultPath, ShouldBeBlank)
 		So(err, ShouldResemble, errImage)
 	})
 
@@ -78,7 +76,6 @@ func TestGetDownloadsForImage(t *testing.T) {
 		So(downloads.Public, ShouldBeBlank)
 		So(downloads.PrivateFilename, ShouldResemble, testImagePrivateFilename)
 		So(downloads.PrivateS3Path, ShouldResemble, testImagePrivateS3Path)
-		So(downloads.PrivateVaultPath, ShouldResemble, testImagePrivateVaultPath)
 		So(err, ShouldBeNil)
 	})
 
@@ -101,7 +98,6 @@ func TestGetDownloadsForImage(t *testing.T) {
 		So(downloads.Public, ShouldBeBlank)
 		So(downloads.PrivateFilename, ShouldResemble, testImagePrivateFilename)
 		So(downloads.PrivateS3Path, ShouldResemble, testImagePrivateS3Path)
-		So(downloads.PrivateVaultPath, ShouldResemble, testImagePrivateVaultPath)
 		So(err, ShouldBeNil)
 	})
 
@@ -124,7 +120,6 @@ func TestGetDownloadsForImage(t *testing.T) {
 		So(downloads.Public, ShouldResemble, testImagePublicUrl)
 		So(downloads.PrivateFilename, ShouldResemble, testImagePrivateFilename)
 		So(downloads.PrivateS3Path, ShouldResemble, testImagePrivateS3Path)
-		So(downloads.PrivateVaultPath, ShouldResemble, testImagePrivateVaultPath)
 		So(err, ShouldBeNil)
 	})
 }

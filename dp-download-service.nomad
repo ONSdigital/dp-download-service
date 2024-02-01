@@ -70,13 +70,6 @@ job "dp-download-service" {
         source      = "${NOMAD_TASK_DIR}/vars-template"
         destination = "${NOMAD_TASK_DIR}/vars"
       }
-
-      vault {
-        policies = ["dp-download-service-web"]
-
-        change_mode   = "signal"
-        change_signal = "SIGUSR1"
-      }
     }
   }
 
@@ -138,13 +131,6 @@ job "dp-download-service" {
       template {
         source      = "${NOMAD_TASK_DIR}/vars-template"
         destination = "${NOMAD_TASK_DIR}/vars"
-      }
-
-      vault {
-        policies = ["dp-download-service-publishing"]
-
-        change_mode   = "signal"
-        change_signal = "SIGUSR1"
       }
     }
   }

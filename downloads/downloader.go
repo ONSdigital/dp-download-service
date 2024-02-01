@@ -55,11 +55,10 @@ const (
 
 // Model is a struct that contains all the required information to download a file.
 type Model struct {
-	IsPublished      bool
-	Public           string
-	PrivateS3Path    string
-	PrivateVaultPath string
-	PrivateFilename  string
+	IsPublished     bool
+	Public          string
+	PrivateS3Path   string
+	PrivateFilename string
 }
 
 // Parameters is the union of required parameters to perform all downloads
@@ -142,7 +141,6 @@ func (d Downloader) getFilterOutputDownload(ctx context.Context, p Parameters, v
 			return downloads, err
 		}
 		model.PrivateS3Path = s3Path
-		model.PrivateVaultPath = filename
 		model.PrivateFilename = filename
 	}
 	return model, nil
@@ -170,7 +168,6 @@ func (d Downloader) getDatasetVersionDownload(ctx context.Context, p Parameters,
 			return downloads, err
 		}
 		model.PrivateS3Path = s3Path
-		model.PrivateVaultPath = filename
 		model.PrivateFilename = filename
 	}
 
@@ -189,10 +186,9 @@ func (d Downloader) getImageDownload(ctx context.Context, p Parameters, variant 
 	privatePath := fmt.Sprintf("images/%s/%s", p.ImageID, p.Variant)
 	downloads = Model{
 		// The variant will be considered published (available for public downloads), when it is in 'published' or 'completed' state.
-		IsPublished:      ("published" == imageVariant.State || "completed" == imageVariant.State),
-		PrivateVaultPath: privatePath,
-		PrivateS3Path:    privatePath,
-		PrivateFilename:  p.Filename,
+		IsPublished:     ("published" == imageVariant.State || "completed" == imageVariant.State),
+		PrivateS3Path:   privatePath,
+		PrivateFilename: p.Filename,
 	}
 	if imageVariant.State == "completed" {
 		downloads.Public = imageVariant.Href

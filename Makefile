@@ -28,7 +28,7 @@ build:
 
 .PHONY: debug
 debug: build
-	HUMAN_LOG=1 VAULT_TOKEN=$(APP_TOKEN) VAULT_ADDR=$(VAULT_ADDR) go run $(LDFLAGS) -race main.go
+	HUMAN_LOG=1 go run $(LDFLAGS) -race main.go
 
 .PHONY: debug-run
 debug-run:

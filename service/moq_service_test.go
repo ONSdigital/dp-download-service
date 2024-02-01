@@ -45,9 +45,6 @@ var _ service.Dependencies = &DependenciesMock{}
 // 			S3ClientFunc: func(configMoqParam *config.Config) (content.S3Client, error) {
 // 				panic("mock out the S3Client method")
 // 			},
-// 			VaultClientFunc: func(configMoqParam *config.Config) (content.VaultClient, error) {
-// 				panic("mock out the VaultClient method")
-// 			},
 // 		}
 //
 // 		// use mockedDependencies in code that requires service.Dependencies
@@ -75,9 +72,6 @@ type DependenciesMock struct {
 
 	// S3ClientFunc mocks the S3Client method.
 	S3ClientFunc func(configMoqParam *config.Config) (content.S3Client, error)
-
-	// VaultClientFunc mocks the VaultClient method.
-	VaultClientFunc func(configMoqParam *config.Config) (content.VaultClient, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -124,11 +118,6 @@ type DependenciesMock struct {
 			// ConfigMoqParam is the configMoqParam argument value.
 			ConfigMoqParam *config.Config
 		}
-		// VaultClient holds details about calls to the VaultClient method.
-		VaultClient []struct {
-			// ConfigMoqParam is the configMoqParam argument value.
-			ConfigMoqParam *config.Config
-		}
 	}
 	lockDatasetClient sync.RWMutex
 	lockFilesClient   sync.RWMutex
@@ -137,7 +126,6 @@ type DependenciesMock struct {
 	lockHttpServer    sync.RWMutex
 	lockImageClient   sync.RWMutex
 	lockS3Client      sync.RWMutex
-	lockVaultClient   sync.RWMutex
 }
 
 // DatasetClient calls DatasetClientFunc.
@@ -370,37 +358,6 @@ func (mock *DependenciesMock) S3ClientCalls() []struct {
 	mock.lockS3Client.RLock()
 	calls = mock.calls.S3Client
 	mock.lockS3Client.RUnlock()
-	return calls
-}
-
-// VaultClient calls VaultClientFunc.
-func (mock *DependenciesMock) VaultClient(configMoqParam *config.Config) (content.VaultClient, error) {
-	if mock.VaultClientFunc == nil {
-		panic("DependenciesMock.VaultClientFunc: method is nil but Dependencies.VaultClient was just called")
-	}
-	callInfo := struct {
-		ConfigMoqParam *config.Config
-	}{
-		ConfigMoqParam: configMoqParam,
-	}
-	mock.lockVaultClient.Lock()
-	mock.calls.VaultClient = append(mock.calls.VaultClient, callInfo)
-	mock.lockVaultClient.Unlock()
-	return mock.VaultClientFunc(configMoqParam)
-}
-
-// VaultClientCalls gets all the calls that were made to VaultClient.
-// Check the length with:
-//     len(mockedDependencies.VaultClientCalls())
-func (mock *DependenciesMock) VaultClientCalls() []struct {
-	ConfigMoqParam *config.Config
-} {
-	var calls []struct {
-		ConfigMoqParam *config.Config
-	}
-	mock.lockVaultClient.RLock()
-	calls = mock.calls.VaultClient
-	mock.lockVaultClient.RUnlock()
 	return calls
 }
 

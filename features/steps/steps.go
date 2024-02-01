@@ -2,19 +2,12 @@ package steps
 
 import (
 	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
-	dprequest "github.com/ONSdigital/dp-net/v2/request"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 
-	"github.com/ONSdigital/dp-download-service/files"
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/aws/aws-sdk-go/aws"
@@ -37,7 +30,7 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the headers should be:$`, d.theHeadersShouldBe)
 	ctx.Step(`^the file content should be:$`, d.theFileContentShouldBe)
 	ctx.Step(`^the file "([^"]*)" has not been uploaded$`, d.theFileHasNotBeenUploaded)
-	ctx.Step(`^the file "([^"]*)" is encrypted in S3 with content:$`, d.theFileEncryptedUsingKeyFromVaultStoredInSWithContent)
+	ctx.Step(`^the file "([^"]*)" is in S3 with content:$`, d.theFileStoredInS3WithContent)
 	ctx.Step(`^I should be redirected to "([^"]*)"$`, d.iShouldBeRedirectedTo)
 	ctx.Step(`^the GET request with path \("([^"]*)"\) should contain an authorization header containing "([^"]*)"$`, d.theGETRequestWithPathShouldContainAnAuthorizationHeaderContaining)
 
@@ -100,32 +93,14 @@ func (d *DownloadServiceComponent) theFileMetadata(filepath string, metadata *go
 	return d.ApiFeature.StepError()
 }
 
-func (d *DownloadServiceComponent) theFileEncryptedUsingKeyFromVaultStoredInSWithContent(filepath string, content *godog.DocString) error {
-	cfg, _ := config.Get()
-
-	vaultPath := fmt.Sprintf("%s/%s", cfg.VaultPath, filepath)
-
-	encryptionKey := make([]byte, 16)
-	rand.Read(encryptionKey)
-
-	// store encryptionkey key in vault against the path <filepath>
-	if err := d.vaultClient.WriteKey(vaultPath, files.VAULT_KEY, hex.EncodeToString(encryptionKey)); err != nil {
-		return err
-	}
-
+// here
+func (d *DownloadServiceComponent) theFileStoredInS3WithContent(filepath string, content *godog.DocString) error {
 	c := bytes.NewBuffer([]byte(content.Content))
-
-	// encrypt
-	encryptedContent, err := encryptObjectContent(encryptionKey, c)
-	if err != nil {
-		fmt.Printf("encryption has failed: %v", err)
-		panic("encryption has failed")
-	}
 
 	// store
 	d.theS3FileWithContent(filepath, &godog.DocString{
 		MediaType: "",
-		Content:   string(encryptedContent),
+		Content:   c.String(),
 	})
 
 	return d.ApiFeature.StepError()
@@ -158,26 +133,6 @@ func (d *DownloadServiceComponent) iShouldBeRedirectedTo(url string) error {
 	assert.Equal(d.ApiFeature, url, d.ApiFeature.HttpResponse.Header.Get("Location"))
 
 	return d.ApiFeature.StepError()
-}
-
-func encryptObjectContent(psk []byte, b io.Reader) ([]byte, error) {
-	unencryptedBytes, err := ioutil.ReadAll(b)
-	if err != nil {
-		return nil, err
-	}
-
-	block, err := aes.NewCipher(psk)
-	if err != nil {
-		return nil, err
-	}
-
-	encryptedBytes := make([]byte, len(unencryptedBytes))
-
-	stream := cipher.NewCFBEncrypter(block, psk)
-
-	stream.XORKeyStream(encryptedBytes, unencryptedBytes)
-
-	return encryptedBytes, nil
 }
 
 func (d *DownloadServiceComponent) theGETRequestWithPathShouldContainAnAuthorizationHeaderContaining(filepath, expectedAuthHeader string) error {

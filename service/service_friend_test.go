@@ -27,10 +27,6 @@ func (svc *Download) GetFilesClient() downloads.FilesClient {
 	return svc.filesClient
 }
 
-func (svc *Download) GetVaultClient() content.VaultClient {
-	return svc.vaultClient
-}
-
 func (svc *Download) GetS3Client() content.S3Client {
 	return svc.s3Client
 }

@@ -1,4 +1,4 @@
-version: "3"
+version: "3.3"
 
 services:
   download-service:
@@ -11,13 +11,9 @@ services:
       BIND_ADDR: 'localhost:23600'
       AWS_REGION: 'eu-west-2' # http://localstack:4572
       BUCKET_NAME: 'testing'
-      ENCRYPTION_DISABLED: 'false'
       GRACEFUL_SHUTDOWN_TIMEOUT: '5s'
       HEALTHCHECK_INTERVAL: '5s'
       HEALTHCHECK_CRITICAL_TIMEOUT: '5s'
-      VAULT_TOKEN: '0000-0000-0000-0000'
-      VAULT_ADDR: 'http://vault:8200'
-      VAULT_PATH': 'secret/shared/psk'
       DATASET_API_URL: ''
       DATASET_AUTH_TOKEN: ''
       DOWNLOAD_SERVICE_TOKEN: ''
@@ -31,16 +27,6 @@ services:
     volumes:
       - ./:/service
 
-  vault:
-    image: hashicorp/vault:latest
-    restart: always
-    ports:
-      - "8200:8200/tcp"
-    entrypoint: vault server -dev -dev-kv-v1 -dev-root-token-id="0000-0000-0000-0000"
-    environment:
-      VAULT_DEV_ROOT_TOKEN_ID: '0000-0000-0000-0000'
-      VAULT_DEV_LISTEN_ADDRESS: '0.0.0.0:8200'
-
   localstack:
     image: localstack/localstack
     ports:
@@ -52,5 +38,5 @@ services:
       - EDGE_PORT=4566
     volumes:
       - ./aws:/docker-entrypoint-initaws.d
-      - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
+      - "${TMPDIR:-/tmp}/localstack:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"

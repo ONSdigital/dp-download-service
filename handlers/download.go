@@ -36,7 +36,7 @@ type IdentityClient interface {
 
 // S3Content is an interface to represent methods called to action on S3
 type S3Content interface {
-	StreamAndWrite(ctx context.Context, s3Path string, vaultPath string, w io.Writer) error
+	StreamAndWrite(ctx context.Context, s3Path string, w io.Writer) error
 }
 
 // Downloader is an interface to represent methods called to obtain the download metadata for any possible download type (dataset, image, etc)
@@ -140,18 +140,16 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 				s3Path = s3Path[i:]
 			}
 		}
-		vaultPath := fileDownloads.PrivateVaultPath
 		filename := fileDownloads.PrivateFilename
 
 		logData["private_s3_path"] = s3Path
-		logData["private_vault_path"] = vaultPath
 		logData["private_filename"] = filename
 		log.Info(req.Context(), "using private link", logData)
 
 		if fileDownloads.IsPublished || authorised {
 			w.Header().Set("Content-Disposition", "attachment; filename="+filename)
 
-			err = d.S3Content.StreamAndWrite(ctx, s3Path, vaultPath, w)
+			err = d.S3Content.StreamAndWrite(ctx, s3Path, w)
 			if err != nil {
 				setStatusCode(ctx, w, fmt.Errorf("failed to stream response: %w", err), logData)
 				return

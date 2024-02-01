@@ -18,7 +18,7 @@ Feature: ONS Public Website Download files
           "state": "PUBLISHED"
         }
         """
-    And the file "data/populations.csv" is encrypted in S3 with content:
+    And the file "data/populations.csv" is in S3 with content:
         """
         mark,1
         jon,2
@@ -54,7 +54,7 @@ Feature: ONS Public Website Download files
           "state": "PUBLISHED"
         }
         """
-    And the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" is encrypted in S3 with content:
+    And the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" is in S3 with content:
         """
         mark,1
         jon,2
@@ -96,7 +96,7 @@ Feature: ONS Public Website Download files
           "state": "UPLOADED"
         }
         """
-    And the file "data/populations.csv" is encrypted in S3 with content:
+    And the file "data/populations.csv" is in S3 with content:
         """
         mark,1
         russ,2
@@ -124,7 +124,7 @@ Feature: ONS Public Website Download files
           "state": "DECRYPTED"
         }
         """
-    And the file "data/populations.csv" is encrypted in S3 with content:
+    And the file "data/populations.csv" is in S3 with content:
         """
         mark,1
         russ,2

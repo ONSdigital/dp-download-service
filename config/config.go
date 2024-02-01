@@ -30,15 +30,11 @@ type Config struct {
 	OTServiceName              string        `envconfig:"OTEL_SERVICE_NAME"`
 	ServiceAuthToken           string        `envconfig:"SERVICE_AUTH_TOKEN"         json:"-"`
 	SecretKey                  string        `envconfig:"SECRET_KEY"                 json:"-"`
-	VaultToken                 string        `envconfig:"VAULT_TOKEN"                json:"-"`
-	VaultAddress               string        `envconfig:"VAULT_ADDR"`
-	VaultPath                  string        `envconfig:"VAULT_PATH"`
 	ZebedeeURL                 string        `envconfig:"ZEBEDEE_URL"`
 	LocalObjectStore           string        `envconfig:"LOCAL_OBJECT_STORE"` // TODO remove replacing minio with localstack in component tests
 	MinioAccessKey             string        `envconfig:"MINIO_ACCESS_KEY"`   // TODO remove replacing minio with localstack in component tests
 	MinioSecretKey             string        `envconfig:"MINIO_SECRET_KEY"`   // TODO remove replacing minio with localstack in component tests
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
-	EncryptionDisabled         bool          `envconfig:"ENCRYPTION_DISABLED"` // TODO remove encryption always required
 	PublicBucketURL            ConfigUrl     `envconfig:"PUBLIC_BUCKET_URL"`
 	MaxConcurrentHandlers      int           `envconfig:"MAX_CONCURRENT_HANDLERS"`
 }
@@ -84,15 +80,11 @@ func Get() (*Config, error) {
 		OTExporterOTLPEndpoint:     "localhost:4317",
 		OTServiceName:              "dp-download-service",
 		ServiceAuthToken:           "c60198e9-1864-4b68-ad0b-1e858e5b46a4",
-		VaultAddress:               "http://localhost:8200",
-		VaultToken:                 "",
-		VaultPath:                  "secret/shared/psk",
 		ZebedeeURL:                 "http://localhost:8082",
 		LocalObjectStore:           "",
 		MinioAccessKey:             "",
 		MinioSecretKey:             "",
 		IsPublishing:               true,
-		EncryptionDisabled:         false,
 		PublicBucketURL:            ConfigUrl{},
 		MaxConcurrentHandlers:      0, // unlimited
 	}

@@ -31,7 +31,6 @@ type Download struct {
 	datasetClient       downloads.DatasetClient
 	filterClient        downloads.FilterClient
 	imageClient         downloads.ImageClient
-	vaultClient         content.VaultClient
 	filesClient         downloads.FilesClient
 	s3Client            content.S3Client
 	zebedeeHealthClient *health.Client
@@ -45,7 +44,7 @@ type Download struct {
 //
 //go:generate moq -pkg service_test -out moq_service_test.go . Dependencies HealthChecker HTTPServer
 //go:generate moq -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilterClient ImageClient FilesClient
-//go:generate moq -pkg service_test -out moq_content_test.go ../content S3Client VaultClient
+//go:generate moq -pkg service_test -out moq_content_test.go ../content S3Client
 
 // Dependencies holds constructors/factories for all external dependencies
 //
@@ -54,7 +53,6 @@ type Dependencies interface {
 	DatasetClient(string) downloads.DatasetClient
 	FilterClient(string) downloads.FilterClient
 	ImageClient(string) downloads.ImageClient
-	VaultClient(*config.Config) (content.VaultClient, error)
 	S3Client(*config.Config) (content.S3Client, error)
 	FilesClient(*config.Config) downloads.FilesClient
 	HealthCheck(*config.Config, string, string, string) (HealthChecker, error)
@@ -86,18 +84,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		shutdown:      cfg.GracefulShutdownTimeout,
 	}
 
-	// Vault client is set up only when encryption is enabled.
-	//
 	var err error
-	var vc content.VaultClient
-	if !cfg.EncryptionDisabled {
-		vc, err = deps.VaultClient(cfg)
-		if err != nil {
-			log.Fatal(ctx, "could not create a vault client", err)
-			return nil, err
-		}
-	}
-	svc.vaultClient = vc
 
 	// Set up S3 client.
 	//
@@ -135,7 +122,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		DatasetCli: svc.datasetClient,
 		ImageCli:   svc.imageClient,
 	}
-	s3c := content.NewStreamWriter(s3, vc, cfg.VaultPath, cfg.EncryptionDisabled)
+	s3c := content.NewStreamWriter(s3)
 
 	d := handlers.Download{
 		Downloader:   downloader,
@@ -143,12 +130,14 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		IsPublishing: cfg.IsPublishing,
 	}
 
+	// Flagged off? Assumption that downloads-new is related to uploads-new
 	downloadHandler := api.CreateV1DownloadHandler(
 		files.FetchMetadata(svc.filesClient, cfg.ServiceAuthToken),
-		files.DownloadFile(svc.s3Client, vc, cfg.VaultPath),
+		files.DownloadFile(svc.s3Client),
 		cfg,
 	)
 
+	// The 'Do' functions eventually get to the S3 bucket, which is all of them except the V1 downloader
 	// And tie routes to download handler methods.
 	//
 	router := mux.NewRouter()
@@ -202,13 +191,6 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 	if err := hc.AddCheck("Dataset API", svc.datasetClient.Checker); err != nil {
 		hasErrors = true
 		log.Error(ctx, "error adding check for dataset api", err)
-	}
-
-	if svc.vaultClient != nil {
-		if err := hc.AddCheck("Vault", svc.vaultClient.Checker); err != nil {
-			hasErrors = true
-			log.Error(ctx, "error adding check for vault", err)
-		}
 	}
 
 	if err := hc.AddCheck("Filter API", svc.filterClient.Checker); err != nil {

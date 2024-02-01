@@ -12,12 +12,11 @@ import (
 )
 
 const (
-	testCSVPublicUrl        = "http://public.localhost/public/filename.csv"
-	testCSVPrivateUrl       = "http://private.localhost/private/filename.csv"
-	testCSVPrivateFilename  = "filename.csv"
-	testCSVPrivateS3Path    = "private/filename.csv"
-	testCSVPrivateVaultPath = "filename.csv"
-	testBadPrivateURL       = "@£$%^&*()_+"
+	testCSVPublicUrl       = "http://public.localhost/public/filename.csv"
+	testCSVPrivateUrl      = "http://private.localhost/private/filename.csv"
+	testCSVPrivateFilename = "filename.csv"
+	testCSVPrivateS3Path   = "private/filename.csv"
+	testBadPrivateURL      = "@£$%^&*()_+"
 )
 
 var (
@@ -54,7 +53,6 @@ func TestGetDownloadForDataset(t *testing.T) {
 		So(downloads.Public, ShouldBeBlank)
 		So(downloads.PrivateFilename, ShouldBeBlank)
 		So(downloads.PrivateS3Path, ShouldBeBlank)
-		So(downloads.PrivateVaultPath, ShouldBeBlank)
 		So(err, ShouldResemble, errDataset)
 	})
 
@@ -78,7 +76,6 @@ func TestGetDownloadForDataset(t *testing.T) {
 		So(downloads.Public, ShouldBeBlank)
 		So(downloads.PrivateFilename, ShouldBeBlank)
 		So(downloads.PrivateS3Path, ShouldBeBlank)
-		So(downloads.PrivateVaultPath, ShouldBeBlank)
 		So(err, ShouldNotBeNil)
 	})
 
@@ -102,7 +99,6 @@ func TestGetDownloadForDataset(t *testing.T) {
 		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
 		So(downloads.PrivateFilename, ShouldResemble, testCSVPrivateFilename)
 		So(downloads.PrivateS3Path, ShouldResemble, testCSVPrivateS3Path)
-		So(downloads.PrivateVaultPath, ShouldResemble, testCSVPrivateVaultPath)
 		So(err, ShouldBeNil)
 	})
 
@@ -125,7 +121,6 @@ func TestGetDownloadForDataset(t *testing.T) {
 		So(downloads.Public, ShouldBeBlank)
 		So(downloads.PrivateFilename, ShouldBeBlank)
 		So(downloads.PrivateS3Path, ShouldBeBlank)
-		So(downloads.PrivateVaultPath, ShouldBeBlank)
 		So(err, ShouldBeNil)
 	})
 
@@ -149,7 +144,6 @@ func TestGetDownloadForDataset(t *testing.T) {
 		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
 		So(downloads.PrivateFilename, ShouldResemble, testCSVPrivateFilename)
 		So(downloads.PrivateS3Path, ShouldResemble, testCSVPrivateS3Path)
-		So(downloads.PrivateVaultPath, ShouldResemble, testCSVPrivateVaultPath)
 		So(err, ShouldBeNil)
 	})
 }

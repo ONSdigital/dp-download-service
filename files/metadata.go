@@ -23,7 +23,7 @@ func GetContentLength(m *files.FileMetaData) string {
 }
 
 func Unpublished(m *files.FileMetaData) bool {
-	return !(m.State == PUBLISHED || m.State == DECRYPTED)
+	return !(m.State == PUBLISHED)
 }
 
 func UploadIncomplete(m *files.FileMetaData) bool {

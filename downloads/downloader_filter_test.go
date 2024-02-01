@@ -45,7 +45,6 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 		So(downloads.Public, ShouldBeBlank)
 		So(downloads.PrivateFilename, ShouldBeBlank)
 		So(downloads.PrivateS3Path, ShouldBeBlank)
-		So(downloads.PrivateVaultPath, ShouldBeBlank)
 		So(err, ShouldResemble, errFilter)
 	})
 
@@ -69,7 +68,6 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 		So(downloads.Public, ShouldBeBlank)
 		So(downloads.PrivateFilename, ShouldBeBlank)
 		So(downloads.PrivateS3Path, ShouldBeBlank)
-		So(downloads.PrivateVaultPath, ShouldBeBlank)
 		So(err, ShouldNotBeNil)
 	})
 
@@ -93,7 +91,6 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
 		So(downloads.PrivateFilename, ShouldResemble, testCSVPrivateFilename)
 		So(downloads.PrivateS3Path, ShouldResemble, testCSVPrivateS3Path)
-		So(downloads.PrivateVaultPath, ShouldResemble, testCSVPrivateVaultPath)
 		So(err, ShouldBeNil)
 	})
 
@@ -117,7 +114,6 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 		So(downloads.Public, ShouldResemble, testCSVPublicUrl)
 		So(downloads.PrivateFilename, ShouldResemble, testCSVPrivateFilename)
 		So(downloads.PrivateS3Path, ShouldResemble, testCSVPrivateS3Path)
-		So(downloads.PrivateVaultPath, ShouldResemble, testCSVPrivateVaultPath)
 		So(err, ShouldBeNil)
 	})
 
@@ -140,7 +136,6 @@ func TestGetDownloadsForFilterOutput(t *testing.T) {
 		So(downloads.Public, ShouldBeBlank)
 		So(downloads.PrivateFilename, ShouldBeBlank)
 		So(downloads.PrivateS3Path, ShouldBeBlank)
-		So(downloads.PrivateVaultPath, ShouldBeBlank)
 		So(err, ShouldBeNil)
 	})
 }

@@ -26,12 +26,8 @@ func getConfigEnv() map[string]string {
 		"HEALTHCHECK_CRITICAL_TIMEOUT": os.Getenv("HEALTHCHECK_CRITICAL_TIMEOUT"),
 		"SERVICE_AUTH_TOKEN":           os.Getenv("SERVICE_AUTH_TOKEN"),
 		"SECRET_KEY":                   os.Getenv("SECRET_KEY"),
-		"VAULT_TOKEN":                  os.Getenv("VAULT_TOKEN"),
-		"VAULT_ADDR":                   os.Getenv("VAULT_ADDR"),
-		"VAULT_PATH":                   os.Getenv("VAULT_PATH"),
 		"ZEBEDEE_URL":                  os.Getenv("ZEBEDEE_URL"),
 		"IS_PUBLISHING":                os.Getenv("IS_PUBLISHING"),
-		"ENCRYPTION_DISABLED":          os.Getenv("ENCRYPTION_DISABLED"),
 		"ENABLE_MONGO":                 os.Getenv("ENABLE_MONGO"),
 		"MONGODB_BIND_ADDR":            os.Getenv("MONGODB_BIND_ADDR"),
 		"MONGODB_COLLECTION":           os.Getenv("MONGODB_COLLECTION"),
@@ -81,15 +77,12 @@ func TestSpec(t *testing.T) {
 				So(config.GracefulShutdownTimeout, ShouldEqual, 5*time.Second)
 				So(config.HealthCheckInterval, ShouldEqual, 30*time.Second)
 				So(config.HealthCheckCriticalTimeout, ShouldEqual, 90*time.Second)
-				So(config.VaultToken, ShouldEqual, "")
-				So(config.VaultPath, ShouldEqual, "secret/shared/psk")
 				So(config.ServiceAuthToken, ShouldEqual, "c60198e9-1864-4b68-ad0b-1e858e5b46a4")
 				So(config.ZebedeeURL, ShouldEqual, "http://localhost:8082")
 				So(config.LocalObjectStore, ShouldEqual, "")
 				So(config.MinioAccessKey, ShouldEqual, "")
 				So(config.MinioSecretKey, ShouldEqual, "")
 				So(config.IsPublishing, ShouldBeTrue)
-				So(config.EncryptionDisabled, ShouldBeFalse)
 				So(config.MaxConcurrentHandlers, ShouldEqual, 0)
 
 				expectedUrl, _ := url.Parse("http://test")

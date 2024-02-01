@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	vault "github.com/ONSdigital/dp-vault"
-
 	s3client "github.com/ONSdigital/dp-s3"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -59,16 +57,6 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 		return nil
 	})
 	return m
-}
-
-func (e *External) VaultClient(cfg *config.Config) (content.VaultClient, error) {
-
-	v, err := vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 5)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	return v, nil
 }
 
 func (e *External) S3Client(cfg *config.Config) (content.S3Client, error) {

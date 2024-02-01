@@ -3,8 +3,7 @@ package files
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -16,12 +15,10 @@ import (
 type RetrieverTestSuite struct {
 	suite.Suite
 	s3c *mocks.MockS3Client
-	vc  *mocks.MockVaultClient
 }
 
 func (s *RetrieverTestSuite) SetupTest() {
 	s.s3c = mocks.NewMockS3Client(gomock.NewController(s.T()))
-	s.vc = mocks.NewMockVaultClient(gomock.NewController(s.T()))
 }
 
 func TestRetrieverTestSuite(t *testing.T) {
@@ -51,34 +48,19 @@ func newFakeFilesApiErroringHttpClient(err error) HTTPClient {
 func (f fakeHttpClient) Do(ctx context.Context, req *http.Request) (resp *http.Response, err error) {
 	return &http.Response{
 		StatusCode: f.statusCode,
-		Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(f.body))),
+		Body:       io.NopCloser(bytes.NewBuffer([]byte(f.body))),
 	}, f.err
 }
 
 func (s *RetrieverTestSuite) TestDownloadFile() {
 	filePath := "data/file.csv"
-	psk := "123456789123456789"
-	encryptionKey, _ := hex.DecodeString(psk)
 
-	fileContent := ioutil.NopCloser(bytes.NewBuffer([]byte("file content")))
+	fileContent := io.NopCloser(bytes.NewBuffer([]byte("file content")))
 
-	s.s3c.EXPECT().GetWithPSK(filePath, encryptionKey).Return(fileContent, nil, nil)
+	s.s3c.EXPECT().Get(filePath).Return(fileContent, nil, nil)
 
-	s.vc.EXPECT().ReadKey("/"+filePath, VAULT_KEY).Return(psk, nil)
-
-	file, err := DownloadFile(s.s3c, s.vc, "")(filePath)
+	file, err := DownloadFile(s.s3c)(filePath)
 
 	s.NoError(err)
 	s.Equal(fileContent, file)
-}
-
-func (s *RetrieverTestSuite) TestDownloadFileEncyptionKeyContainNonHexCharacter() {
-	filePath := "data/file.csv"
-	psk := "NON HEX CHARACTERS"
-
-	s.vc.EXPECT().ReadKey("/"+filePath, VAULT_KEY).Return(psk, nil)
-
-	_, err := DownloadFile(s.s3c, s.vc, "")(filePath)
-
-	s.Error(err)
 }

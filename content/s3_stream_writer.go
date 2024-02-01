@@ -2,8 +2,6 @@ package content
 
 import (
 	"context"
-	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 
@@ -11,12 +9,7 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-var (
-	VaultFilenameEmptyErr = errors.New("vault filename required but was empty")
-	vaultKey              = "key"
-)
-
-//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/content VaultClient,Writer,S3Client,S3ReadCloser
+//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/content,Writer,S3Client,S3ReadCloser
 
 // Writer is an io.Writer alias to allow mockgen to create a mock impl for the tests
 type Writer io.Writer
@@ -24,55 +17,30 @@ type Writer io.Writer
 // S3ReadCloser is an io.ReadCloser alias to allow mockgen to create a mock impl for the tests
 type S3ReadCloser io.ReadCloser
 
-// VaultClient is an interface to represent methods called to action upon vault
-type VaultClient interface {
-	ReadKey(path, key string) (string, error)
-	Checker(ctx context.Context, check *healthcheck.CheckState) error
-}
-
 // S3Client is an interface to represent methods called to retrieve from s3
 type S3Client interface {
 	Get(key string) (io.ReadCloser, *int64, error)
-	GetWithPSK(key string, psk []byte) (io.ReadCloser, *int64, error)
 	Checker(ctx context.Context, check *healthcheck.CheckState) error
 }
 
 // S3StreamWriter provides functionality for retrieving content from an S3 bucket. The content is streamed/decrypted and and written to the provided io.Writer
 type S3StreamWriter struct {
-	VaultCli           VaultClient
-	VaultPath          string
-	S3Client           S3Client
-	EncryptionDisabled bool
+	S3Client S3Client
 }
 
 // NewStreamWriter create a new S3StreamWriter instance.
-func NewStreamWriter(s3c S3Client, vc VaultClient, vp string, encDisabled bool) *S3StreamWriter {
+func NewStreamWriter(s3c S3Client) *S3StreamWriter {
 	return &S3StreamWriter{
-		S3Client:           s3c,
-		VaultCli:           vc,
-		VaultPath:          vp,
-		EncryptionDisabled: encDisabled,
+		S3Client: s3c,
 	}
 }
 
 // StreamAndWrite decrypt and stream the request file writing the content to the provided io.Writer.
-func (s S3StreamWriter) StreamAndWrite(ctx context.Context, s3Path string, vaultPath string, w io.Writer) (err error) {
+func (s S3StreamWriter) StreamAndWrite(ctx context.Context, s3Path string, w io.Writer) (err error) {
 	var s3ReadCloser io.ReadCloser
-	if s.EncryptionDisabled {
-		s3ReadCloser, _, err = s.S3Client.Get(s3Path)
-		if err != nil {
-			return fmt.Errorf("failed to get stream object from S3 client: %w", err)
-		}
-	} else {
-		psk, err := s.getVaultKeyForFile(vaultPath)
-		if err != nil {
-			return fmt.Errorf("failed to get Vault key: %w", err)
-		}
-
-		s3ReadCloser, _, err = s.S3Client.GetWithPSK(s3Path, psk)
-		if err != nil {
-			return fmt.Errorf("failed to get stream object (encrypted) from S3 client: %w", err)
-		}
+	s3ReadCloser, _, err = s.S3Client.Get(s3Path)
+	if err != nil {
+		return fmt.Errorf("failed to get stream object from S3 client: %w", err)
 	}
 
 	defer closeAndLogError(ctx, s3ReadCloser)
@@ -83,25 +51,6 @@ func (s S3StreamWriter) StreamAndWrite(ctx context.Context, s3Path string, vault
 	}
 
 	return nil
-}
-
-func (s *S3StreamWriter) getVaultKeyForFile(secretPath string) ([]byte, error) {
-	if len(secretPath) == 0 {
-		return nil, VaultFilenameEmptyErr
-	}
-
-	vp := s.VaultPath + "/" + secretPath
-	pskStr, err := s.VaultCli.ReadKey(vp, vaultKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read Vault key: %w", err)
-	}
-
-	psk, err := hex.DecodeString(pskStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode psk: %w", err)
-	}
-
-	return psk, nil
 }
 
 func closeAndLogError(ctx context.Context, closer io.Closer) {

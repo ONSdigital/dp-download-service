@@ -2,13 +2,14 @@ package external
 
 import (
 	"fmt"
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"net/http"
 
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
+	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
-	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	s3client "github.com/ONSdigital/dp-s3"
-	vault "github.com/ONSdigital/dp-vault"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -39,10 +39,6 @@ func (*External) FilterClient(filterAPIURL string) downloads.FilterClient {
 
 func (*External) ImageClient(imageAPIURL string) downloads.ImageClient {
 	return image.NewAPIClient(imageAPIURL)
-}
-
-func (*External) VaultClient(cfg *config.Config) (content.VaultClient, error) {
-	return vault.CreateClient(cfg.VaultToken, cfg.VaultAddress, 3)
 }
 
 func (*External) FilesClient(cfg *config.Config) downloads.FilesClient {

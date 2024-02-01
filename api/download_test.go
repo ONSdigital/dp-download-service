@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
+	fclient "github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/files"
-	fclient "github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/stretchr/testify/assert"
 )
 
