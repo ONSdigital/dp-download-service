@@ -159,10 +159,11 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	middlewareChain := alice.New(middleware.Whitelist(middleware.HealthcheckFilter(hc.Handler)))
 	middlewareChain = middlewareChain.Append(api.Limiter(cfg.MaxConcurrentHandlers))
 
-	// Add middleware for open telemetry
-	router.Use(otelmux.Middleware(cfg.OTServiceName))
-	middlewareChain = middlewareChain.Append(otelhttp.NewMiddleware(cfg.OTServiceName))
-
+	if cfg.OtelEnabled {
+		// Add middleware for open telemetry
+		router.Use(otelmux.Middleware(cfg.OTServiceName))
+		middlewareChain = middlewareChain.Append(otelhttp.NewMiddleware(cfg.OTServiceName))
+	}
 	// For non-whitelisted endpoints, do identityHandler or corsHandler
 	//
 	if cfg.IsPublishing {

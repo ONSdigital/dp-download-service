@@ -58,6 +58,7 @@ The endpoint `/healthcheck` checks the health of the dataset api and returns one
 | OTEL_BATCH_TIMEOUT           | 5s                                   | Interval between pushes to OT Collector                                                          |
 | OTEL_EXPORTER_OTLP_ENDPOINT  | http://localhost:4317                | URL for OpenTelemetry endpoint                                                                   |
 | OTEL_SERVICE_NAME            | "dp-download-service"                | Service name to report to telemetry tools                                                        |
+| OTEL_ENABLED                 | false                                | Feature flag to enable OpenTelemetry
 | SERVICE_AUTH_TOKEN           | c60198e9-1864-4b68-ad0b-1e858e5b46a4 | The service auth token for the download service                                                  |
 | ZEBEDEE_URL                  | http://localhost:8082                | The URL for zebedee                                                                              |
 | AWS_REGION                   | -                                    | The AWS access key credential                                                                    |

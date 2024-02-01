@@ -28,6 +28,7 @@ type Config struct {
 	OTBatchTimeout             time.Duration `encconfig:"OTEL_BATCH_TIMEOUT"`
 	OTExporterOTLPEndpoint     string        `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT"`
 	OTServiceName              string        `envconfig:"OTEL_SERVICE_NAME"`
+	OtelEnabled                bool          `envconfig:"OTEL_ENABLED"`
 	ServiceAuthToken           string        `envconfig:"SERVICE_AUTH_TOKEN"         json:"-"`
 	SecretKey                  string        `envconfig:"SECRET_KEY"                 json:"-"`
 	ZebedeeURL                 string        `envconfig:"ZEBEDEE_URL"`
@@ -79,6 +80,7 @@ func Get() (*Config, error) {
 		OTBatchTimeout:             5 * time.Second,
 		OTExporterOTLPEndpoint:     "localhost:4317",
 		OTServiceName:              "dp-download-service",
+		OtelEnabled:                false,
 		ServiceAuthToken:           "c60198e9-1864-4b68-ad0b-1e858e5b46a4",
 		ZebedeeURL:                 "http://localhost:8082",
 		LocalObjectStore:           "",
