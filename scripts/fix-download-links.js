@@ -11,7 +11,7 @@
 // note the `/datasets` in the above
 
 instances_coll = db.getCollection('instances');
-download_formats = { 'xls': 1, 'xlsx': 1, 'csv': 1, 'csvw': 1 };      // keys are keys of the `downloads` sub-doc
+download_formats = { 'xlsx': 1, 'xls': 1, 'csv': 1, 'csvw': 1 };      // keys are keys of the `downloads` sub-doc
 debugging = true;       // when `false`, will change the db!
 lim = 10;
 count_done = 0;
