@@ -71,13 +71,6 @@ func parseRequest(req *http.Request) (context.Context, string) {
 }
 
 func handleUnsupportedMetadataStates(ctx context.Context, m fclient.FileMetaData, cfg *config.Config, filePath string, w http.ResponseWriter) bool {
-	// If decrypted, which it will be?
-	if files.Decrypted(&m) {
-		log.Info(ctx, "File already decrypted, redirecting")
-		setStatusMovedPermanently(RedirectLocation(cfg, filePath), w)
-		return true
-	}
-
 	if files.UploadIncomplete(&m) {
 		log.Info(ctx, "File has not finished uploading")
 		setStatusNotFound(w)

@@ -11,7 +11,6 @@ const (
 	CREATED   string = "CREATED"   // first chunk uploaded
 	UPLOADED  string = "UPLOADED"  // all chunks uploaded
 	PUBLISHED string = "PUBLISHED" // published - authorized for public download
-	DECRYPTED string = "DECRYPTED" // available decrypted from S3/CDN
 )
 
 func GetFilename(m *files.FileMetaData) string {
@@ -28,10 +27,6 @@ func Unpublished(m *files.FileMetaData) bool {
 
 func UploadIncomplete(m *files.FileMetaData) bool {
 	return m.State == CREATED
-}
-
-func Decrypted(m *files.FileMetaData) bool {
-	return m.State == DECRYPTED
 }
 
 func Uploaded(m *files.FileMetaData) bool {

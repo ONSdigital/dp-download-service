@@ -44,7 +44,7 @@ The endpoint `/healthcheck` checks the health of the dataset api and returns one
 | Environment variable         | Default                              | Description                                                                                      |
 |------------------------------|--------------------------------------|--------------------------------------------------------------------------------------------------|
 | BIND_ADDR                    | :23600                               | The host and port to bind to                                                                     |
-| BUCKET_NAME                  | "csv-exported"                       | The s3 bucket to decrypt files from                                                              |
+| BUCKET_NAME                  | "csv-exported"                       | The s3 bucket to retrieve files from                                                              |
 | DATASET_API_URL              | http://localhost:22000               | The dataset api url                                                                              |
 | DATASET_AUTH_TOKEN           | FD0108EA-825D-411C-9B1D-41EF7727F465 | The dataset auth token                                                                           |
 | DOWNLOAD_SERVICE_TOKEN       | QB0108EZ-825D-412C-9B1D-41EF7747F462 | The token to request public/private links from dataset api                                       |

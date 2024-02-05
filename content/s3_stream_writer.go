@@ -23,7 +23,7 @@ type S3Client interface {
 	Checker(ctx context.Context, check *healthcheck.CheckState) error
 }
 
-// S3StreamWriter provides functionality for retrieving content from an S3 bucket. The content is streamed/decrypted and and written to the provided io.Writer
+// S3StreamWriter provides functionality for retrieving content from an S3 bucket. The content is streamed and and written to the provided io.Writer
 type S3StreamWriter struct {
 	S3Client S3Client
 }
@@ -35,7 +35,7 @@ func NewStreamWriter(s3c S3Client) *S3StreamWriter {
 	}
 }
 
-// StreamAndWrite decrypt and stream the request file writing the content to the provided io.Writer.
+// StreamAndWrite stream the request file writing the content to the provided io.Writer.
 func (s S3StreamWriter) StreamAndWrite(ctx context.Context, s3Path string, w io.Writer) (err error) {
 	var s3ReadCloser io.ReadCloser
 	s3ReadCloser, _, err = s.S3Client.Get(s3Path)
