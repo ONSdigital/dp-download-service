@@ -16,6 +16,7 @@ func TestUnpublished(t *testing.T) {
 		{State: files.CREATED, ExpectedUnpublished: true},
 		{State: files.UPLOADED, ExpectedUnpublished: true},
 		{State: files.PUBLISHED, ExpectedUnpublished: false},
+		{State: files.MOVED, ExpectedUnpublished: false},
 	}
 
 	for _, file := range testFiles {
@@ -23,6 +24,6 @@ func TestUnpublished(t *testing.T) {
 			State: file.State,
 		}
 
-		assert.Equal(t, file.ExpectedUnpublished, !(m.State == files.PUBLISHED))
+		assert.Equal(t, file.ExpectedUnpublished, !(m.State == files.PUBLISHED || m.State == files.MOVED))
 	}
 }

@@ -17,9 +17,10 @@ for each state and why the Download Service responds in such a way.
 | context                      | State       | HTTP Response           | Notes                                                      |
 |------------------------------|-------------|-------------------------|------------------------------------------------------------|
 | any                          | CREATED     | 404 - Not Found         | File is being uploaded do not expose file exists to public |
-| auth user in publishing mode | UPLOADED    | 200 - OK                | File is previewable - stream content from S3     |
+| auth user in publishing mode | UPLOADED    | 200 - OK                | File is previewable - stream content from S3               |
 | web (anon) user in web mode  | UPLOADED    | 404 - Not Found         | File is being reviewed do not expose file exists to public |
-| any                          | PUBLISHED   | 200 - OK                | File is published - stream content from S3       |
+| any                          | MOVED       | 301 - Moved Permanently | File is moved - redirect request to public location        | 
+| any                          | PUBLISHED   | 200 - OK                | File is published - stream content from S3                 |
 
 ## Installation
 
@@ -44,7 +45,7 @@ The endpoint `/healthcheck` checks the health of the dataset api and returns one
 | Environment variable         | Default                              | Description                                                                                      |
 |------------------------------|--------------------------------------|--------------------------------------------------------------------------------------------------|
 | BIND_ADDR                    | :23600                               | The host and port to bind to                                                                     |
-| BUCKET_NAME                  | "csv-exported"                       | The s3 bucket to retrieve files from                                                              |
+| BUCKET_NAME                  | "csv-exported"                       | The s3 bucket to retrieve files from                                                             |
 | DATASET_API_URL              | http://localhost:22000               | The dataset api url                                                                              |
 | DATASET_AUTH_TOKEN           | FD0108EA-825D-411C-9B1D-41EF7727F465 | The dataset auth token                                                                           |
 | DOWNLOAD_SERVICE_TOKEN       | QB0108EZ-825D-412C-9B1D-41EF7747F462 | The token to request public/private links from dataset api                                       |
@@ -58,7 +59,7 @@ The endpoint `/healthcheck` checks the health of the dataset api and returns one
 | OTEL_BATCH_TIMEOUT           | 5s                                   | Interval between pushes to OT Collector                                                          |
 | OTEL_EXPORTER_OTLP_ENDPOINT  | http://localhost:4317                | URL for OpenTelemetry endpoint                                                                   |
 | OTEL_SERVICE_NAME            | "dp-download-service"                | Service name to report to telemetry tools                                                        |
-| OTEL_ENABLED                 | false                                | Feature flag to enable OpenTelemetry
+| OTEL_ENABLED                 | false                                | Feature flag to enable OpenTelemetry                                                             |
 | SERVICE_AUTH_TOKEN           | c60198e9-1864-4b68-ad0b-1e858e5b46a4 | The service auth token for the download service                                                  |
 | ZEBEDEE_URL                  | http://localhost:8082                | The URL for zebedee                                                                              |
 | AWS_REGION                   | -                                    | The AWS access key credential                                                                    |

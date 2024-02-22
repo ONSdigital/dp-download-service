@@ -71,6 +71,12 @@ func parseRequest(req *http.Request) (context.Context, string) {
 }
 
 func handleUnsupportedMetadataStates(ctx context.Context, m fclient.FileMetaData, cfg *config.Config, filePath string, w http.ResponseWriter) bool {
+	if files.Moved(&m) {
+		log.Info(ctx, "File moved, redirecting")
+		setStatusMovedPermanently(RedirectLocation(cfg, filePath), w)
+		return true
+	}
+
 	if files.UploadIncomplete(&m) {
 		log.Info(ctx, "File has not finished uploading")
 		setStatusNotFound(w)
@@ -90,6 +96,12 @@ func closeDownloadedFile(ctx context.Context, file io.ReadCloser) {
 	if err := file.Close(); err != nil {
 		log.Error(ctx, "error closing io.Closer for file streaming", err)
 	}
+}
+
+func setStatusMovedPermanently(location string, w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "max-age=31536000")
+	w.Header().Set("Location", location)
+	w.WriteHeader(http.StatusMovedPermanently)
 }
 
 func setStatusNotFound(w http.ResponseWriter) {
