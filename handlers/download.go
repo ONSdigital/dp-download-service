@@ -145,10 +145,9 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 		logData["private_s3_path"] = s3Path
 		logData["private_filename"] = filename
 		log.Info(req.Context(), "using private link", logData)
+		w.Header().Set("Content-Disposition", "attachment; filename="+filename)
 
 		if fileDownloads.IsPublished || authorised {
-			w.Header().Set("Content-Disposition", "attachment; filename="+filename)
-
 			err = d.S3Content.StreamAndWrite(ctx, s3Path, w)
 			if err != nil {
 				setStatusCode(ctx, w, fmt.Errorf("failed to stream response: %w", err), logData)
