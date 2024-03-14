@@ -33,6 +33,7 @@ Feature: Download preview feature
         When I download the file "data/populations.csv"
         Then the HTTP status code should be "200"
         And the response header "Cache-Control" should be "no-cache"
+        And the response header "Content-Disposition" should be "attachment; filename=text/csv"
 
     Scenario: ONS previewer requests data-file that has been uploaded but not yet published using an authorisation header
         Given the file "data/authors.csv" has the metadata:
