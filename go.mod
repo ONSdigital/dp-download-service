@@ -8,6 +8,8 @@ replace (
 	github.com/go-ldap/ldap/v3 => github.com/go-ldap/ldap/v3 v3.4.3
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.12.2
 	github.com/spf13/cobra => github.com/spf13/cobra v1.4.0
+	// to fix: [CVE-2024-24786] CWE-835: Loop with Unreachable Exit Condition ('Infinite Loop')
+	google.golang.org/protobuf => google.golang.org/protobuf v1.33.0
 )
 
 require (
@@ -17,7 +19,6 @@ require (
 	github.com/ONSdigital/dp-net/v2 v2.11.0
 	github.com/ONSdigital/dp-otel-go v0.0.6
 	github.com/ONSdigital/dp-s3 v1.7.0
-	github.com/ONSdigital/dp-vault v1.1.1
 	github.com/ONSdigital/log.go/v2 v2.4.1
 	github.com/aws/aws-sdk-go v1.44.76
 	github.com/cucumber/godog v0.12.2
@@ -62,7 +63,6 @@ require (
 	github.com/maxcnunes/httpfake v1.2.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/smarty/assertions v1.15.1 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
