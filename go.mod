@@ -1,6 +1,6 @@
 module github.com/ONSdigital/dp-download-service
 
-go 1.21
+go 1.22
 
 replace (
 	github.com/coreos/etcd => github.com/coreos/etcd v3.3.24+incompatible
