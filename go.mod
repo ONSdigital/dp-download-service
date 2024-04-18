@@ -6,6 +6,7 @@ replace (
 	github.com/coreos/etcd => github.com/coreos/etcd v3.3.24+incompatible
 	github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go v3.2.1-0.20210802184156-9742bd7fca1c+incompatible
 	github.com/go-ldap/ldap/v3 => github.com/go-ldap/ldap/v3 v3.4.3
+	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.12.2
 	github.com/spf13/cobra => github.com/spf13/cobra v1.4.0
 	// to fix: [CVE-2024-24786] CWE-835: Loop with Unreachable Exit Condition ('Infinite Loop')
