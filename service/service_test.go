@@ -81,7 +81,7 @@ func TestNew(t *testing.T) {
 			ImageClientFunc: func(s string) downloads.ImageClient {
 				return mockedImageClient
 			},
-			S3ClientFunc: func(cfg *config.Config) (content.S3Client, error) {
+			S3ClientFunc: func(ctx context.Context, cfg *config.Config) (content.S3Client, error) {
 				return mockedS3Client, nil
 			},
 			HealthCheckFunc: func(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
@@ -116,7 +116,7 @@ func TestNew(t *testing.T) {
 		//
 
 		Convey("When S3 setup fails", func() {
-			mockedDependencies.S3ClientFunc = func(cfg *config.Config) (content.S3Client, error) {
+			mockedDependencies.S3ClientFunc = func(ctx context.Context, cfg *config.Config) (content.S3Client, error) {
 				return nil, errors.New("s3 failure")
 			}
 

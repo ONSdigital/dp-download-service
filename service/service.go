@@ -53,7 +53,7 @@ type Dependencies interface {
 	DatasetClient(string) downloads.DatasetClient
 	FilterClient(string) downloads.FilterClient
 	ImageClient(string) downloads.ImageClient
-	S3Client(*config.Config) (content.S3Client, error)
+	S3Client(context.Context, *config.Config) (content.S3Client, error)
 	FilesClient(*config.Config) downloads.FilesClient
 	HealthCheck(*config.Config, string, string, string) (HealthChecker, error)
 	HttpServer(*config.Config, http.Handler) HTTPServer
@@ -88,7 +88,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 
 	// Set up S3 client.
 	//
-	s3, err := deps.S3Client(cfg)
+	s3, err := deps.S3Client(ctx, cfg)
 	if err != nil {
 		log.Error(ctx, "could not create the s3 client", err)
 		return nil, err

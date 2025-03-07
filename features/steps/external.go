@@ -60,9 +60,7 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 	return m
 }
 
-func (e *External) S3Client(cfg *config.Config) (content.S3Client, error) {
-	ctx := context.Background()
-
+func (e *External) S3Client(ctx context.Context, cfg *config.Config) (content.S3Client, error) {
 	awsConfig, err := awsConfig.LoadDefaultConfig(ctx,
 		awsConfig.WithRegion(cfg.AwsRegion),
 		awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),

@@ -42,7 +42,7 @@ var _ service.Dependencies = &DependenciesMock{}
 //			ImageClientFunc: func(s string) downloads.ImageClient {
 //				panic("mock out the ImageClient method")
 //			},
-//			S3ClientFunc: func(configMoqParam *config.Config) (content.S3Client, error) {
+//			S3ClientFunc: func(contextMoqParam context.Context, configMoqParam *config.Config) (content.S3Client, error) {
 //				panic("mock out the S3Client method")
 //			},
 //		}
@@ -71,7 +71,7 @@ type DependenciesMock struct {
 	ImageClientFunc func(s string) downloads.ImageClient
 
 	// S3ClientFunc mocks the S3Client method.
-	S3ClientFunc func(configMoqParam *config.Config) (content.S3Client, error)
+	S3ClientFunc func(contextMoqParam context.Context, configMoqParam *config.Config) (content.S3Client, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -115,6 +115,8 @@ type DependenciesMock struct {
 		}
 		// S3Client holds details about calls to the S3Client method.
 		S3Client []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
 			// ConfigMoqParam is the configMoqParam argument value.
 			ConfigMoqParam *config.Config
 		}
@@ -337,19 +339,21 @@ func (mock *DependenciesMock) ImageClientCalls() []struct {
 }
 
 // S3Client calls S3ClientFunc.
-func (mock *DependenciesMock) S3Client(configMoqParam *config.Config) (content.S3Client, error) {
+func (mock *DependenciesMock) S3Client(contextMoqParam context.Context, configMoqParam *config.Config) (content.S3Client, error) {
 	if mock.S3ClientFunc == nil {
 		panic("DependenciesMock.S3ClientFunc: method is nil but Dependencies.S3Client was just called")
 	}
 	callInfo := struct {
-		ConfigMoqParam *config.Config
+		ContextMoqParam context.Context
+		ConfigMoqParam  *config.Config
 	}{
-		ConfigMoqParam: configMoqParam,
+		ContextMoqParam: contextMoqParam,
+		ConfigMoqParam:  configMoqParam,
 	}
 	mock.lockS3Client.Lock()
 	mock.calls.S3Client = append(mock.calls.S3Client, callInfo)
 	mock.lockS3Client.Unlock()
-	return mock.S3ClientFunc(configMoqParam)
+	return mock.S3ClientFunc(contextMoqParam, configMoqParam)
 }
 
 // S3ClientCalls gets all the calls that were made to S3Client.
@@ -357,10 +361,12 @@ func (mock *DependenciesMock) S3Client(configMoqParam *config.Config) (content.S
 //
 //	len(mockedDependencies.S3ClientCalls())
 func (mock *DependenciesMock) S3ClientCalls() []struct {
-	ConfigMoqParam *config.Config
+	ContextMoqParam context.Context
+	ConfigMoqParam  *config.Config
 } {
 	var calls []struct {
-		ConfigMoqParam *config.Config
+		ContextMoqParam context.Context
+		ConfigMoqParam  *config.Config
 	}
 	mock.lockS3Client.RLock()
 	calls = mock.calls.S3Client

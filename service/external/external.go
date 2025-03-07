@@ -47,8 +47,7 @@ func (*External) FilesClient(cfg *config.Config) downloads.FilesClient {
 }
 
 // S3Client obtains a new S3 client, or a local storage client if a non-empty LocalObjectStore is provided
-func (*External) S3Client(cfg *config.Config) (content.S3Client, error) {
-	ctx := context.Background()
+func (*External) S3Client(ctx context.Context, cfg *config.Config) (content.S3Client, error) {
 	if cfg.LocalObjectStore != "" {
 		awsConfig, err := awsConfig.LoadDefaultConfig(ctx,
 			awsConfig.WithRegion(cfg.AwsRegion),
