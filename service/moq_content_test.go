@@ -15,12 +15,30 @@ import (
 // If this is not the case, regenerate this file with moq.
 var _ content.S3Client = &S3ClientMock{}
 
+// S3ClientMock is a mock implementation of content.S3Client.
+//
+//	func TestSomethingThatUsesS3Client(t *testing.T) {
+//
+//		// make and configure a mocked content.S3Client
+//		mockedS3Client := &S3ClientMock{
+//			CheckerFunc: func(ctx context.Context, check *healthcheck.CheckState) error {
+//				panic("mock out the Checker method")
+//			},
+//			GetFunc: func(ctx context.Context, key string) (io.ReadCloser, *int64, error) {
+//				panic("mock out the Get method")
+//			},
+//		}
+//
+//		// use mockedS3Client in code that requires content.S3Client
+//		// and then make assertions.
+//
+//	}
 type S3ClientMock struct {
 	// CheckerFunc mocks the Checker method.
 	CheckerFunc func(ctx context.Context, check *healthcheck.CheckState) error
 
 	// GetFunc mocks the Get method.
-	GetFunc func(key string) (io.ReadCloser, *int64, error)
+	GetFunc func(ctx context.Context, key string) (io.ReadCloser, *int64, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -33,12 +51,14 @@ type S3ClientMock struct {
 		}
 		// Get holds details about calls to the Get method.
 		Get []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// Key is the key argument value.
 			Key string
 		}
 	}
-	lockChecker    sync.RWMutex
-	lockGet        sync.RWMutex
+	lockChecker sync.RWMutex
+	lockGet     sync.RWMutex
 }
 
 // Checker calls CheckerFunc.
@@ -61,7 +81,8 @@ func (mock *S3ClientMock) Checker(ctx context.Context, check *healthcheck.CheckS
 
 // CheckerCalls gets all the calls that were made to Checker.
 // Check the length with:
-//     len(mockedS3Client.CheckerCalls())
+//
+//	len(mockedS3Client.CheckerCalls())
 func (mock *S3ClientMock) CheckerCalls() []struct {
 	Ctx   context.Context
 	Check *healthcheck.CheckState
@@ -77,28 +98,33 @@ func (mock *S3ClientMock) CheckerCalls() []struct {
 }
 
 // Get calls GetFunc.
-func (mock *S3ClientMock) Get(key string) (io.ReadCloser, *int64, error) {
+func (mock *S3ClientMock) Get(ctx context.Context, key string) (io.ReadCloser, *int64, error) {
 	if mock.GetFunc == nil {
 		panic("S3ClientMock.GetFunc: method is nil but S3Client.Get was just called")
 	}
 	callInfo := struct {
+		Ctx context.Context
 		Key string
 	}{
+		Ctx: ctx,
 		Key: key,
 	}
 	mock.lockGet.Lock()
 	mock.calls.Get = append(mock.calls.Get, callInfo)
 	mock.lockGet.Unlock()
-	return mock.GetFunc(key)
+	return mock.GetFunc(ctx, key)
 }
 
 // GetCalls gets all the calls that were made to Get.
 // Check the length with:
-//     len(mockedS3Client.GetCalls())
+//
+//	len(mockedS3Client.GetCalls())
 func (mock *S3ClientMock) GetCalls() []struct {
+	Ctx context.Context
 	Key string
 } {
 	var calls []struct {
+		Ctx context.Context
 		Key string
 	}
 	mock.lockGet.RLock()
@@ -106,4 +132,3 @@ func (mock *S3ClientMock) GetCalls() []struct {
 	mock.lockGet.RUnlock()
 	return calls
 }
-

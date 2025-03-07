@@ -133,7 +133,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	// Flagged off? Assumption that downloads-new is related to uploads-new
 	downloadHandler := api.CreateV1DownloadHandler(
 		files.FetchMetadata(svc.filesClient, cfg.ServiceAuthToken),
-		files.DownloadFile(svc.s3Client),
+		files.DownloadFile(ctx, svc.s3Client),
 		cfg,
 	)
 

@@ -1,10 +1,15 @@
 package external
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/files"
@@ -17,11 +22,7 @@ import (
 	"github.com/ONSdigital/dp-download-service/service"
 
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	s3client "github.com/ONSdigital/dp-s3"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
+	s3client "github.com/ONSdigital/dp-s3/v3"
 )
 
 // External implements the service.Dependencies interface for actual external services.
@@ -47,28 +48,30 @@ func (*External) FilesClient(cfg *config.Config) downloads.FilesClient {
 
 // S3Client obtains a new S3 client, or a local storage client if a non-empty LocalObjectStore is provided
 func (*External) S3Client(cfg *config.Config) (content.S3Client, error) {
+	ctx := context.Background()
 	if cfg.LocalObjectStore != "" {
-		s3Config := &aws.Config{
-			Credentials:      credentials.NewStaticCredentials(cfg.MinioAccessKey, cfg.MinioSecretKey, ""),
-			Endpoint:         aws.String(cfg.LocalObjectStore),
-			Region:           aws.String(cfg.AwsRegion),
-			DisableSSL:       aws.Bool(true),
-			S3ForcePathStyle: aws.Bool(true),
+		awsConfig, err := awsConfig.LoadDefaultConfig(ctx,
+			awsConfig.WithRegion(cfg.AwsRegion),
+			awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.MinioAccessKey, cfg.MinioSecretKey, "")),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("could not create aws config: %w", err)
 		}
 
-		s, err := session.NewSession(s3Config)
-		if err != nil {
-			return nil, fmt.Errorf("could not create s3 session: %w", err)
-		}
-		return s3client.NewClientWithSession(cfg.BucketName, s), nil
+		s3client := s3client.NewClientWithConfig(cfg.BucketName, awsConfig, func(o *s3.Options) {
+			o.BaseEndpoint = aws.String(cfg.LocalObjectStore)
+			o.UsePathStyle = true
+		})
+
+		return s3client, nil
 	}
 
-	s3, err := s3client.NewClient(cfg.AwsRegion, cfg.BucketName)
+	s3client, err := s3client.NewClient(ctx, cfg.AwsRegion, cfg.BucketName)
 	if err != nil {
 		return nil, fmt.Errorf("could not create s3 client: %w", err)
 	}
 
-	return s3, nil
+	return s3client, nil
 }
 
 func (*External) HealthCheck(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {

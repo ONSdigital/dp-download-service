@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
-	s3client "github.com/ONSdigital/dp-s3"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
+	s3client "github.com/ONSdigital/dp-s3/v3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
@@ -60,18 +61,22 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 }
 
 func (e *External) S3Client(cfg *config.Config) (content.S3Client, error) {
-	s, err := session.NewSession(&aws.Config{
-		Endpoint:         aws.String(localStackHost),
-		Region:           aws.String(cfg.AwsRegion),
-		S3ForcePathStyle: aws.Bool(true),
-		Credentials:      credentials.NewStaticCredentials("test", "test", ""),
-	})
+	ctx := context.Background()
 
+	awsConfig, err := awsConfig.LoadDefaultConfig(ctx,
+		awsConfig.WithRegion(cfg.AwsRegion),
+		awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
+	)
 	if err != nil {
-		fmt.Println("S3 ERROR: " + err.Error())
+		return nil, fmt.Errorf("could not create aws config: %w", err)
 	}
 
-	return s3client.NewClientWithSession(cfg.BucketName, s), nil
+	s3client := s3client.NewClientWithConfig(cfg.BucketName, awsConfig, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(localStackHost)
+		o.UsePathStyle = true
+	})
+
+	return s3client, nil
 }
 
 func (e *External) HealthCheck(c *config.Config, s string, s2 string, s3 string) (service.HealthChecker, error) {

@@ -33,9 +33,9 @@ func FetchMetadata(filesClient downloads.FilesClient, authToken string) Metadata
 	}
 }
 
-func DownloadFile(s3client content.S3Client) FileDownloader {
+func DownloadFile(ctx context.Context, s3client content.S3Client) FileDownloader {
 	return func(filePath string) (io.ReadCloser, error) {
-		file, _, err := s3client.Get(filePath)
+		file, _, err := s3client.Get(ctx, filePath)
 
 		return file, err
 	}

@@ -104,13 +104,13 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 
 func s3ClientGetReturnsError(ctrl *gomock.Controller, key string) (*mocks.MockS3Client, error) {
 	cli := mocks.NewMockS3Client(ctrl)
-	cli.EXPECT().Get(key).Times(1).Return(nil, nil, testErr)
+	cli.EXPECT().Get(gomock.Any(), key).Times(1).Return(nil, nil, testErr)
 	return cli, testErr
 }
 
 func s3ClientGetReturnsReader(ctrl *gomock.Controller, key string, r S3ReadCloser) *mocks.MockS3Client {
 	cli := mocks.NewMockS3Client(ctrl)
-	cli.EXPECT().Get(key).Times(1).Return(r, nil, nil)
+	cli.EXPECT().Get(gomock.Any(), key).Times(1).Return(r, nil, nil)
 	return cli
 }
 

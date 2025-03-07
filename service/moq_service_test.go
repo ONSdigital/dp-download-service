@@ -20,37 +20,37 @@ var _ service.Dependencies = &DependenciesMock{}
 
 // DependenciesMock is a mock implementation of service.Dependencies.
 //
-// 	func TestSomethingThatUsesDependencies(t *testing.T) {
+//	func TestSomethingThatUsesDependencies(t *testing.T) {
 //
-// 		// make and configure a mocked service.Dependencies
-// 		mockedDependencies := &DependenciesMock{
-// 			DatasetClientFunc: func(s string) downloads.DatasetClient {
-// 				panic("mock out the DatasetClient method")
-// 			},
-// 			FilesClientFunc: func(configMoqParam *config.Config) downloads.FilesClient {
-// 				panic("mock out the FilesClient method")
-// 			},
-// 			FilterClientFunc: func(s string) downloads.FilterClient {
-// 				panic("mock out the FilterClient method")
-// 			},
-// 			HealthCheckFunc: func(configMoqParam *config.Config, s1 string, s2 string, s3 string) (service.HealthChecker, error) {
-// 				panic("mock out the HealthCheck method")
-// 			},
-// 			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
-// 				panic("mock out the HttpServer method")
-// 			},
-// 			ImageClientFunc: func(s string) downloads.ImageClient {
-// 				panic("mock out the ImageClient method")
-// 			},
-// 			S3ClientFunc: func(configMoqParam *config.Config) (content.S3Client, error) {
-// 				panic("mock out the S3Client method")
-// 			},
-// 		}
+//		// make and configure a mocked service.Dependencies
+//		mockedDependencies := &DependenciesMock{
+//			DatasetClientFunc: func(s string) downloads.DatasetClient {
+//				panic("mock out the DatasetClient method")
+//			},
+//			FilesClientFunc: func(configMoqParam *config.Config) downloads.FilesClient {
+//				panic("mock out the FilesClient method")
+//			},
+//			FilterClientFunc: func(s string) downloads.FilterClient {
+//				panic("mock out the FilterClient method")
+//			},
+//			HealthCheckFunc: func(configMoqParam *config.Config, s1 string, s2 string, s3 string) (service.HealthChecker, error) {
+//				panic("mock out the HealthCheck method")
+//			},
+//			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
+//				panic("mock out the HttpServer method")
+//			},
+//			ImageClientFunc: func(s string) downloads.ImageClient {
+//				panic("mock out the ImageClient method")
+//			},
+//			S3ClientFunc: func(configMoqParam *config.Config) (content.S3Client, error) {
+//				panic("mock out the S3Client method")
+//			},
+//		}
 //
-// 		// use mockedDependencies in code that requires service.Dependencies
-// 		// and then make assertions.
+//		// use mockedDependencies in code that requires service.Dependencies
+//		// and then make assertions.
 //
-// 	}
+//	}
 type DependenciesMock struct {
 	// DatasetClientFunc mocks the DatasetClient method.
 	DatasetClientFunc func(s string) downloads.DatasetClient
@@ -146,7 +146,8 @@ func (mock *DependenciesMock) DatasetClient(s string) downloads.DatasetClient {
 
 // DatasetClientCalls gets all the calls that were made to DatasetClient.
 // Check the length with:
-//     len(mockedDependencies.DatasetClientCalls())
+//
+//	len(mockedDependencies.DatasetClientCalls())
 func (mock *DependenciesMock) DatasetClientCalls() []struct {
 	S string
 } {
@@ -177,7 +178,8 @@ func (mock *DependenciesMock) FilesClient(configMoqParam *config.Config) downloa
 
 // FilesClientCalls gets all the calls that were made to FilesClient.
 // Check the length with:
-//     len(mockedDependencies.FilesClientCalls())
+//
+//	len(mockedDependencies.FilesClientCalls())
 func (mock *DependenciesMock) FilesClientCalls() []struct {
 	ConfigMoqParam *config.Config
 } {
@@ -208,7 +210,8 @@ func (mock *DependenciesMock) FilterClient(s string) downloads.FilterClient {
 
 // FilterClientCalls gets all the calls that were made to FilterClient.
 // Check the length with:
-//     len(mockedDependencies.FilterClientCalls())
+//
+//	len(mockedDependencies.FilterClientCalls())
 func (mock *DependenciesMock) FilterClientCalls() []struct {
 	S string
 } {
@@ -245,7 +248,8 @@ func (mock *DependenciesMock) HealthCheck(configMoqParam *config.Config, s1 stri
 
 // HealthCheckCalls gets all the calls that were made to HealthCheck.
 // Check the length with:
-//     len(mockedDependencies.HealthCheckCalls())
+//
+//	len(mockedDependencies.HealthCheckCalls())
 func (mock *DependenciesMock) HealthCheckCalls() []struct {
 	ConfigMoqParam *config.Config
 	S1             string
@@ -284,7 +288,8 @@ func (mock *DependenciesMock) HttpServer(configMoqParam *config.Config, handler 
 
 // HttpServerCalls gets all the calls that were made to HttpServer.
 // Check the length with:
-//     len(mockedDependencies.HttpServerCalls())
+//
+//	len(mockedDependencies.HttpServerCalls())
 func (mock *DependenciesMock) HttpServerCalls() []struct {
 	ConfigMoqParam *config.Config
 	Handler        http.Handler
@@ -317,7 +322,8 @@ func (mock *DependenciesMock) ImageClient(s string) downloads.ImageClient {
 
 // ImageClientCalls gets all the calls that were made to ImageClient.
 // Check the length with:
-//     len(mockedDependencies.ImageClientCalls())
+//
+//	len(mockedDependencies.ImageClientCalls())
 func (mock *DependenciesMock) ImageClientCalls() []struct {
 	S string
 } {
@@ -348,7 +354,8 @@ func (mock *DependenciesMock) S3Client(configMoqParam *config.Config) (content.S
 
 // S3ClientCalls gets all the calls that were made to S3Client.
 // Check the length with:
-//     len(mockedDependencies.S3ClientCalls())
+//
+//	len(mockedDependencies.S3ClientCalls())
 func (mock *DependenciesMock) S3ClientCalls() []struct {
 	ConfigMoqParam *config.Config
 } {
@@ -367,28 +374,28 @@ var _ service.HealthChecker = &HealthCheckerMock{}
 
 // HealthCheckerMock is a mock implementation of service.HealthChecker.
 //
-// 	func TestSomethingThatUsesHealthChecker(t *testing.T) {
+//	func TestSomethingThatUsesHealthChecker(t *testing.T) {
 //
-// 		// make and configure a mocked service.HealthChecker
-// 		mockedHealthChecker := &HealthCheckerMock{
-// 			AddCheckFunc: func(s string, checker healthcheck.Checker) error {
-// 				panic("mock out the AddCheck method")
-// 			},
-// 			HandlerFunc: func(responseWriter http.ResponseWriter, request *http.Request)  {
-// 				panic("mock out the Handler method")
-// 			},
-// 			StartFunc: func(contextMoqParam context.Context)  {
-// 				panic("mock out the Start method")
-// 			},
-// 			StopFunc: func()  {
-// 				panic("mock out the Stop method")
-// 			},
-// 		}
+//		// make and configure a mocked service.HealthChecker
+//		mockedHealthChecker := &HealthCheckerMock{
+//			AddCheckFunc: func(s string, checker healthcheck.Checker) error {
+//				panic("mock out the AddCheck method")
+//			},
+//			HandlerFunc: func(responseWriter http.ResponseWriter, request *http.Request)  {
+//				panic("mock out the Handler method")
+//			},
+//			StartFunc: func(contextMoqParam context.Context)  {
+//				panic("mock out the Start method")
+//			},
+//			StopFunc: func()  {
+//				panic("mock out the Stop method")
+//			},
+//		}
 //
-// 		// use mockedHealthChecker in code that requires service.HealthChecker
-// 		// and then make assertions.
+//		// use mockedHealthChecker in code that requires service.HealthChecker
+//		// and then make assertions.
 //
-// 	}
+//	}
 type HealthCheckerMock struct {
 	// AddCheckFunc mocks the AddCheck method.
 	AddCheckFunc func(s string, checker healthcheck.Checker) error
@@ -453,7 +460,8 @@ func (mock *HealthCheckerMock) AddCheck(s string, checker healthcheck.Checker) e
 
 // AddCheckCalls gets all the calls that were made to AddCheck.
 // Check the length with:
-//     len(mockedHealthChecker.AddCheckCalls())
+//
+//	len(mockedHealthChecker.AddCheckCalls())
 func (mock *HealthCheckerMock) AddCheckCalls() []struct {
 	S       string
 	Checker healthcheck.Checker
@@ -488,7 +496,8 @@ func (mock *HealthCheckerMock) Handler(responseWriter http.ResponseWriter, reque
 
 // HandlerCalls gets all the calls that were made to Handler.
 // Check the length with:
-//     len(mockedHealthChecker.HandlerCalls())
+//
+//	len(mockedHealthChecker.HandlerCalls())
 func (mock *HealthCheckerMock) HandlerCalls() []struct {
 	ResponseWriter http.ResponseWriter
 	Request        *http.Request
@@ -521,7 +530,8 @@ func (mock *HealthCheckerMock) Start(contextMoqParam context.Context) {
 
 // StartCalls gets all the calls that were made to Start.
 // Check the length with:
-//     len(mockedHealthChecker.StartCalls())
+//
+//	len(mockedHealthChecker.StartCalls())
 func (mock *HealthCheckerMock) StartCalls() []struct {
 	ContextMoqParam context.Context
 } {
@@ -549,7 +559,8 @@ func (mock *HealthCheckerMock) Stop() {
 
 // StopCalls gets all the calls that were made to Stop.
 // Check the length with:
-//     len(mockedHealthChecker.StopCalls())
+//
+//	len(mockedHealthChecker.StopCalls())
 func (mock *HealthCheckerMock) StopCalls() []struct {
 } {
 	var calls []struct {
@@ -566,22 +577,22 @@ var _ service.HTTPServer = &HTTPServerMock{}
 
 // HTTPServerMock is a mock implementation of service.HTTPServer.
 //
-// 	func TestSomethingThatUsesHTTPServer(t *testing.T) {
+//	func TestSomethingThatUsesHTTPServer(t *testing.T) {
 //
-// 		// make and configure a mocked service.HTTPServer
-// 		mockedHTTPServer := &HTTPServerMock{
-// 			ListenAndServeFunc: func() error {
-// 				panic("mock out the ListenAndServe method")
-// 			},
-// 			ShutdownFunc: func(ctx context.Context) error {
-// 				panic("mock out the Shutdown method")
-// 			},
-// 		}
+//		// make and configure a mocked service.HTTPServer
+//		mockedHTTPServer := &HTTPServerMock{
+//			ListenAndServeFunc: func() error {
+//				panic("mock out the ListenAndServe method")
+//			},
+//			ShutdownFunc: func(ctx context.Context) error {
+//				panic("mock out the Shutdown method")
+//			},
+//		}
 //
-// 		// use mockedHTTPServer in code that requires service.HTTPServer
-// 		// and then make assertions.
+//		// use mockedHTTPServer in code that requires service.HTTPServer
+//		// and then make assertions.
 //
-// 	}
+//	}
 type HTTPServerMock struct {
 	// ListenAndServeFunc mocks the ListenAndServe method.
 	ListenAndServeFunc func() error
@@ -619,7 +630,8 @@ func (mock *HTTPServerMock) ListenAndServe() error {
 
 // ListenAndServeCalls gets all the calls that were made to ListenAndServe.
 // Check the length with:
-//     len(mockedHTTPServer.ListenAndServeCalls())
+//
+//	len(mockedHTTPServer.ListenAndServeCalls())
 func (mock *HTTPServerMock) ListenAndServeCalls() []struct {
 } {
 	var calls []struct {
@@ -648,7 +660,8 @@ func (mock *HTTPServerMock) Shutdown(ctx context.Context) error {
 
 // ShutdownCalls gets all the calls that were made to Shutdown.
 // Check the length with:
-//     len(mockedHTTPServer.ShutdownCalls())
+//
+//	len(mockedHTTPServer.ShutdownCalls())
 func (mock *HTTPServerMock) ShutdownCalls() []struct {
 	Ctx context.Context
 } {

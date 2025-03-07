@@ -57,9 +57,9 @@ func (s *RetrieverTestSuite) TestDownloadFile() {
 
 	fileContent := io.NopCloser(bytes.NewBuffer([]byte("file content")))
 
-	s.s3c.EXPECT().Get(filePath).Return(fileContent, nil, nil)
+	s.s3c.EXPECT().Get(gomock.Any(), filePath).Return(fileContent, nil, nil)
 
-	file, err := DownloadFile(s.s3c)(filePath)
+	file, err := DownloadFile(context.Background(), s.s3c)(filePath)
 
 	s.NoError(err)
 	s.Equal(fileContent, file)

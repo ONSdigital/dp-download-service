@@ -20,25 +20,25 @@ var _ downloads.DatasetClient = &DatasetClientMock{}
 
 // DatasetClientMock is a mock implementation of downloads.DatasetClient.
 //
-// 	func TestSomethingThatUsesDatasetClient(t *testing.T) {
+//	func TestSomethingThatUsesDatasetClient(t *testing.T) {
 //
-// 		// make and configure a mocked downloads.DatasetClient
-// 		mockedDatasetClient := &DatasetClientMock{
-// 			CheckerFunc: func(ctx context.Context, check *healthcheck.CheckState) error {
-// 				panic("mock out the Checker method")
-// 			},
-// 			GetInstanceFunc: func(ctx context.Context, userAuthToken string, serviceAuthToken string, collectionID string, instanceID string, ifMatch string) (dataset.Instance, string, error) {
-// 				panic("mock out the GetInstance method")
-// 			},
-// 			GetVersionFunc: func(ctx context.Context, userAuthToken string, serviceAuthToken string, downloadServiceAuthToken string, collectionID string, datasetID string, edition string, version string) (dataset.Version, error) {
-// 				panic("mock out the GetVersion method")
-// 			},
-// 		}
+//		// make and configure a mocked downloads.DatasetClient
+//		mockedDatasetClient := &DatasetClientMock{
+//			CheckerFunc: func(ctx context.Context, check *healthcheck.CheckState) error {
+//				panic("mock out the Checker method")
+//			},
+//			GetInstanceFunc: func(ctx context.Context, userAuthToken string, serviceAuthToken string, collectionID string, instanceID string, ifMatch string) (dataset.Instance, string, error) {
+//				panic("mock out the GetInstance method")
+//			},
+//			GetVersionFunc: func(ctx context.Context, userAuthToken string, serviceAuthToken string, downloadServiceAuthToken string, collectionID string, datasetID string, edition string, version string) (dataset.Version, error) {
+//				panic("mock out the GetVersion method")
+//			},
+//		}
 //
-// 		// use mockedDatasetClient in code that requires downloads.DatasetClient
-// 		// and then make assertions.
+//		// use mockedDatasetClient in code that requires downloads.DatasetClient
+//		// and then make assertions.
 //
-// 	}
+//	}
 type DatasetClientMock struct {
 	// CheckerFunc mocks the Checker method.
 	CheckerFunc func(ctx context.Context, check *healthcheck.CheckState) error
@@ -118,7 +118,8 @@ func (mock *DatasetClientMock) Checker(ctx context.Context, check *healthcheck.C
 
 // CheckerCalls gets all the calls that were made to Checker.
 // Check the length with:
-//     len(mockedDatasetClient.CheckerCalls())
+//
+//	len(mockedDatasetClient.CheckerCalls())
 func (mock *DatasetClientMock) CheckerCalls() []struct {
 	Ctx   context.Context
 	Check *healthcheck.CheckState
@@ -161,7 +162,8 @@ func (mock *DatasetClientMock) GetInstance(ctx context.Context, userAuthToken st
 
 // GetInstanceCalls gets all the calls that were made to GetInstance.
 // Check the length with:
-//     len(mockedDatasetClient.GetInstanceCalls())
+//
+//	len(mockedDatasetClient.GetInstanceCalls())
 func (mock *DatasetClientMock) GetInstanceCalls() []struct {
 	Ctx              context.Context
 	UserAuthToken    string
@@ -216,7 +218,8 @@ func (mock *DatasetClientMock) GetVersion(ctx context.Context, userAuthToken str
 
 // GetVersionCalls gets all the calls that were made to GetVersion.
 // Check the length with:
-//     len(mockedDatasetClient.GetVersionCalls())
+//
+//	len(mockedDatasetClient.GetVersionCalls())
 func (mock *DatasetClientMock) GetVersionCalls() []struct {
 	Ctx                      context.Context
 	UserAuthToken            string
@@ -249,22 +252,22 @@ var _ downloads.FilterClient = &FilterClientMock{}
 
 // FilterClientMock is a mock implementation of downloads.FilterClient.
 //
-// 	func TestSomethingThatUsesFilterClient(t *testing.T) {
+//	func TestSomethingThatUsesFilterClient(t *testing.T) {
 //
-// 		// make and configure a mocked downloads.FilterClient
-// 		mockedFilterClient := &FilterClientMock{
-// 			CheckerFunc: func(ctx context.Context, check *healthcheck.CheckState) error {
-// 				panic("mock out the Checker method")
-// 			},
-// 			GetOutputFunc: func(ctx context.Context, userAuthToken string, serviceAuthToken string, downloadServiceToken string, collectionID string, filterOutputID string) (filter.Model, error) {
-// 				panic("mock out the GetOutput method")
-// 			},
-// 		}
+//		// make and configure a mocked downloads.FilterClient
+//		mockedFilterClient := &FilterClientMock{
+//			CheckerFunc: func(ctx context.Context, check *healthcheck.CheckState) error {
+//				panic("mock out the Checker method")
+//			},
+//			GetOutputFunc: func(ctx context.Context, userAuthToken string, serviceAuthToken string, downloadServiceToken string, collectionID string, filterOutputID string) (filter.Model, error) {
+//				panic("mock out the GetOutput method")
+//			},
+//		}
 //
-// 		// use mockedFilterClient in code that requires downloads.FilterClient
-// 		// and then make assertions.
+//		// use mockedFilterClient in code that requires downloads.FilterClient
+//		// and then make assertions.
 //
-// 	}
+//	}
 type FilterClientMock struct {
 	// CheckerFunc mocks the Checker method.
 	CheckerFunc func(ctx context.Context, check *healthcheck.CheckState) error
@@ -321,7 +324,8 @@ func (mock *FilterClientMock) Checker(ctx context.Context, check *healthcheck.Ch
 
 // CheckerCalls gets all the calls that were made to Checker.
 // Check the length with:
-//     len(mockedFilterClient.CheckerCalls())
+//
+//	len(mockedFilterClient.CheckerCalls())
 func (mock *FilterClientMock) CheckerCalls() []struct {
 	Ctx   context.Context
 	Check *healthcheck.CheckState
@@ -364,7 +368,8 @@ func (mock *FilterClientMock) GetOutput(ctx context.Context, userAuthToken strin
 
 // GetOutputCalls gets all the calls that were made to GetOutput.
 // Check the length with:
-//     len(mockedFilterClient.GetOutputCalls())
+//
+//	len(mockedFilterClient.GetOutputCalls())
 func (mock *FilterClientMock) GetOutputCalls() []struct {
 	Ctx                  context.Context
 	UserAuthToken        string
@@ -393,22 +398,22 @@ var _ downloads.ImageClient = &ImageClientMock{}
 
 // ImageClientMock is a mock implementation of downloads.ImageClient.
 //
-// 	func TestSomethingThatUsesImageClient(t *testing.T) {
+//	func TestSomethingThatUsesImageClient(t *testing.T) {
 //
-// 		// make and configure a mocked downloads.ImageClient
-// 		mockedImageClient := &ImageClientMock{
-// 			CheckerFunc: func(ctx context.Context, check *healthcheck.CheckState) error {
-// 				panic("mock out the Checker method")
-// 			},
-// 			GetDownloadVariantFunc: func(ctx context.Context, userAuthToken string, serviceAuthToken string, collectionID string, imageID string, variant string) (image.ImageDownload, error) {
-// 				panic("mock out the GetDownloadVariant method")
-// 			},
-// 		}
+//		// make and configure a mocked downloads.ImageClient
+//		mockedImageClient := &ImageClientMock{
+//			CheckerFunc: func(ctx context.Context, check *healthcheck.CheckState) error {
+//				panic("mock out the Checker method")
+//			},
+//			GetDownloadVariantFunc: func(ctx context.Context, userAuthToken string, serviceAuthToken string, collectionID string, imageID string, variant string) (image.ImageDownload, error) {
+//				panic("mock out the GetDownloadVariant method")
+//			},
+//		}
 //
-// 		// use mockedImageClient in code that requires downloads.ImageClient
-// 		// and then make assertions.
+//		// use mockedImageClient in code that requires downloads.ImageClient
+//		// and then make assertions.
 //
-// 	}
+//	}
 type ImageClientMock struct {
 	// CheckerFunc mocks the Checker method.
 	CheckerFunc func(ctx context.Context, check *healthcheck.CheckState) error
@@ -465,7 +470,8 @@ func (mock *ImageClientMock) Checker(ctx context.Context, check *healthcheck.Che
 
 // CheckerCalls gets all the calls that were made to Checker.
 // Check the length with:
-//     len(mockedImageClient.CheckerCalls())
+//
+//	len(mockedImageClient.CheckerCalls())
 func (mock *ImageClientMock) CheckerCalls() []struct {
 	Ctx   context.Context
 	Check *healthcheck.CheckState
@@ -508,7 +514,8 @@ func (mock *ImageClientMock) GetDownloadVariant(ctx context.Context, userAuthTok
 
 // GetDownloadVariantCalls gets all the calls that were made to GetDownloadVariant.
 // Check the length with:
-//     len(mockedImageClient.GetDownloadVariantCalls())
+//
+//	len(mockedImageClient.GetDownloadVariantCalls())
 func (mock *ImageClientMock) GetDownloadVariantCalls() []struct {
 	Ctx              context.Context
 	UserAuthToken    string
@@ -537,22 +544,22 @@ var _ downloads.FilesClient = &FilesClientMock{}
 
 // FilesClientMock is a mock implementation of downloads.FilesClient.
 //
-// 	func TestSomethingThatUsesFilesClient(t *testing.T) {
+//	func TestSomethingThatUsesFilesClient(t *testing.T) {
 //
-// 		// make and configure a mocked downloads.FilesClient
-// 		mockedFilesClient := &FilesClientMock{
-// 			CheckerFunc: func(ctx context.Context, state *healthcheck.CheckState) error {
-// 				panic("mock out the Checker method")
-// 			},
-// 			GetFileFunc: func(ctx context.Context, path string, authToken string) (files.FileMetaData, error) {
-// 				panic("mock out the GetFile method")
-// 			},
-// 		}
+//		// make and configure a mocked downloads.FilesClient
+//		mockedFilesClient := &FilesClientMock{
+//			CheckerFunc: func(ctx context.Context, state *healthcheck.CheckState) error {
+//				panic("mock out the Checker method")
+//			},
+//			GetFileFunc: func(ctx context.Context, path string, authToken string) (files.FileMetaData, error) {
+//				panic("mock out the GetFile method")
+//			},
+//		}
 //
-// 		// use mockedFilesClient in code that requires downloads.FilesClient
-// 		// and then make assertions.
+//		// use mockedFilesClient in code that requires downloads.FilesClient
+//		// and then make assertions.
 //
-// 	}
+//	}
 type FilesClientMock struct {
 	// CheckerFunc mocks the Checker method.
 	CheckerFunc func(ctx context.Context, state *healthcheck.CheckState) error
@@ -603,7 +610,8 @@ func (mock *FilesClientMock) Checker(ctx context.Context, state *healthcheck.Che
 
 // CheckerCalls gets all the calls that were made to Checker.
 // Check the length with:
-//     len(mockedFilesClient.CheckerCalls())
+//
+//	len(mockedFilesClient.CheckerCalls())
 func (mock *FilesClientMock) CheckerCalls() []struct {
 	Ctx   context.Context
 	State *healthcheck.CheckState
@@ -640,7 +648,8 @@ func (mock *FilesClientMock) GetFile(ctx context.Context, path string, authToken
 
 // GetFileCalls gets all the calls that were made to GetFile.
 // Check the length with:
-//     len(mockedFilesClient.GetFileCalls())
+//
+//	len(mockedFilesClient.GetFileCalls())
 func (mock *FilesClientMock) GetFileCalls() []struct {
 	Ctx       context.Context
 	Path      string

@@ -7,17 +7,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-
 	componenttest "github.com/ONSdigital/dp-component-test"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
 	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"github.com/ONSdigital/log.go/v2/log"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 const (
@@ -68,24 +67,42 @@ func (d *DownloadServiceComponent) Initialiser() (http.Handler, error) {
 
 func (d *DownloadServiceComponent) Reset() {
 	cfg, _ := config.Get()
+	ctx := context.Background()
 
 	// clear out test bucket
-	s, _ := session.NewSession(&aws.Config{
-		Endpoint:         aws.String(localStackHost),
-		Region:           aws.String(cfg.AwsRegion),
-		S3ForcePathStyle: aws.Bool(true),
-		Credentials:      credentials.NewStaticCredentials("test", "test", ""),
+	awsConfig, err := awsConfig.LoadDefaultConfig(ctx,
+		awsConfig.WithRegion(cfg.AwsRegion),
+		awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create aws config: %s", err.Error()))
+	}
+
+	s3client := s3.NewFromConfig(awsConfig, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(localStackHost)
+		o.UsePathStyle = true
 	})
 
-	s3client := s3.New(s)
+	objectsToDelete, err := s3client.ListObjects(ctx, &s3.ListObjectsInput{
+		Bucket: aws.String(cfg.BucketName),
+	})
+	if err != nil {
+		panic(fmt.Sprintf("Failed to list objects in localstack s3: %s", err.Error()))
+	}
 
-	err := s3manager.NewBatchDeleteWithClient(s3client).Delete(
-		aws.BackgroundContext(), s3manager.NewDeleteListIterator(s3client, &s3.ListObjectsInput{
+	for _, object := range objectsToDelete.Contents {
+		deleteObjectInput := &s3.DeleteObjectInput{
 			Bucket: aws.String(cfg.BucketName),
-		}))
+			Key:    object.Key,
+		}
+		_, err = s3client.DeleteObject(ctx, deleteObjectInput)
+		if err != nil {
+			panic(fmt.Sprintf("Failed to delete object in localstack s3: %s", err.Error()))
+		}
+	}
 
 	if err != nil {
-		panic(fmt.Sprintf("Failed to empty localstack s3: %s", err.Error()))
+		panic(fmt.Sprintf("Failed to delete objects in localstack s3: %s", err.Error()))
 	}
 }
 

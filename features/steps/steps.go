@@ -2,18 +2,20 @@ package steps
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 
 	dprequest "github.com/ONSdigital/dp-net/v2/request"
+	s3client "github.com/ONSdigital/dp-s3/v3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 
 	"github.com/ONSdigital/dp-download-service/config"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/cucumber/godog"
 	"github.com/rdumont/assistdog"
 	"github.com/stretchr/testify/assert"
@@ -108,16 +110,20 @@ func (d *DownloadServiceComponent) theFileStoredInS3WithContent(filepath string,
 
 func (d *DownloadServiceComponent) theS3FileWithContent(filepath string, content *godog.DocString) error {
 	cfg, _ := config.Get()
+	ctx := context.Background()
 
-	s, err := session.NewSession(&aws.Config{
-		Endpoint:         aws.String(localStackHost),
-		Region:           aws.String(cfg.AwsRegion),
-		S3ForcePathStyle: aws.Bool(true),
-		Credentials:      credentials.NewStaticCredentials("test", "test", ""),
-	})
+	awsConfig, err := awsConfig.LoadDefaultConfig(ctx,
+		awsConfig.WithRegion(cfg.AwsRegion),
+		awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
+	)
 	assert.NoError(d.ApiFeature, err)
 
-	_, err = s3manager.NewUploader(s).Upload(&s3manager.UploadInput{
+	s3client := s3client.NewClientWithConfig(cfg.BucketName, awsConfig, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(localStackHost)
+		o.UsePathStyle = true
+	})
+
+	_, err = s3client.Upload(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(cfg.BucketName),
 		Key:    aws.String(filepath),
 		Body:   strings.NewReader(content.Content),

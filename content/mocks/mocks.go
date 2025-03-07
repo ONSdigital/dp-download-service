@@ -89,10 +89,9 @@ func (mr *MockS3ClientMockRecorder) Checker(arg0, arg1 interface{}) *gomock.Call
 }
 
 // Get mocks base method.
-func (m *MockS3Client) Get(arg0 string) (io.ReadCloser, *int64, error) {
-	// Must be this one
+func (m *MockS3Client) Get(arg0 context.Context, arg1 string) (io.ReadCloser, *int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0)
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(*int64)
 	ret2, _ := ret[2].(error)
@@ -100,9 +99,9 @@ func (m *MockS3Client) Get(arg0 string) (io.ReadCloser, *int64, error) {
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockS3ClientMockRecorder) Get(arg0 interface{}) *gomock.Call {
+func (mr *MockS3ClientMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockS3Client)(nil).Get), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockS3Client)(nil).Get), arg0, arg1)
 }
 
 // MockS3ReadCloser is a mock of S3ReadCloser interface.
