@@ -57,8 +57,8 @@ func (d *DownloadServiceComponent) theFileContentShouldBe(expectedContent *godog
 }
 
 func (d *DownloadServiceComponent) iShouldReceiveThePrivateFile(filename string) error {
-	assert.Equal(d.ApiFeature, http.StatusOK, d.ApiFeature.HttpResponse.StatusCode)
-	assert.Equal(d.ApiFeature, "attachment; filename="+filename, d.ApiFeature.HttpResponse.Header.Get("Content-Disposition"))
+	assert.Equal(d.ApiFeature, http.StatusOK, d.ApiFeature.HTTPResponse.StatusCode)
+	assert.Equal(d.ApiFeature, "attachment; filename="+filename, d.ApiFeature.HTTPResponse.Header.Get("Content-Disposition"))
 
 	return d.ApiFeature.StepError()
 }
@@ -136,7 +136,7 @@ func (d *DownloadServiceComponent) theS3FileWithContent(filepath string, content
 func (d *DownloadServiceComponent) iShouldBeRedirectedTo(url string) error {
 	d.ApiFeature.TheHTTPStatusCodeShouldBe("301")
 
-	assert.Equal(d.ApiFeature, url, d.ApiFeature.HttpResponse.Header.Get("Location"))
+	assert.Equal(d.ApiFeature, url, d.ApiFeature.HTTPResponse.Header.Get("Location"))
 
 	return d.ApiFeature.StepError()
 }
