@@ -112,6 +112,23 @@ func TestHandlingErrorGettingFileContent(t *testing.T) {
 	assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
 }
 
+func TestHandlingErrorGettingFileNotAvailable(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/unavailablefile.csv", nil)
+	rec := &ErrorWriter{header: make(http.Header)}
+
+	fetchMetadata := func(ctx context.Context, path string) (fclient.FileMetaData, error) {
+		return fclient.FileMetaData{}, files.ErrFileNotRegistered
+	}
+	downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
+
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, &config.Config{})
+
+	h.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusNotFound, rec.status)
+	assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
+}
+
 func TestHandleFileNotPublished(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
 	rec := &ErrorWriter{header: make(http.Header)}

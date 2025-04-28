@@ -3,9 +3,10 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+
 	"github.com/ONSdigital/dp-download-service/files"
 	"github.com/ONSdigital/log.go/v2/log"
-	"net/http"
 )
 
 //nolint:golint,unused
@@ -40,5 +41,5 @@ func writeError(w http.ResponseWriter, errs jsonErrors, httpCode int) {
 }
 
 func buildErrors(err error, code string) jsonErrors {
-	return jsonErrors{Error: []jsonError{{Description: err.Error(), Code: code}}}
+	return jsonErrors{Error: []jsonError{{Description: err.Error()}}}
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 
 	dprequest "github.com/ONSdigital/dp-net/v2/request"
 
@@ -29,6 +30,10 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 
 		metadata, err := fetchMetadata(ctx, requestedFilePath)
 		if err != nil {
+			if strings.Contains(err.Error(), files.ErrFileNotRegistered.Error()) {
+				handleError(ctx, "Error fetching metadata", w, files.ErrFileNotRegistered)
+				return
+			}
 			handleError(ctx, "Error fetching metadata", w, err)
 			return
 		}
