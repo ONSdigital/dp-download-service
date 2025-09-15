@@ -2,14 +2,6 @@ module github.com/ONSdigital/dp-download-service
 
 go 1.24
 
-// to avoid [CVE-2022-29153] CWE-918: Server-Side Request Forgery (SSRF)
-exclude github.com/hashicorp/consul/api v1.1.0
-
-// to avoid [CVE-2022-29153] CWE-918: Server-Side Request Forgery (SSRF)
-exclude github.com/hashicorp/consul/sdk v0.16.2
-
-exclude github.com/prometheus/client_golang v0.9.3
-
 require (
 	github.com/ONSdigital/dp-api-clients-go/v2 v2.263.0
 	github.com/ONSdigital/dp-component-test v0.6.0
