@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"testing"
@@ -285,16 +286,39 @@ func TestRegisteredRoutes(t *testing.T) {
 	Convey("When the service is created", t, func() {
 		svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
 
-		Convey("The /downloads/files/{path:.*} route should be registered", func() {
-			So(err, ShouldBeNil)
-			So(svc, ShouldNotBeNil)
+		So(err, ShouldBeNil)
+		So(svc, ShouldNotBeNil)
 
-			req, _ := http.NewRequest("GET", "/downloads/files/some/test/path.csv", nil)
-			match := &mux.RouteMatch{}
-			found := svc.Router().Match(req, match)
+		// Table of expected routes
+		tests := []struct {
+			method string
+			path   string
+		}{
+			{"GET", "/downloads/datasets/123/editions/2021/versions/1.csv"},
+			{"GET", "/downloads/datasets/123/editions/2021/versions/1.csv-metadata.json"},
+			{"GET", "/downloads/datasets/123/editions/2021/versions/1.txt"},
+			{"GET", "/downloads/datasets/123/editions/2021/versions/1.xls"},
+			{"GET", "/downloads/datasets/123/editions/2021/versions/1.xlsx"},
+			{"GET", "/downloads/filter-outputs/abc.csv"},
+			{"GET", "/downloads/filter-outputs/abc.xls"},
+			{"GET", "/downloads/filter-outputs/abc.xlsx"},
+			{"GET", "/downloads/filter-outputs/abc.txt"},
+			{"GET", "/downloads/filter-outputs/abc.csv-metadata.json"},
+			{"GET", "/images/xyz/small/example.png"},
+			{"GET", "/downloads-new/some/test/path.csv"},
+			{"GET", "/downloads/files/some/test/path.csv"},
+			{"GET", "/health"},
+		}
 
-			So(found, ShouldBeTrue)
-			So(match.Handler, ShouldNotBeNil)
-		})
+		for _, tt := range tests {
+			Convey(fmt.Sprintf("The %s %s route should be registered", tt.method, tt.path), func() {
+				req, _ := http.NewRequest(tt.method, tt.path, nil)
+				match := &mux.RouteMatch{}
+				found := svc.GetRouter().Match(req, match)
+
+				So(found, ShouldBeTrue)
+				So(match.Handler, ShouldNotBeNil)
+			})
+		}
 	})
 }

@@ -256,6 +256,6 @@ func (d Download) Close(ctx context.Context) error {
 	return nil
 }
 
-func (d *Download) Router() *mux.Router {
+func (d *Download) GetRouter() *mux.Router {
 	return d.router
 }
