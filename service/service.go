@@ -153,6 +153,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	router.Path("/downloads/filter-outputs/{filterOutputID}.csv-metadata.json").HandlerFunc(d.DoFilterOutput("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads-new/{path:.*}").HandlerFunc(downloadHandler)
+	router.Path("/downloads/files/{path:.*}").HandlerFunc(downloadHandler)
 	router.HandleFunc("/health", hc.Handler)
 	svc.router = router
 
@@ -253,4 +254,8 @@ func (d Download) Close(ctx context.Context) error {
 	log.Info(shutdownCtx, "shutdown complete", log.Data{"duration": time.Since(shutdownStart)})
 
 	return nil
+}
+
+func (d *Download) Router() *mux.Router {
+	return d.router
 }

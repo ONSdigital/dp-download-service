@@ -14,6 +14,7 @@ import (
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	"github.com/gorilla/mux"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -234,6 +235,66 @@ func TestNew(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(svc.GetZebedeeHealthClient(), ShouldBeNil)
 			})
+		})
+	})
+}
+
+func TestRegisteredRoutes(t *testing.T) {
+	buildTime := "buildTime"
+	gitCommit := "gitCommit"
+	version := "version"
+
+	ctx := context.Background()
+	cfg := &config.Config{
+		GracefulShutdownTimeout: 5 * time.Minute,
+		IsPublishing:            true,
+	}
+
+	checker := func(ctx context.Context, check *healthcheck.CheckState) error {
+		return nil
+	}
+
+	mockedDatasetClient := &DatasetClientMock{CheckerFunc: checker}
+	mockedFilterClient := &FilterClientMock{CheckerFunc: checker}
+	mockedImageClient := &ImageClientMock{CheckerFunc: checker}
+	mockedFilesClient := &FilesClientMock{CheckerFunc: checker}
+	mockedS3Client := &S3ClientMock{CheckerFunc: checker}
+	mockedHealthChecker := &HealthCheckerMock{
+		AddCheckFunc: func(s string, checker healthcheck.Checker) error { return nil },
+	}
+	mockedHttpServer := &HTTPServerMock{}
+
+	mockedDependencies := &DependenciesMock{
+		DatasetClientFunc: func(s string) downloads.DatasetClient { return mockedDatasetClient },
+		FilterClientFunc:  func(s string) downloads.FilterClient { return mockedFilterClient },
+		ImageClientFunc:   func(s string) downloads.ImageClient { return mockedImageClient },
+		S3ClientFunc: func(ctx context.Context, cfg *config.Config) (content.S3Client, error) {
+			return mockedS3Client, nil
+		},
+		HealthCheckFunc: func(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
+			return mockedHealthChecker, nil
+		},
+		HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
+			return mockedHttpServer
+		},
+		FilesClientFunc: func(configMoqParam *config.Config) downloads.FilesClient {
+			return mockedFilesClient
+		},
+	}
+
+	Convey("When the service is created", t, func() {
+		svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
+
+		Convey("The /downloads/files/{path:.*} route should be registered", func() {
+			So(err, ShouldBeNil)
+			So(svc, ShouldNotBeNil)
+
+			req, _ := http.NewRequest("GET", "/downloads/files/some/test/path.csv", nil)
+			match := &mux.RouteMatch{}
+			found := svc.Router().Match(req, match)
+
+			So(found, ShouldBeTrue)
+			So(match.Handler, ShouldNotBeNil)
 		})
 	})
 }
