@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/cucumber/godog"
+	"github.com/cucumber/messages-go/v16"
 	"github.com/rdumont/assistdog"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,6 +29,7 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I should receive the private file "([^"]*)"$`, d.iShouldReceiveThePrivateFile)
 	ctx.Step(`^is not yet published$`, d.isNotYetPublished)
 	ctx.Step(`^I download the file "([^"]*)"$`, d.iDownloadTheFile)
+	ctx.Step(`^I download the file "([^"]*)" from alternative endpoint$`, d.iDownloadTheFileFromAlternativeEndpoint)
 	ctx.Step(`^the file "([^"]*)" has the metadata:$`, d.theFileMetadata)
 	ctx.Step(`^the application is in "([^"]*)" mode$`, d.weAreInWebMode)
 	ctx.Step(`^the headers should be:$`, d.theHeadersShouldBe)
@@ -35,7 +38,28 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the file "([^"]*)" is in S3 with content:$`, d.theFileStoredInS3WithContent)
 	ctx.Step(`^I should be redirected to "([^"]*)"$`, d.iShouldBeRedirectedTo)
 	ctx.Step(`^the GET request with path \("([^"]*)"\) should contain an authorization header containing "([^"]*)"$`, d.theGETRequestWithPathShouldContainAnAuthorizationHeaderContaining)
+	ctx.Step(`^the response body should contain "([^"]*)"$`, d.theResponseBodyShouldContain)
+	ctx.Step(`^the collection "([^"]*)" is marked as PUBLISHED$`, d.theCollectionIsMarkedAsPublished)
+	ctx.Step(`^the file "([^"]*)" is not present in S3$`, d.theFileIsNotPresentInS)
+}
 
+func (c *DownloadServiceComponent) theCollectionIsMarkedAsPublished(collectionID string) error {
+	body := fmt.Sprintf(`{"state": %q}`, "PUBLISHED")
+	err := c.ApiFeature.IPatch(fmt.Sprintf("/collection/%s", collectionID), &messages.PickleDocString{MediaType: "application/json", Content: body})
+	assert.NoError(c.ApiFeature, err)
+	return c.ApiFeature.StepError()
+}
+
+func (d *DownloadServiceComponent) theResponseBodyShouldContain(expected string) error {
+	bodyBytes, err := io.ReadAll(d.ApiFeature.HttpResponse.Body)
+	if err != nil {
+		return err
+	}
+	body := string(bodyBytes)
+
+	assert.Contains(d.ApiFeature, body, expected, "expected response body to contain %q but got %q", expected, body)
+
+	return d.ApiFeature.StepError()
 }
 
 func (d *DownloadServiceComponent) weAreInWebMode(mode string) error {
@@ -70,7 +94,6 @@ func (d *DownloadServiceComponent) isNotYetPublished() error {
 func (d *DownloadServiceComponent) theFileHasNotBeenUploaded(filename string) error {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-
 	}))
 
 	d.cfg.FilesApiURL = server.URL
@@ -95,7 +118,6 @@ func (d *DownloadServiceComponent) theFileMetadata(filepath string, metadata *go
 	return d.ApiFeature.StepError()
 }
 
-// here
 func (d *DownloadServiceComponent) theFileStoredInS3WithContent(filepath string, content *godog.DocString) error {
 	c := bytes.NewBuffer([]byte(content.Content))
 
@@ -144,4 +166,12 @@ func (d *DownloadServiceComponent) iShouldBeRedirectedTo(url string) error {
 func (d *DownloadServiceComponent) theGETRequestWithPathShouldContainAnAuthorizationHeaderContaining(filepath, expectedAuthHeader string) error {
 	assert.Equal(d.ApiFeature, expectedAuthHeader, requests[fmt.Sprintf("/files/%s", filepath)])
 	return d.ApiFeature.StepError()
+}
+
+func (d *DownloadServiceComponent) iDownloadTheFileFromAlternativeEndpoint(filepath string) error {
+	return d.ApiFeature.IGet(fmt.Sprintf("/downloads/files/%s", filepath))
+}
+
+func (d *DownloadServiceComponent) theFileIsNotPresentInS(path string) error {
+	return nil
 }
