@@ -4,7 +4,7 @@ services:
   download-service:
     build:
       context: ./
-      dockerfile: Dockerfile-local
+      dockerfile: Dockerfile.test
     ports:
       - "23600:23600"
     environment:
