@@ -2,7 +2,10 @@ version: "3.3"
 
 services:
   download-service:
-    image: template_test
+    build:
+      context: ./
+      dockerfile: Dockerfile.test
+    command: ["go", "test", "-component", "-coverpkg=./..."]
     ports:
       - "23600:23600"
     environment:

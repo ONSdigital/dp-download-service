@@ -1,7 +1,9 @@
-FROM golang:1.24.6-bullseye as build
+FROM golang:1.24.6-bullseye AS build
 
 WORKDIR /service
 ADD . /service
-CMD tail -f /dev/null
 
-FROM build as test
+FROM build AS test
+
+WORKDIR /service
+CMD ["go", "test", "-component", "-coverpkg=./..."]
