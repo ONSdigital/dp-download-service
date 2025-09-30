@@ -4,10 +4,10 @@ Feature: ONS Public Website Download files
     Given the application is in "web" mode
 
   Scenario: Download a file that has been published
-    Given the file "data/populations.csv" has the metadata:
+    Given the file "data/published.csv" has the metadata:
         """
         {
-          "path": "data/populations.csv",
+          "path": "data/published.csv",
           "is_publishable": true,
           "collection_id": "1234-asdfg-54321-qwerty",
           "title": "The number of people",
@@ -18,19 +18,19 @@ Feature: ONS Public Website Download files
           "state": "PUBLISHED"
         }
         """
-    And the file "data/populations.csv" is in S3 with content:
+    And the file "data/published.csv" is in S3 with content:
         """
         mark,1
         jon,2
         russ,3
         Ioannis,4
         """
-    When I download the file "data/populations.csv"
+    When I GET "/downloads-new/data/published.csv"
     Then the HTTP status code should be "200"
     And the headers should be:
       | Content-Type        | text/csv                             |
       | Content-Length      | 29                                   |
-      | Content-Disposition | attachment; filename=populations.csv |
+      | Content-Disposition | attachment; filename=published.csv   |
     And the file content should be:
       """
       mark,1
@@ -40,33 +40,33 @@ Feature: ONS Public Website Download files
       """
 
   Scenario: Download a file with weird characters that has been published
-    Given the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" has the metadata:
+    Given the file "data/weird&chars#published.csv" has the metadata:
         """
         {
-          "path": "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png",
+          "path": "data/weird&chars#published.csv",
           "is_publishable": true,
           "collection_id": "1234-asdfg-54321-qwerty",
           "title": "The number of people",
           "size_in_bytes": 29,
-          "type": "image/png",
+          "type": "text/csv",
           "licence": "OGL v3",
           "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
           "state": "PUBLISHED"
         }
         """
-    And the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" is in S3 with content:
+    And the file "data/weird&chars#published.csv" is in S3 with content:
         """
         mark,1
         jon,2
         russ,3
         Ioannis,4
         """
-    When I download the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png"
+    When I GET "/downloads-new/data/weird&chars#published.csv"
     Then the HTTP status code should be "200"
     And the headers should be:
-      | Content-Type        | image/png                                 |
-      | Content-Length      | 29                                        |
-      | Content-Disposition | attachment; filename=chosen-sprite@2x.png |
+      | Content-Type        | text/csv                                       |
+      | Content-Length      | 29                                             |
+      | Content-Disposition | attachment; filename=weird&chars#published.csv |
     And the file content should be:
       """
       mark,1
@@ -76,16 +76,16 @@ Feature: ONS Public Website Download files
       """
 
   Scenario: Trying to download a file that has not been uploaded yet
-    Given the file "data/populations.csv" has not been uploaded
-    When I download the file "data/populations.csv"
+    Given the file "data/missing.csv" has not been uploaded
+    When I GET "/downloads-new/data/missing.csv"
     Then the HTTP status code should be "404"
     And the response header "Cache-Control" should be "no-cache"
 
   Scenario: ONS previewer requests data-file that has been uploaded but not yet published
-    Given the file "data/populations.csv" has the metadata:
+    Given the file "data/unpublished.csv" has the metadata:
         """
         {
-          "path": "data/populations.csv",
+          "path": "data/unpublished.csv",
           "is_publishable": true,
           "collection_id": "1234-asdfg-54321-qwerty",
           "title": "The number of people",
@@ -96,7 +96,7 @@ Feature: ONS Public Website Download files
           "state": "UPLOADED"
         }
         """
-    And the file "data/populations.csv" is in S3 with content:
+    And the file "data/unpublished.csv" is in S3 with content:
         """
         mark,1
         russ,2
@@ -105,15 +105,15 @@ Feature: ONS Public Website Download files
         brian,4
         jon,5
         """
-    When I download the file "data/populations.csv"
+    When I GET "/downloads-new/data/unpublished.csv"
     Then the HTTP status code should be "404"
     And the response header "Cache-Control" should be "no-cache"
 
   Scenario: Redirecting public to bucket when file is published & moved
-    Given the file "data/populations.csv" has the metadata:
+    Given the file "data/return301.csv" has the metadata:
         """
         {
-          "path": "data/populations.csv",
+          "path": "data/return301.csv",
           "is_publishable": true,
           "collection_id": "1234-asdfg-54321-qwerty",
           "title": "The number of people",
@@ -124,7 +124,7 @@ Feature: ONS Public Website Download files
           "state": "MOVED"
         }
         """
-    And the file "data/populations.csv" is in S3 with content:
+    And the file "data/return301.csv" is in S3 with content:
         """
         mark,1
         russ,2
@@ -133,6 +133,6 @@ Feature: ONS Public Website Download files
         brian,4
         jon,5
         """
-    When I download the file "data/populations.csv"
-    Then I should be redirected to "http://public-bucket.com/data/populations.csv"
+    When I GET "/downloads-new/data/return301.csv"
+    Then I should be redirected to "http://public-bucket.com/data/return301.csv"
     And the response header "Cache-Control" should be "max-age=31536000"

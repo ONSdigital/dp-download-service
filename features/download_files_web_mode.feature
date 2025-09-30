@@ -6,10 +6,10 @@ Feature: Download files feature - web
     And I am identified as "dave@ons.gov.uk"
 
   Scenario: File is published and downloaded successfully
-    Given the file "data/populations.csv" has the metadata:
+    Given the file "data/return301.csv" has the metadata:
       """
       {
-        "path": "data/populations.csv",
+        "path": "data/return301.csv",
         "is_publishable": true,
         "collection_id": "1234-asdfg-54321-qwerty",
         "title": "The number of people",
@@ -17,10 +17,10 @@ Feature: Download files feature - web
         "type": "text/csv",
         "licence": "OGL v3",
         "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
-        "state": "PUBLISHED"
+        "state": "MOVED"
       }
       """
-    And the file "data/populations.csv" is in S3 with content:
+    And the file "data/return301.csv" is in S3 with content:
       """
       mark,1
       russ,2
@@ -29,31 +29,23 @@ Feature: Download files feature - web
       brian,4
       jon,5
       """
-    When I download the file "data/populations.csv"
+    When I GET "/downloads/files/data/return301.csv"
     Then the HTTP status code should be "301"
-    And the response header "Content-Disposition" should be "attachment; filename=populations.csv"
+    And the response header "Location" should be "http://public-bucket.com/data/return301.csv"
 
   Scenario: File is not uploaded and not published returns 404
-    Given the file "data/missing.csv" has the metadata:
+    Given the file "data/missing.csv" has not been uploaded
+    When I GET "/downloads/files/data/missing.csv"
+    Then I should receive the following JSON response with status "404":
       """
       {
-        "path": "data/missing.csv",
-        "is_publishable": true,
-        "collection_id": "1234-asdfg-54321-qwerty",
-        "title": "Missing file",
-        "size_in_bytes": 0,
-        "type": "text/csv",
-        "licence": "OGL v3",
-        "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
-        "state": "CREATED"
+        "errors": [
+          {
+            "code": "",
+            "description": "file not registered"
+          }
+        ]
       }
-      """
-    And the file "data/missing.csv" is not present in S3
-    When I download the file "data/missing.csv"
-    Then the HTTP status code should be "404"
-    And I should receive the following JSON response:
-      """
-      file not registered
       """
 
   Scenario: File is uploaded but not published returns 404
@@ -80,14 +72,14 @@ Feature: Download files feature - web
       brian,4
       jon,5
       """
-    When I download the file "data/unpublished.csv"
+    When I GET "/downloads/files/data/unpublished.csv"
     Then the HTTP status code should be "404"
     
-  Scenario:File is uploaded but collection is published and file is downloaded
-    Given the file "data/collection-published.csv" has the metadata:
+  Scenario: File is uploaded, collection is published and file is downloaded
+    Given the file "data/published.csv" has the metadata:
       """
       {
-        "path": "data/collection-published.csv",
+        "path": "data/published.csv",
         "is_publishable": true,
         "collection_id": "collection-published-1234",
         "title": "Collection published file",
@@ -95,10 +87,10 @@ Feature: Download files feature - web
         "type": "text/csv",
         "licence": "OGL v3",
         "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
-        "state": "UPLOADED"
+        "state": "MOVED"
       }
       """
-    And the file "data/collection-published.csv" is in S3 with content:
+    And the file "data/published.csv" is in S3 with content:
       """
       mark,1
       russ,2
@@ -108,6 +100,6 @@ Feature: Download files feature - web
       jon,5
       """
     And the collection "collection-published-1234" is marked as PUBLISHED
-    When I download the file "data/collection-published.csv"
+    When I GET "/downloads/files/data/published.csv"
     Then the HTTP status code should be "200"
-    And the response header "Content-Disposition" should be "attachment; filename=collection-published.csv"
+    And the response header "Content-Disposition" should be "attachment; filename=published.csv"

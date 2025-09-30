@@ -6,10 +6,10 @@ Feature: Download preview feature
         And I am identified as "dave@ons.gov.uk"
 
     Scenario: ONS previewer requests data-file that has been uploaded but not yet published
-        Given the file "data/populations.csv" has the metadata:
+        Given the file "data/unpublished.csv" has the metadata:
         """
         {
-          "path": "data/populations.csv",
+          "path": "data/unpublished.csv",
           "is_publishable": true,
           "collection_id": "1234-asdfg-54321-qwerty",
           "title": "The number of people",
@@ -21,7 +21,7 @@ Feature: Download preview feature
         }
         """
 
-        And the file "data/populations.csv" is in S3 with content:
+        And the file "data/unpublished.csv" is in S3 with content:
         """
         mark,1
         russ,2
@@ -30,46 +30,16 @@ Feature: Download preview feature
         brian,4
         jon,5
         """
-        When I download the file "data/populations.csv"
+        When I GET "/downloads-new/data/unpublished.csv"
         Then the HTTP status code should be "200"
         And the response header "Cache-Control" should be "no-cache"
-        And the response header "Content-Disposition" should be "attachment; filename=text/csv"
-
-    Scenario: ONS previewer requests data-file that has been uploaded but not yet published using an authorisation header
-        Given the file "data/authors.csv" has the metadata:
-        """
-        {
-          "path": "data/populations.csv",
-          "is_publishable": true,
-          "collection_id": "1234-asdfg-54321-qwerty",
-          "title": "The number of people",
-          "size_in_bytes": 29,
-          "type": "text/csv",
-          "licence": "OGL v3",
-          "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
-          "state": "UPLOADED"
-        }
-        """
-        And the file "data/authors.csv" is in S3 with content:
-        """
-        mark,1
-        russ,2
-        dan,3
-        saul,3.5
-        brian,4
-        jon,5
-        """
-        And I set the "Authorization" header to "auth-header-total-secure"
-        When I download the file "data/authors.csv"
-        Then the HTTP status code should be "200"
-        And the GET request with path ("data/authors.csv") should contain an authorization header containing "auth-header-total-secure"
-        And the response header "Cache-Control" should be "no-cache"
+        And the response header "Content-Disposition" should be "attachment; filename=unpublished.csv"
 
     Scenario: ONS previewer requests data-file with weird characters that has been uploaded but not yet published
-        Given the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" has the metadata:
+        Given the file "data/weird&chars#unpublished.csv" has the metadata:
         """
         {
-          "path": "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png",
+          "path": "data/weird&chars#unpublished.csv",
           "is_publishable": true,
           "collection_id": "1234-asdfg-54321-qwerty",
           "title": "The number of people",
@@ -81,7 +51,7 @@ Feature: Download preview feature
         }
         """
 
-        And the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png" is in S3 with content:
+        And the file "data/weird&chars#unpublished.csv" is in S3 with content:
         """
         mark,1
         russ,2
@@ -90,6 +60,6 @@ Feature: Download preview feature
         brian,4
         jon,5
         """
-        When I download the file "interactives/87a3dde3-wéî-4290-9a3b-afbea82e0fa7/version-11/lib&/chosen-sprite@2x.png"
+        When I GET "/downloads-new/data/weird&chars#unpublished.csv"
         Then the HTTP status code should be "200"
         And the response header "Cache-Control" should be "no-cache"

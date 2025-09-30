@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 	s3client "github.com/ONSdigital/dp-s3/v3"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
@@ -57,6 +58,27 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 		check.Update("OK", "MsgHealthy", 0)
 		return nil
 	})
+
+	m.EXPECT().GetFile(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+		func(ctx context.Context, path, authToken string) (files.FileMetaData, error) {
+			switch path {
+			case "data/published.csv":
+				return files.FileMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+			case "data/unpublished.csv":
+				return files.FileMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+			case "data/weird&chars#published.csv":
+				return files.FileMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+			case "data/weird&chars#unpublished.csv":
+				return files.FileMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+			case "data/return301.csv":
+				return files.FileMetaData{State: "MOVED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+			case "data/missing.csv":
+				return files.FileMetaData{}, fmt.Errorf("file not registered")
+			default:
+				return files.FileMetaData{}, fmt.Errorf("unknown mock path")
+			}
+		},
+	)
 	return m
 }
 

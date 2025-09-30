@@ -36,6 +36,7 @@ func handleError(ctx context.Context, event string, w http.ResponseWriter, err e
 
 func writeError(w http.ResponseWriter, errs jsonErrors, httpCode int) {
 	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpCode)
 	json.NewEncoder(w).Encode(&errs) // nolint
 }
