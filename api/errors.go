@@ -42,5 +42,5 @@ func writeError(w http.ResponseWriter, errs jsonErrors, httpCode int) {
 }
 
 func buildErrors(err error, code string) jsonErrors {
-	return jsonErrors{Error: []jsonError{{Description: err.Error()}}}
+	return jsonErrors{Error: []jsonError{{Code: code, Description: err.Error()}}}
 }

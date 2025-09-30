@@ -78,7 +78,17 @@ Feature: ONS Public Website Download files
   Scenario: Trying to download a file that has not been uploaded yet
     Given the file "data/missing.csv" has not been uploaded
     When I GET "/downloads-new/data/missing.csv"
-    Then the HTTP status code should be "404"
+    Then I should receive the following JSON response with status "404":
+      """
+      {
+        "errors": [
+          {
+            "code": "FileNotRegistered",
+            "description": "file not registered"
+          }
+        ]
+      }
+      """
     And the response header "Cache-Control" should be "no-cache"
 
   Scenario: ONS previewer requests data-file that has been uploaded but not yet published

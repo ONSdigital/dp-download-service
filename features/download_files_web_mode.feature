@@ -41,7 +41,7 @@ Feature: Download files feature - web
       {
         "errors": [
           {
-            "code": "",
+            "code": "FileNotRegistered",
             "description": "file not registered"
           }
         ]

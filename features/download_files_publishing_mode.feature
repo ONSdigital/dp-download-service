@@ -42,7 +42,7 @@ Feature: Download preview feature - publishing
       {
         "errors": [
           {
-            "code": "",
+            "code": "FileNotRegistered",
             "description": "file not registered"
           }
         ]
