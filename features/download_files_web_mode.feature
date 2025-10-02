@@ -2,8 +2,6 @@ Feature: Download files feature - web
 
   Background:
     Given the application is in "web" mode
-    And I am authorised
-    And I am identified as "dave@ons.gov.uk"
 
   Scenario: File is published and downloaded successfully
     Given the file "data/return301.csv" has the metadata:
