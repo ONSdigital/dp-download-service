@@ -20,7 +20,7 @@ import (
 	"github.com/ONSdigital/dp-download-service/downloads/mocks"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	dphttp "github.com/ONSdigital/dp-net/v3/http"
 	"github.com/golang/mock/gomock"
 )
 
