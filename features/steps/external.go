@@ -54,10 +54,12 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 	t := &testing.T{}
 	c := gomock.NewController(t)
 	m := mocks.NewMockFilesClient(c)
-	m.EXPECT().Checker(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, check *healthcheck.CheckState) error {
-		check.Update("OK", "MsgHealthy", 0)
-		return nil
-	})
+
+	m.EXPECT().Checker(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+		func(ctx context.Context, check *healthcheck.CheckState) error {
+			check.Update("OK", "MsgHealthy", 0)
+			return nil
+		})
 
 	m.EXPECT().GetFile(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, path, authToken string) (files.FileMetaData, error) {
@@ -81,14 +83,9 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 			default:
 				return files.FileMetaData{}, fmt.Errorf("unknown mock path")
 			}
-		},
-	)
+		})
 
-	m.EXPECT().CreateFileEvent(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, event interface{}) error {
-			return nil
-		},
-	)
+	m.EXPECT().CreateFileEvent(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
 	return m
 }
