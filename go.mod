@@ -7,14 +7,14 @@ require (
 	github.com/ONSdigital/dp-component-test v0.28.0
 	github.com/ONSdigital/dp-files-api v1.13.0
 	github.com/ONSdigital/dp-healthcheck v1.6.4
-	github.com/ONSdigital/dp-net/v2 v2.22.0
-	github.com/ONSdigital/dp-otel-go v0.0.8
+	github.com/ONSdigital/dp-net/v3 v3.5.0
+	github.com/ONSdigital/dp-otel-go v0.0.6
 	github.com/ONSdigital/dp-s3/v3 v3.3.0
 	github.com/ONSdigital/log.go/v2 v2.5.0
 	github.com/aws/aws-sdk-go-v2 v1.39.6
-	github.com/aws/aws-sdk-go-v2/config v1.31.20
-	github.com/aws/aws-sdk-go-v2/credentials v1.18.24
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.90.2
+	github.com/aws/aws-sdk-go-v2/config v1.31.15
+	github.com/aws/aws-sdk-go-v2/credentials v1.18.19
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.89.0
 	github.com/cucumber/godog v0.15.1
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/handlers v1.5.2
@@ -33,7 +33,6 @@ require (
 	github.com/ONSdigital/dp-authorisation/v2 v2.32.3 // indirect
 	github.com/ONSdigital/dp-kafka/v3 v3.11.0 // indirect
 	github.com/ONSdigital/dp-mongodb-in-memory v1.8.1 // indirect
-	github.com/ONSdigital/dp-net/v3 v3.5.0 // indirect
 	github.com/ONSdigital/dp-permissions-api v1.3.0 // indirect
 	github.com/alicebob/miniredis/v2 v2.35.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.3 // indirect

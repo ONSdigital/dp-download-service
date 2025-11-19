@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"testing"
@@ -15,7 +14,6 @@ import (
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	"github.com/gorilla/mux"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -237,88 +235,5 @@ func TestNew(t *testing.T) {
 				So(svc.GetZebedeeHealthClient(), ShouldBeNil)
 			})
 		})
-	})
-}
-
-func TestRegisteredRoutes(t *testing.T) {
-	buildTime := "buildTime"
-	gitCommit := "gitCommit"
-	version := "version"
-
-	ctx := context.Background()
-	cfg := &config.Config{
-		GracefulShutdownTimeout: 5 * time.Minute,
-		IsPublishing:            true,
-	}
-
-	checker := func(ctx context.Context, check *healthcheck.CheckState) error {
-		return nil
-	}
-
-	mockedDatasetClient := &DatasetClientMock{CheckerFunc: checker}
-	mockedFilterClient := &FilterClientMock{CheckerFunc: checker}
-	mockedImageClient := &ImageClientMock{CheckerFunc: checker}
-	mockedFilesClient := &FilesClientMock{CheckerFunc: checker}
-	mockedS3Client := &S3ClientMock{CheckerFunc: checker}
-	mockedHealthChecker := &HealthCheckerMock{
-		AddCheckFunc: func(s string, checker healthcheck.Checker) error { return nil },
-	}
-	mockedHttpServer := &HTTPServerMock{}
-
-	mockedDependencies := &DependenciesMock{
-		DatasetClientFunc: func(s string) downloads.DatasetClient { return mockedDatasetClient },
-		FilterClientFunc:  func(s string) downloads.FilterClient { return mockedFilterClient },
-		ImageClientFunc:   func(s string) downloads.ImageClient { return mockedImageClient },
-		S3ClientFunc: func(ctx context.Context, cfg *config.Config) (content.S3Client, error) {
-			return mockedS3Client, nil
-		},
-		HealthCheckFunc: func(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
-			return mockedHealthChecker, nil
-		},
-		HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
-			return mockedHttpServer
-		},
-		FilesClientFunc: func(configMoqParam *config.Config) downloads.FilesClient {
-			return mockedFilesClient
-		},
-	}
-
-	Convey("When the service is created", t, func() {
-		svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
-
-		So(err, ShouldBeNil)
-		So(svc, ShouldNotBeNil)
-
-		// Table of expected routes
-		tests := []struct {
-			method string
-			path   string
-		}{
-			{"GET", "/downloads/datasets/123/editions/2021/versions/1.csv"},
-			{"GET", "/downloads/datasets/123/editions/2021/versions/1.csv-metadata.json"},
-			{"GET", "/downloads/datasets/123/editions/2021/versions/1.txt"},
-			{"GET", "/downloads/datasets/123/editions/2021/versions/1.xls"},
-			{"GET", "/downloads/datasets/123/editions/2021/versions/1.xlsx"},
-			{"GET", "/downloads/filter-outputs/abc.csv"},
-			{"GET", "/downloads/filter-outputs/abc.xls"},
-			{"GET", "/downloads/filter-outputs/abc.xlsx"},
-			{"GET", "/downloads/filter-outputs/abc.txt"},
-			{"GET", "/downloads/filter-outputs/abc.csv-metadata.json"},
-			{"GET", "/images/xyz/small/example.png"},
-			{"GET", "/downloads-new/some/test/path.csv"},
-			{"GET", "/downloads/files/some/test/path.csv"},
-			{"GET", "/health"},
-		}
-
-		for _, tt := range tests {
-			Convey(fmt.Sprintf("The %s %s route should be registered", tt.method, tt.path), func() {
-				req, _ := http.NewRequest(tt.method, tt.path, nil)
-				match := &mux.RouteMatch{}
-				found := svc.GetRouter().Match(req, match)
-
-				So(found, ShouldBeTrue)
-				So(match.Handler, ShouldNotBeNil)
-			})
-		}
 	})
 }

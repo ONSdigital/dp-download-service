@@ -8,8 +8,8 @@ import (
 	"net/http"
 
 	"github.com/ONSdigital/dp-download-service/downloads"
-	dphandlers "github.com/ONSdigital/dp-net/v2/handlers"
-	"github.com/ONSdigital/dp-net/v2/request"
+	dphandlers "github.com/ONSdigital/dp-net/v3/handlers"
+	"github.com/ONSdigital/dp-net/v3/request"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 )

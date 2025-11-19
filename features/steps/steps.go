@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	dprequest "github.com/ONSdigital/dp-net/v2/request"
+	dprequest "github.com/ONSdigital/dp-net/v3/request"
 	s3client "github.com/ONSdigital/dp-s3/v3"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
