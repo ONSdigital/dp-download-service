@@ -72,6 +72,10 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 				return files.FileMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/return301.csv":
 				return files.FileMetaData{State: "MOVED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+			case "data/test.csv":
+				return files.FileMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 10}, nil
+			case "data/uploaded.csv":
+				return files.FileMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 15}, nil
 			case "data/missing.csv":
 				return files.FileMetaData{}, fmt.Errorf("file not registered")
 			default:
@@ -79,6 +83,13 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 			}
 		},
 	)
+
+	m.EXPECT().CreateFileEvent(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+		func(ctx context.Context, event interface{}) error {
+			return nil
+		},
+	)
+
 	return m
 }
 

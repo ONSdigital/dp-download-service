@@ -10,6 +10,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	"github.com/ONSdigital/dp-download-service/downloads"
+	filesModel "github.com/ONSdigital/dp-files-api/files"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"sync"
 )
@@ -551,6 +552,9 @@ var _ downloads.FilesClient = &FilesClientMock{}
 //			CheckerFunc: func(ctx context.Context, state *healthcheck.CheckState) error {
 //				panic("mock out the Checker method")
 //			},
+//			CreateFileEventFunc: func(ctx context.Context, event filesModel.FileEvent) (*filesModel.FileEvent, error) {
+//				panic("mock out the CreateFileEvent method")
+//			},
 //			GetFileFunc: func(ctx context.Context, path string, authToken string) (files.FileMetaData, error) {
 //				panic("mock out the GetFile method")
 //			},
@@ -564,6 +568,9 @@ type FilesClientMock struct {
 	// CheckerFunc mocks the Checker method.
 	CheckerFunc func(ctx context.Context, state *healthcheck.CheckState) error
 
+	// CreateFileEventFunc mocks the CreateFileEvent method.
+	CreateFileEventFunc func(ctx context.Context, event filesModel.FileEvent) (*filesModel.FileEvent, error)
+
 	// GetFileFunc mocks the GetFile method.
 	GetFileFunc func(ctx context.Context, path string, authToken string) (files.FileMetaData, error)
 
@@ -576,6 +583,13 @@ type FilesClientMock struct {
 			// State is the state argument value.
 			State *healthcheck.CheckState
 		}
+		// CreateFileEvent holds details about calls to the CreateFileEvent method.
+		CreateFileEvent []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Event is the event argument value.
+			Event filesModel.FileEvent
+		}
 		// GetFile holds details about calls to the GetFile method.
 		GetFile []struct {
 			// Ctx is the ctx argument value.
@@ -586,8 +600,9 @@ type FilesClientMock struct {
 			AuthToken string
 		}
 	}
-	lockChecker sync.RWMutex
-	lockGetFile sync.RWMutex
+	lockChecker         sync.RWMutex
+	lockCreateFileEvent sync.RWMutex
+	lockGetFile         sync.RWMutex
 }
 
 // Checker calls CheckerFunc.
@@ -623,6 +638,42 @@ func (mock *FilesClientMock) CheckerCalls() []struct {
 	mock.lockChecker.RLock()
 	calls = mock.calls.Checker
 	mock.lockChecker.RUnlock()
+	return calls
+}
+
+// CreateFileEvent calls CreateFileEventFunc.
+func (mock *FilesClientMock) CreateFileEvent(ctx context.Context, event filesModel.FileEvent) (*filesModel.FileEvent, error) {
+	if mock.CreateFileEventFunc == nil {
+		panic("FilesClientMock.CreateFileEventFunc: method is nil but FilesClient.CreateFileEvent was just called")
+	}
+	callInfo := struct {
+		Ctx   context.Context
+		Event filesModel.FileEvent
+	}{
+		Ctx:   ctx,
+		Event: event,
+	}
+	mock.lockCreateFileEvent.Lock()
+	mock.calls.CreateFileEvent = append(mock.calls.CreateFileEvent, callInfo)
+	mock.lockCreateFileEvent.Unlock()
+	return mock.CreateFileEventFunc(ctx, event)
+}
+
+// CreateFileEventCalls gets all the calls that were made to CreateFileEvent.
+// Check the length with:
+//
+//	len(mockedFilesClient.CreateFileEventCalls())
+func (mock *FilesClientMock) CreateFileEventCalls() []struct {
+	Ctx   context.Context
+	Event filesModel.FileEvent
+} {
+	var calls []struct {
+		Ctx   context.Context
+		Event filesModel.FileEvent
+	}
+	mock.lockCreateFileEvent.RLock()
+	calls = mock.calls.CreateFileEvent
+	mock.lockCreateFileEvent.RUnlock()
 	return calls
 }
 

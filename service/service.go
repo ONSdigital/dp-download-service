@@ -134,6 +134,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	downloadHandler := api.CreateV1DownloadHandler(
 		files.FetchMetadata(svc.filesClient, cfg.ServiceAuthToken),
 		files.DownloadFile(ctx, svc.s3Client),
+		svc.filesClient,
 		cfg,
 	)
 

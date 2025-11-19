@@ -12,6 +12,7 @@ import (
 	files "github.com/ONSdigital/dp-api-clients-go/v2/files"
 	filter "github.com/ONSdigital/dp-api-clients-go/v2/filter"
 	image "github.com/ONSdigital/dp-api-clients-go/v2/image"
+	files0 "github.com/ONSdigital/dp-files-api/files"
 	healthcheck "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -223,6 +224,21 @@ func (m *MockFilesClient) Checker(arg0 context.Context, arg1 *healthcheck.CheckS
 func (mr *MockFilesClientMockRecorder) Checker(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checker", reflect.TypeOf((*MockFilesClient)(nil).Checker), arg0, arg1)
+}
+
+// CreateFileEvent mocks base method.
+func (m *MockFilesClient) CreateFileEvent(arg0 context.Context, arg1 files0.FileEvent) (*files0.FileEvent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateFileEvent", arg0, arg1)
+	ret0, _ := ret[0].(*files0.FileEvent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateFileEvent indicates an expected call of CreateFileEvent.
+func (mr *MockFilesClientMockRecorder) CreateFileEvent(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFileEvent", reflect.TypeOf((*MockFilesClient)(nil).CreateFileEvent), arg0, arg1)
 }
 
 // GetFile mocks base method.
