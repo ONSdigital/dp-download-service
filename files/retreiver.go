@@ -6,9 +6,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
+	filesSDK "github.com/ONSdigital/dp-files-api/files"
 )
 
 type HTTPClient interface {
@@ -23,13 +23,13 @@ var ErrUnknown = errors.New("an unknown error occurred")
 var ErrRequest = errors.New("an error occurred making a request to files api")
 
 type FileDownloader func(path string) (io.ReadCloser, error)
-type MetadataFetcher func(ctx context.Context, path string) (files.FileMetaData, error)
+type MetadataFetcher func(ctx context.Context, path string) (*filesSDK.StoredRegisteredMetaData, error)
 
 type ContextKey string
 
-func FetchMetadata(filesClient downloads.FilesClient, authToken string) MetadataFetcher {
-	return func(ctx context.Context, path string) (files.FileMetaData, error) {
-		return filesClient.GetFile(ctx, path, authToken)
+func FetchMetadata(filesClient downloads.FilesClient) MetadataFetcher {
+	return func(ctx context.Context, path string) (*filesSDK.StoredRegisteredMetaData, error) {
+		return filesClient.GetFile(ctx, path)
 	}
 }
 

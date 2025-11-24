@@ -12,17 +12,16 @@ import (
 	iclient "github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	dprequest "github.com/ONSdigital/dp-net/v3/request"
 
-	fclient "github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/files"
-	filesSDK "github.com/ONSdigital/dp-files-api/files"
+	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 )
 
 // CreateV1DownloadHandler handles generic download file requests.
-func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, filesClient downloads.FilesClient, cfg *config.Config) http.HandlerFunc {
+func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, filesClient downloads.FilesClient, identityClient *iclient.Client, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if cfg.IsPublishing {
 			w.Header().Set("Cache-Control", "no-cache")
@@ -43,14 +42,17 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		log.Info(ctx, fmt.Sprintf("Found metadata for file %s", requestedFilePath), log.Data{"metadata": metadata})
 
 		if cfg.IsPublishing {
-			go LogFileEvent(context.Background(), filesClient, req, requestedFilePath, &metadata, cfg)
+			authToken := req.Header.Get(dprequest.AuthHeaderKey)
+			if authToken != "" {
+				go LogFileEvent(context.Background(), filesClient, identityClient, req, requestedFilePath, metadata, cfg)
+			}
 		}
 
-		if handleUnsupportedMetadataStates(ctx, metadata, cfg, requestedFilePath, w) {
+		if handleUnsupportedMetadataStates(ctx, *metadata, cfg, requestedFilePath, w) {
 			return
 		}
 
-		setContentHeaders(w, metadata)
+		setContentHeaders(w, *metadata)
 
 		file, err := downloadFileFromBucket(requestedFilePath)
 		if err != nil {
@@ -69,21 +71,25 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 	}
 }
 
-func LogFileEvent(ctx context.Context, filesClient downloads.FilesClient, req *http.Request, filePath string, metadata *fclient.FileMetaData, cfg *config.Config) {
-	requestedBy := GetUserIdentity(ctx, req, cfg)
+func LogFileEvent(ctx context.Context, filesClient downloads.FilesClient, identityClient *iclient.Client, req *http.Request, filePath string, metadata *filesAPIModels.StoredRegisteredMetaData, cfg *config.Config) {
+	requestedBy := GetUserIdentity(ctx, identityClient, req)
 
-	event := filesSDK.FileEvent{
+	event := filesAPIModels.FileEvent{
 		RequestedBy: requestedBy,
-		Action:      filesSDK.ActionRead,
+		Action:      filesAPIModels.ActionRead,
 		Resource:    req.URL.Path,
-		File: &filesSDK.FileMetaData{
+		File: &filesAPIModels.FileMetaData{
 			Path:          metadata.Path,
 			IsPublishable: metadata.IsPublishable,
 			CollectionID:  metadata.CollectionID,
+			BundleID:      metadata.BundleID,
 			Title:         metadata.Title,
 			SizeInBytes:   metadata.SizeInBytes,
 			Type:          metadata.Type,
+			Licence:       metadata.Licence,
+			LicenceURL:    metadata.LicenceURL,
 			State:         metadata.State,
+			Etag:          metadata.Etag,
 		},
 	}
 
@@ -95,22 +101,13 @@ func LogFileEvent(ctx context.Context, filesClient downloads.FilesClient, req *h
 	}
 }
 
-func GetUserIdentity(ctx context.Context, req *http.Request, cfg *config.Config) *filesSDK.RequestedBy {
+func GetUserIdentity(ctx context.Context, identityClient *iclient.Client, req *http.Request) *filesAPIModels.RequestedBy {
 	authToken := req.Header.Get(dprequest.AuthHeaderKey)
-
-	if authToken == "" {
-		return &filesSDK.RequestedBy{
-			ID: "unauthorised",
-		}
-	}
-
 	authToken = strings.TrimPrefix(authToken, dprequest.BearerPrefix)
-
-	identityClient := iclient.New(cfg.ZebedeeURL)
 
 	identityResp, err := identityClient.CheckTokenIdentity(ctx, authToken, iclient.TokenTypeUser)
 	if err == nil && identityResp != nil {
-		return &filesSDK.RequestedBy{
+		return &filesAPIModels.RequestedBy{
 			ID:    identityResp.Identifier,
 			Email: identityResp.Identifier,
 		}
@@ -118,14 +115,14 @@ func GetUserIdentity(ctx context.Context, req *http.Request, cfg *config.Config)
 
 	identityResp, err = identityClient.CheckTokenIdentity(ctx, authToken, iclient.TokenTypeService)
 	if err == nil && identityResp != nil {
-		return &filesSDK.RequestedBy{
+		return &filesAPIModels.RequestedBy{
 			ID:    identityResp.Identifier,
 			Email: "",
 		}
 	}
 
 	log.Error(ctx, "failed to validate token with identity service", err)
-	return &filesSDK.RequestedBy{
+	return &filesAPIModels.RequestedBy{
 		ID: "unauthorised",
 	}
 }
@@ -143,7 +140,7 @@ func parseRequest(req *http.Request) (context.Context, string) {
 	return ctx, filePath
 }
 
-func handleUnsupportedMetadataStates(ctx context.Context, m fclient.FileMetaData, cfg *config.Config, filePath string, w http.ResponseWriter) bool {
+func handleUnsupportedMetadataStates(ctx context.Context, m filesAPIModels.StoredRegisteredMetaData, cfg *config.Config, filePath string, w http.ResponseWriter) bool {
 	if files.Moved(&m) {
 		log.Info(ctx, "File moved, redirecting")
 		setStatusMovedPermanently(RedirectLocation(cfg, filePath), w)
@@ -206,7 +203,7 @@ func isWebMode(cfg *config.Config) bool {
 	return !cfg.IsPublishing
 }
 
-func setContentHeaders(w http.ResponseWriter, m fclient.FileMetaData) {
+func setContentHeaders(w http.ResponseWriter, m filesAPIModels.StoredRegisteredMetaData) {
 	w.Header().Set("Content-Type", m.Type)
 	w.Header().Set("Content-Length", files.GetContentLength(&m))
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", files.GetFilename(&m)))

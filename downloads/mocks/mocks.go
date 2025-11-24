@@ -9,10 +9,9 @@ import (
 	reflect "reflect"
 
 	dataset "github.com/ONSdigital/dp-api-clients-go/v2/dataset"
-	files "github.com/ONSdigital/dp-api-clients-go/v2/files"
 	filter "github.com/ONSdigital/dp-api-clients-go/v2/filter"
 	image "github.com/ONSdigital/dp-api-clients-go/v2/image"
-	files0 "github.com/ONSdigital/dp-files-api/files"
+	files "github.com/ONSdigital/dp-files-api/files"
 	healthcheck "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -227,10 +226,10 @@ func (mr *MockFilesClientMockRecorder) Checker(arg0, arg1 interface{}) *gomock.C
 }
 
 // CreateFileEvent mocks base method.
-func (m *MockFilesClient) CreateFileEvent(arg0 context.Context, arg1 files0.FileEvent) (*files0.FileEvent, error) {
+func (m *MockFilesClient) CreateFileEvent(arg0 context.Context, arg1 files.FileEvent) (*files.FileEvent, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateFileEvent", arg0, arg1)
-	ret0, _ := ret[0].(*files0.FileEvent)
+	ret0, _ := ret[0].(*files.FileEvent)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -242,16 +241,16 @@ func (mr *MockFilesClientMockRecorder) CreateFileEvent(arg0, arg1 interface{}) *
 }
 
 // GetFile mocks base method.
-func (m *MockFilesClient) GetFile(arg0 context.Context, arg1, arg2 string) (files.FileMetaData, error) {
+func (m *MockFilesClient) GetFile(arg0 context.Context, arg1 string) (*files.StoredRegisteredMetaData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFile", arg0, arg1, arg2)
-	ret0, _ := ret[0].(files.FileMetaData)
+	ret := m.ctrl.Call(m, "GetFile", arg0, arg1)
+	ret0, _ := ret[0].(*files.StoredRegisteredMetaData)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetFile indicates an expected call of GetFile.
-func (mr *MockFilesClientMockRecorder) GetFile(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockFilesClientMockRecorder) GetFile(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFile", reflect.TypeOf((*MockFilesClient)(nil).GetFile), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFile", reflect.TypeOf((*MockFilesClient)(nil).GetFile), arg0, arg1)
 }

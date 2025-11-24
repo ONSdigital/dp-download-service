@@ -28,46 +28,54 @@ Feature: File event logging in publishing mode
     When I GET "/downloads-new/data/published.csv"
     Then the HTTP status code should be "200"
     And the response header "Cache-Control" should be "no-cache"
+    And a file event should be logged for "data/published.csv"
+    And the file event should have action "READ"
+    And the file event should have user "publisher@ons.gov.uk"
 
   Scenario: File download works when file event logging fails
-    Given the file "data/test.csv" has the metadata:
+    Given the file "data/published.csv" has the metadata:
       """
       {
-        "path": "data/test.csv",
+        "path": "data/published.csv",
         "is_publishable": true,
-        "title": "Test Data",
-        "size_in_bytes": 10,
+        "title": "Published Data",
+        "size_in_bytes": 29,
         "type": "text/csv",
         "licence": "OGL v3",
         "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
         "state": "PUBLISHED"
       }
       """
-    And the file "data/test.csv" is in S3 with content:
+    And the file "data/published.csv" is in S3 with content:
       """
-      test,data
+      mark,1
+      jon,2
       """
-    When I GET "/downloads-new/data/test.csv"
+    When I GET "/downloads-new/data/published.csv"
     Then the HTTP status code should be "200"
+    And a file event should be logged for "data/published.csv"
 
   Scenario: File event logged for uploaded file in publishing mode
-    Given the file "data/uploaded.csv" has the metadata:
+    Given the file "data/unpublished.csv" has the metadata:
       """
       {
-        "path": "data/uploaded.csv",
+        "path": "data/unpublished.csv",
         "is_publishable": true,
         "title": "Uploaded Data",
-        "size_in_bytes": 15,
+        "size_in_bytes": 29,
         "type": "text/csv",
         "licence": "OGL v3",
         "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
         "state": "UPLOADED"
       }
       """
-    And the file "data/uploaded.csv" is in S3 with content:
+    And the file "data/unpublished.csv" is in S3 with content:
       """
-      test,upload
+      mark,1
+      jon,2
       """
-    When I GET "/downloads-new/data/uploaded.csv"
+    When I GET "/downloads-new/data/unpublished.csv"
     Then the HTTP status code should be "200"
     And the response header "Cache-Control" should be "no-cache"
+    And a file event should be logged for "data/unpublished.csv"
+    And the file event should have action "READ"

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
+	iclient "github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-api-clients-go/v2/middleware"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
@@ -98,8 +99,10 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	// Create Health client for Zebedee only if we are in publishing mode.
 	//
 	var zc *health.Client
+	var identityClient *iclient.Client
 	if cfg.IsPublishing {
 		zc = health.NewClient("Zebedee", cfg.ZebedeeURL)
+		identityClient = iclient.NewWithHealthClient(zc)
 	}
 	svc.zebedeeHealthClient = zc
 
@@ -132,9 +135,10 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 
 	// Flagged off? Assumption that downloads-new is related to uploads-new
 	downloadHandler := api.CreateV1DownloadHandler(
-		files.FetchMetadata(svc.filesClient, cfg.ServiceAuthToken),
+		files.FetchMetadata(svc.filesClient),
 		files.DownloadFile(ctx, svc.s3Client),
 		svc.filesClient,
+		identityClient,
 		cfg,
 	)
 

@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
-	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	filesSDK "github.com/ONSdigital/dp-files-api/files"
@@ -40,7 +39,7 @@ type ImageClient interface {
 
 // FilesClient is interface to the files api
 type FilesClient interface {
-	GetFile(ctx context.Context, path string, authToken string) (files.FileMetaData, error)
+	GetFile(ctx context.Context, path string) (*filesSDK.StoredRegisteredMetaData, error)
 	CreateFileEvent(ctx context.Context, event filesSDK.FileEvent) (*filesSDK.FileEvent, error)
 	Checker(ctx context.Context, state *healthcheck.CheckState) error
 }

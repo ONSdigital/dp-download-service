@@ -14,6 +14,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
+	filesSDK "github.com/ONSdigital/dp-files-api/sdk"
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
@@ -42,7 +43,7 @@ func (*External) ImageClient(imageAPIURL string) downloads.ImageClient {
 }
 
 func (*External) FilesClient(cfg *config.Config) downloads.FilesClient {
-	return downloads.NewFilesClientWrapper(cfg.FilesApiURL, cfg.ServiceAuthToken)
+	return filesSDK.New(cfg.FilesApiURL, cfg.ServiceAuthToken)
 }
 
 // S3Client obtains a new S3 client, or a local storage client if a non-empty LocalObjectStore is provided
