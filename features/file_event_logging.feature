@@ -3,7 +3,7 @@ Feature: File event logging in publishing mode
   Background:
     Given the application is in "publishing" mode
     And I am authorised
-    And I am identified as "publisher@ons.gov.uk"
+    And I am identified as "dave@ons.gov.uk"
 
   Scenario: File event is logged when downloading in publishing mode
     Given the file "data/published.csv" has the metadata:
@@ -30,7 +30,7 @@ Feature: File event logging in publishing mode
     And the response header "Cache-Control" should be "no-cache"
     And a file event should be logged for "data/published.csv"
     And the file event should have action "READ"
-    And the file event should have user "publisher@ons.gov.uk"
+    And the file event should have user "dave@ons.gov.uk"
 
   Scenario: File download works when file event logging fails
     Given the file "data/published.csv" has the metadata:
