@@ -41,15 +41,18 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		}
 		log.Info(ctx, fmt.Sprintf("Found metadata for file %s", requestedFilePath), log.Data{"metadata": metadata})
 
+		if handleUnsupportedMetadataStates(ctx, *metadata, cfg, requestedFilePath, w) {
+			return
+		}
+
 		if cfg.IsPublishing {
 			authToken := req.Header.Get(dprequest.AuthHeaderKey)
 			if authToken != "" {
-				go LogFileEvent(context.Background(), filesClient, identityClient, req, requestedFilePath, metadata, cfg)
+				if err := LogFileEvent(ctx, filesClient, identityClient, req, requestedFilePath, metadata, cfg); err != nil {
+					handleError(ctx, "Failed to log file event", w, err)
+					return
+				}
 			}
-		}
-
-		if handleUnsupportedMetadataStates(ctx, *metadata, cfg, requestedFilePath, w) {
-			return
 		}
 
 		setContentHeaders(w, *metadata)
@@ -71,7 +74,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 	}
 }
 
-func LogFileEvent(ctx context.Context, filesClient downloads.FilesClient, identityClient *iclient.Client, req *http.Request, filePath string, metadata *filesAPIModels.StoredRegisteredMetaData, cfg *config.Config) {
+func LogFileEvent(ctx context.Context, filesClient downloads.FilesClient, identityClient *iclient.Client, req *http.Request, filePath string, metadata *filesAPIModels.StoredRegisteredMetaData, cfg *config.Config) error {
 	requestedBy := GetUserIdentity(ctx, identityClient, req)
 
 	event := filesAPIModels.FileEvent{
@@ -93,12 +96,16 @@ func LogFileEvent(ctx context.Context, filesClient downloads.FilesClient, identi
 		},
 	}
 
-	if _, err := filesClient.CreateFileEvent(ctx, event); err != nil {
+	_, err := filesClient.CreateFileEvent(ctx, event)
+	if err != nil {
 		log.Error(ctx, "failed to create file event", err, log.Data{
 			"file_path": filePath,
 			"user_id":   requestedBy.ID,
 		})
+		return fmt.Errorf("failed to create file event: %w", err)
 	}
+
+	return nil
 }
 
 func GetUserIdentity(ctx context.Context, identityClient *iclient.Client, req *http.Request) *filesAPIModels.RequestedBy {

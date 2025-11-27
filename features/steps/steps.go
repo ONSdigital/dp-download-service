@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"time"
 
 	dprequest "github.com/ONSdigital/dp-net/v3/request"
 	s3client "github.com/ONSdigital/dp-s3/v3"
@@ -35,9 +34,7 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I should be redirected to "([^"]*)"$`, d.iShouldBeRedirectedTo)
 	ctx.Step(`^the response body should contain "([^"]*)"$`, d.theResponseBodyShouldContain)
 	ctx.Step(`^the collection "([^"]*)" is marked as PUBLISHED$`, d.theCollectionIsMarkedAsPublished)
-	ctx.Step(`^a file event should be logged for "([^"]*)"$`, d.aFileEventShouldBeLogged)
-	ctx.Step(`^the file event should have action "([^"]*)"$`, d.theFileEventShouldHaveAction)
-	ctx.Step(`^the file event should have user "([^"]*)"$`, d.theFileEventShouldHaveUser)
+	ctx.Step(`^a file event with action "([^"]*)" and resource "([^"]*)" should be created by user "([^"]*)"$`, d.aFileEventShouldBeCreated)
 	ctx.Step(`^no file event should be logged$`, d.noFileEventShouldBeLogged)
 }
 
@@ -152,53 +149,34 @@ func (d *DownloadServiceComponent) iShouldBeRedirectedTo(url string) error {
 	return d.ApiFeature.StepError()
 }
 
-func (d *DownloadServiceComponent) aFileEventShouldBeLogged(filePath string) error {
-	time.Sleep(100 * time.Millisecond)
+func (d *DownloadServiceComponent) aFileEventShouldBeCreated(expectedAction, expectedResource, expectedUser string) error {
+	assert.NotEmpty(d.ApiFeature, d.deps.CreatedFileEvents, "no file events were created")
 
+	if len(d.deps.CreatedFileEvents) == 0 {
+		return d.ApiFeature.StepError()
+	}
+
+	// Find matching event
 	found := false
 	for _, event := range d.deps.CreatedFileEvents {
-		if event.File != nil && event.File.Path == filePath {
+		if event.File != nil &&
+			event.File.Path == expectedResource &&
+			event.Action == expectedAction &&
+			event.RequestedBy != nil &&
+			event.RequestedBy.Email == expectedUser {
 			found = true
 			break
 		}
 	}
 
-	assert.True(d.ApiFeature, found, fmt.Sprintf("expected file event for path %s but none found", filePath))
-	return d.ApiFeature.StepError()
-}
-
-func (d *DownloadServiceComponent) theFileEventShouldHaveAction(expectedAction string) error {
-	time.Sleep(100 * time.Millisecond)
-
-	assert.NotEmpty(d.ApiFeature, d.deps.CreatedFileEvents, "no file events were created")
-
-	if len(d.deps.CreatedFileEvents) > 0 {
-		lastEvent := d.deps.CreatedFileEvents[len(d.deps.CreatedFileEvents)-1]
-		assert.Equal(d.ApiFeature, expectedAction, lastEvent.Action, "file event action mismatch")
-	}
-
-	return d.ApiFeature.StepError()
-}
-
-func (d *DownloadServiceComponent) theFileEventShouldHaveUser(expectedUser string) error {
-	time.Sleep(100 * time.Millisecond)
-
-	assert.NotEmpty(d.ApiFeature, d.deps.CreatedFileEvents, "no file events were created")
-
-	if len(d.deps.CreatedFileEvents) > 0 {
-		lastEvent := d.deps.CreatedFileEvents[len(d.deps.CreatedFileEvents)-1]
-		if lastEvent.RequestedBy != nil {
-			assert.Equal(d.ApiFeature, expectedUser, lastEvent.RequestedBy.Email, "file event user mismatch")
-		} else {
-			d.ApiFeature.Errorf("file event has no RequestedBy")
-		}
-	}
+	assert.True(d.ApiFeature, found, fmt.Sprintf(
+		"expected file event with action=%s, resource=%s, user=%s but not found",
+		expectedAction, expectedResource, expectedUser))
 
 	return d.ApiFeature.StepError()
 }
 
 func (d *DownloadServiceComponent) noFileEventShouldBeLogged() error {
-	time.Sleep(100 * time.Millisecond)
 
 	assert.Empty(d.ApiFeature, d.deps.CreatedFileEvents, "expected no file events but found some")
 	return d.ApiFeature.StepError()

@@ -10,7 +10,7 @@ import (
 	componenttest "github.com/ONSdigital/dp-component-test"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
-	filesSDK "github.com/ONSdigital/dp-files-api/files"
+	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
 	dphttp "github.com/ONSdigital/dp-net/v3/http"
 	"github.com/ONSdigital/log.go/v2/log"
 
@@ -68,7 +68,7 @@ func (d *DownloadServiceComponent) Initialiser() (http.Handler, error) {
 
 func (d *DownloadServiceComponent) Reset() {
 	// Clear file events from previous scenarios
-	d.deps.CreatedFileEvents = []filesSDK.FileEvent{}
+	d.deps.CreatedFileEvents = []filesAPIModels.FileEvent{}
 
 	cfg, _ := config.Get()
 	ctx := context.Background()

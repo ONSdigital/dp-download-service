@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	clientsidentity "github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/files"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
@@ -176,7 +175,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	//
 	if cfg.IsPublishing {
 		log.Info(ctx, "private endpoints are enabled. using identity middleware")
-		identityHandler := dphandlers.IdentityWithHTTPClient(clientsidentity.NewWithHealthClient(zc))
+		identityHandler := dphandlers.IdentityWithHTTPClient(identityClient)
 		middlewareChain = middlewareChain.Append(identityHandler)
 	} else {
 		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))

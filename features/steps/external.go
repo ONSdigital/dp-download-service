@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	filesSDK "github.com/ONSdigital/dp-files-api/files"
+	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
 	s3client "github.com/ONSdigital/dp-s3/v3"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
@@ -26,7 +26,7 @@ import (
 
 type External struct {
 	Server            *dphttp.Server
-	CreatedFileEvents []filesSDK.FileEvent
+	CreatedFileEvents []filesAPIModels.FileEvent
 }
 
 func (e *External) FilterClient(s string) downloads.FilterClient {
@@ -63,18 +63,18 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 		})
 
 	m.EXPECT().GetFile(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, path string) (*filesSDK.StoredRegisteredMetaData, error) {
+		func(ctx context.Context, path string) (*filesAPIModels.StoredRegisteredMetaData, error) {
 			switch path {
 			case "data/published.csv":
-				return &filesSDK.StoredRegisteredMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+				return &filesAPIModels.StoredRegisteredMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/unpublished.csv":
-				return &filesSDK.StoredRegisteredMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+				return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/weird&chars#published.csv":
-				return &filesSDK.StoredRegisteredMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+				return &filesAPIModels.StoredRegisteredMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/weird&chars#unpublished.csv":
-				return &filesSDK.StoredRegisteredMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+				return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/return301.csv":
-				return &filesSDK.StoredRegisteredMetaData{State: "MOVED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+				return &filesAPIModels.StoredRegisteredMetaData{State: "MOVED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/missing.csv":
 				return nil, fmt.Errorf("file not registered")
 			default:
@@ -83,7 +83,7 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 		})
 
 	m.EXPECT().CreateFileEvent(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, event filesSDK.FileEvent) (*filesSDK.FileEvent, error) {
+		func(ctx context.Context, event filesAPIModels.FileEvent) (*filesAPIModels.FileEvent, error) {
 			e.CreatedFileEvents = append(e.CreatedFileEvents, event)
 			return &event, nil
 		})
