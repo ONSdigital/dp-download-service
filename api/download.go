@@ -48,7 +48,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		if cfg.IsPublishing {
 			authToken := req.Header.Get(dprequest.AuthHeaderKey)
 			if authToken != "" {
-				if err := LogFileEvent(ctx, filesClient, identityClient, req, requestedFilePath, metadata, cfg); err != nil {
+				if err := LogFileEvent(ctx, filesClient, identityClient, req, requestedFilePath, metadata); err != nil {
 					handleError(ctx, "Failed to log file event", w, err)
 					return
 				}
@@ -74,7 +74,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 	}
 }
 
-func LogFileEvent(ctx context.Context, filesClient downloads.FilesClient, identityClient *iclient.Client, req *http.Request, filePath string, metadata *filesAPIModels.StoredRegisteredMetaData, cfg *config.Config) error {
+func LogFileEvent(ctx context.Context, filesClient downloads.FilesClient, identityClient *iclient.Client, req *http.Request, filePath string, metadata *filesAPIModels.StoredRegisteredMetaData) error {
 	requestedBy := GetUserIdentity(ctx, identityClient, req)
 
 	event := filesAPIModels.FileEvent{
