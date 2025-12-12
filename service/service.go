@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"time"
 
-	clientsidentity "github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/files"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
+	iclient "github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-api-clients-go/v2/middleware"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
@@ -98,8 +98,10 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	// Create Health client for Zebedee only if we are in publishing mode.
 	//
 	var zc *health.Client
+	var identityClient *iclient.Client
 	if cfg.IsPublishing {
 		zc = health.NewClient("Zebedee", cfg.ZebedeeURL)
+		identityClient = iclient.NewWithHealthClient(zc)
 	}
 	svc.zebedeeHealthClient = zc
 
@@ -132,8 +134,10 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 
 	// Flagged off? Assumption that downloads-new is related to uploads-new
 	downloadHandler := api.CreateV1DownloadHandler(
-		files.FetchMetadata(svc.filesClient, cfg.ServiceAuthToken),
+		files.FetchMetadata(svc.filesClient),
 		files.DownloadFile(ctx, svc.s3Client),
+		svc.filesClient,
+		identityClient,
 		cfg,
 	)
 
@@ -171,7 +175,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	//
 	if cfg.IsPublishing {
 		log.Info(ctx, "private endpoints are enabled. using identity middleware")
-		identityHandler := dphandlers.IdentityWithHTTPClient(clientsidentity.NewWithHealthClient(zc))
+		identityHandler := dphandlers.IdentityWithHTTPClient(identityClient)
 		middlewareChain = middlewareChain.Append(identityHandler)
 	} else {
 		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))

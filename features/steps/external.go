@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/files"
+	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
 	s3client "github.com/ONSdigital/dp-s3/v3"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
@@ -25,7 +25,8 @@ import (
 )
 
 type External struct {
-	Server *dphttp.Server
+	Server            *dphttp.Server
+	CreatedFileEvents []filesAPIModels.FileEvent
 }
 
 func (e *External) FilterClient(s string) downloads.FilterClient {
@@ -54,31 +55,39 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 	t := &testing.T{}
 	c := gomock.NewController(t)
 	m := mocks.NewMockFilesClient(c)
-	m.EXPECT().Checker(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, check *healthcheck.CheckState) error {
-		check.Update("OK", "MsgHealthy", 0)
-		return nil
-	})
 
-	m.EXPECT().GetFile(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, path, authToken string) (files.FileMetaData, error) {
+	m.EXPECT().Checker(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+		func(ctx context.Context, check *healthcheck.CheckState) error {
+			check.Update("OK", "MsgHealthy", 0)
+			return nil
+		})
+
+	m.EXPECT().GetFile(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+		func(ctx context.Context, path string) (*filesAPIModels.StoredRegisteredMetaData, error) {
 			switch path {
 			case "data/published.csv":
-				return files.FileMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+				return &filesAPIModels.StoredRegisteredMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/unpublished.csv":
-				return files.FileMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+				return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/weird&chars#published.csv":
-				return files.FileMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+				return &filesAPIModels.StoredRegisteredMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/weird&chars#unpublished.csv":
-				return files.FileMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+				return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/return301.csv":
-				return files.FileMetaData{State: "MOVED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+				return &filesAPIModels.StoredRegisteredMetaData{State: "MOVED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/missing.csv":
-				return files.FileMetaData{}, fmt.Errorf("file not registered")
+				return nil, fmt.Errorf("file not registered")
 			default:
-				return files.FileMetaData{}, fmt.Errorf("unknown mock path")
+				return nil, fmt.Errorf("unknown mock path")
 			}
-		},
-	)
+		})
+
+	m.EXPECT().CreateFileEvent(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+		func(ctx context.Context, event filesAPIModels.FileEvent) (*filesAPIModels.FileEvent, error) {
+			e.CreatedFileEvents = append(e.CreatedFileEvents, event)
+			return &event, nil
+		})
+
 	return m
 }
 

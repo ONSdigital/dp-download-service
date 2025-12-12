@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/files"
+	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
 )
 
 const (
@@ -14,26 +14,26 @@ const (
 	MOVED     string = "MOVED"     // available from S3/CDN
 )
 
-func GetFilename(m *files.FileMetaData) string {
+func GetFilename(m *filesAPIModels.StoredRegisteredMetaData) string {
 	return filepath.Base(m.Path)
 }
 
-func GetContentLength(m *files.FileMetaData) string {
+func GetContentLength(m *filesAPIModels.StoredRegisteredMetaData) string {
 	return strconv.FormatUint(m.SizeInBytes, 10)
 }
 
-func Unpublished(m *files.FileMetaData) bool {
+func Unpublished(m *filesAPIModels.StoredRegisteredMetaData) bool {
 	return !(m.State == PUBLISHED || m.State == MOVED)
 }
 
-func UploadIncomplete(m *files.FileMetaData) bool {
+func UploadIncomplete(m *filesAPIModels.StoredRegisteredMetaData) bool {
 	return m.State == CREATED
 }
 
-func Moved(m *files.FileMetaData) bool {
+func Moved(m *filesAPIModels.StoredRegisteredMetaData) bool {
 	return m.State == MOVED
 }
 
-func Uploaded(m *files.FileMetaData) bool {
+func Uploaded(m *filesAPIModels.StoredRegisteredMetaData) bool {
 	return m.State == UPLOADED
 }
