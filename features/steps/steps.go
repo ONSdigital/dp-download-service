@@ -34,6 +34,8 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I should be redirected to "([^"]*)"$`, d.iShouldBeRedirectedTo)
 	ctx.Step(`^the response body should contain "([^"]*)"$`, d.theResponseBodyShouldContain)
 	ctx.Step(`^the collection "([^"]*)" is marked as PUBLISHED$`, d.theCollectionIsMarkedAsPublished)
+	ctx.Step(`^a file event with action "([^"]*)" and resource "([^"]*)" should be created by user "([^"]*)"$`, d.aFileEventShouldBeCreated)
+	ctx.Step(`^no file event should be logged$`, d.noFileEventShouldBeLogged)
 }
 
 func (c *DownloadServiceComponent) theCollectionIsMarkedAsPublished(collectionID string) error {
@@ -144,5 +146,38 @@ func (d *DownloadServiceComponent) iShouldBeRedirectedTo(url string) error {
 
 	assert.Equal(d.ApiFeature, url, d.ApiFeature.HTTPResponse.Header.Get("Location"))
 
+	return d.ApiFeature.StepError()
+}
+
+func (d *DownloadServiceComponent) aFileEventShouldBeCreated(expectedAction, expectedResource, expectedUser string) error {
+	assert.NotEmpty(d.ApiFeature, d.deps.CreatedFileEvents, "no file events were created")
+
+	if len(d.deps.CreatedFileEvents) == 0 {
+		return d.ApiFeature.StepError()
+	}
+
+	// Find matching event
+	found := false
+	for _, event := range d.deps.CreatedFileEvents {
+		if event.File != nil &&
+			event.File.Path == expectedResource &&
+			event.Action == expectedAction &&
+			event.RequestedBy != nil &&
+			event.RequestedBy.Email == expectedUser {
+			found = true
+			break
+		}
+	}
+
+	assert.True(d.ApiFeature, found, fmt.Sprintf(
+		"expected file event with action=%s, resource=%s, user=%s but not found",
+		expectedAction, expectedResource, expectedUser))
+
+	return d.ApiFeature.StepError()
+}
+
+func (d *DownloadServiceComponent) noFileEventShouldBeLogged() error {
+
+	assert.Empty(d.ApiFeature, d.deps.CreatedFileEvents, "expected no file events but found some")
 	return d.ApiFeature.StepError()
 }
