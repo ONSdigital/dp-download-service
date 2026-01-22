@@ -10,19 +10,16 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
+	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
+	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dprequest "github.com/ONSdigital/dp-net/v3/request"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/downloads FilterClient,DatasetClient,ImageClient,FilesClient
-
-// FilterClient is an interface to represent methods called to action on the filter api
-type FilterClient interface {
-	GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID string) (m filter.Model, err error)
-	Checker(ctx context.Context, check *healthcheck.CheckState) error
-}
+//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/downloads DatasetClient,FilesClient,FilterClient,IdentityClient,ImageClient
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
 type DatasetClient interface {
@@ -31,17 +28,28 @@ type DatasetClient interface {
 	Checker(ctx context.Context, check *healthcheck.CheckState) error
 }
 
+// FilesClient is interface to the files api
+type FilesClient interface {
+	GetFile(ctx context.Context, filePath string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error)
+	CreateFileEvent(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error)
+	Checker(ctx context.Context, state *healthcheck.CheckState) error
+}
+
+// FilterClient is an interface to represent methods called to action on the filter api
+type FilterClient interface {
+	GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID string) (m filter.Model, err error)
+	Checker(ctx context.Context, check *healthcheck.CheckState) error
+}
+
+// IdentityClient is an interface to represent methods called to action on the identity api
+type IdentityClient interface {
+	CheckTokenIdentity(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error)
+}
+
 // ImageClient is an interface to represent methods called to action on the image api
 type ImageClient interface {
 	GetDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (m image.ImageDownload, err error)
 	Checker(ctx context.Context, check *healthcheck.CheckState) error
-}
-
-// FilesClient is interface to the files api
-type FilesClient interface {
-	GetFile(ctx context.Context, path string) (*filesAPIModels.StoredRegisteredMetaData, error)
-	CreateFileEvent(ctx context.Context, event filesAPIModels.FileEvent) (*filesAPIModels.FileEvent, error)
-	Checker(ctx context.Context, state *healthcheck.CheckState) error
 }
 
 // FileType - iota enum of possible file types that can be download
