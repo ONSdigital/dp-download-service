@@ -86,7 +86,7 @@ func (d *DownloadServiceComponent) theFileHasNotBeenUploaded(filename string) er
 		w.WriteHeader(http.StatusNotFound)
 	}))
 
-	d.cfg.FilesApiURL = server.URL
+	d.cfg.FilesAPIURL = server.URL
 
 	return d.ApiFeature.StepError()
 }
@@ -99,7 +99,7 @@ func (d *DownloadServiceComponent) theFileMetadata(filepath string, metadata *go
 		w.Write([]byte(metadata.Content))
 	}))
 
-	d.cfg.FilesApiURL = server.URL
+	d.cfg.FilesAPIURL = server.URL
 
 	return d.ApiFeature.StepError()
 }
@@ -177,7 +177,6 @@ func (d *DownloadServiceComponent) aFileEventShouldBeCreated(expectedAction, exp
 }
 
 func (d *DownloadServiceComponent) noFileEventShouldBeLogged() error {
-
 	assert.Empty(d.ApiFeature, d.deps.CreatedFileEvents, "expected no file events but found some")
 	return d.ApiFeature.StepError()
 }

@@ -34,7 +34,6 @@ type DownloadServiceComponent struct {
 }
 
 func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent {
-	//os.Setenv("ZEBEDEE_URL", fake_auth_url)
 	s := dphttp.NewServer("", http.NewServeMux())
 	s.HandleOSSignals = false
 

@@ -7,7 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
+	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
+	dprequest "github.com/ONSdigital/dp-net/v3/request"
 	s3client "github.com/ONSdigital/dp-s3/v3"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
@@ -40,6 +43,28 @@ func (e *External) FilterClient(s string) downloads.FilterClient {
 	return m
 }
 
+func (e *External) IdentityClient(s string) downloads.IdentityClient {
+	t := &testing.T{}
+	c := gomock.NewController(t)
+	m := mocks.NewMockIdentityClient(c)
+	m.EXPECT().CheckTokenIdentity(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error) {
+			switch tokenType {
+			case identity.TokenTypeUser:
+				return &dprequest.IdentityResponse{
+					Identifier: "user",
+				}, nil
+			case identity.TokenTypeService:
+				return &dprequest.IdentityResponse{
+					Identifier: "service",
+				}, nil
+			default:
+				return nil, fmt.Errorf("unknown token type")
+			}
+		})
+	return m
+}
+
 func (e *External) ImageClient(s string) downloads.ImageClient {
 	t := &testing.T{}
 	c := gomock.NewController(t)
@@ -51,7 +76,7 @@ func (e *External) ImageClient(s string) downloads.ImageClient {
 	return m
 }
 
-func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
+func (e *External) FilesClient(s string) downloads.FilesClient {
 	t := &testing.T{}
 	c := gomock.NewController(t)
 	m := mocks.NewMockFilesClient(c)
@@ -62,8 +87,8 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 			return nil
 		})
 
-	m.EXPECT().GetFile(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, path string) (*filesAPIModels.StoredRegisteredMetaData, error) {
+	m.EXPECT().GetFile(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+		func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
 			switch path {
 			case "data/published.csv":
 				return &filesAPIModels.StoredRegisteredMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
@@ -82,8 +107,8 @@ func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
 			}
 		})
 
-	m.EXPECT().CreateFileEvent(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, event filesAPIModels.FileEvent) (*filesAPIModels.FileEvent, error) {
+	m.EXPECT().CreateFileEvent(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+		func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
 			e.CreatedFileEvents = append(e.CreatedFileEvents, event)
 			return &event, nil
 		})
