@@ -19,9 +19,9 @@ type Config struct {
 	DatasetAPIURL              string        `envconfig:"DATASET_API_URL"`
 	DownloadServiceToken       string        `envconfig:"DOWNLOAD_SERVICE_TOKEN"     json:"-"`
 	DatasetAuthToken           string        `envconfig:"DATASET_AUTH_TOKEN"         json:"-"`
+	FilesAPIURL                string        `envconfig:"FILES_API_URL"`
 	FilterAPIURL               string        `envconfig:"FILTER_API_URL"`
 	ImageAPIURL                string        `envconfig:"IMAGE_API_URL"`
-	FilesApiURL                string        `envconfig:"FILES_API_URL"`
 	GracefulShutdownTimeout    time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"  json:"-"`
 	HealthCheckInterval        time.Duration `envconfig:"HEALTHCHECK_INTERVAL"`
 	HealthCheckCriticalTimeout time.Duration `envconfig:"HEALTHCHECK_CRITICAL_TIMEOUT"`
@@ -69,9 +69,9 @@ func Get() (*Config, error) {
 		AwsRegion:                  "eu-west-2",
 		BucketName:                 "csv-exported",
 		DatasetAPIURL:              "http://localhost:22000",
+		FilesAPIURL:                "http://localhost:26900",
 		FilterAPIURL:               "http://localhost:22100",
 		ImageAPIURL:                "http://localhost:24700",
-		FilesApiURL:                "http://localhost:26900",
 		DatasetAuthToken:           "FD0108EA-825D-411C-9B1D-41EF7727F465",
 		DownloadServiceToken:       "QB0108EZ-825D-412C-9B1D-41EF7747F462",
 		GracefulShutdownTimeout:    5 * time.Second,

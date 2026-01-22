@@ -19,6 +19,7 @@ func getConfigEnv() map[string]string {
 		"DATASET_API_URL":              os.Getenv("DATASET_API_URL"),
 		"DOWNLOAD_SERVICE_TOKEN":       os.Getenv("DOWNLOAD_SERVICE_TOKEN"),
 		"DATASET_AUTH_TOKEN":           os.Getenv("DATASET_AUTH_TOKEN"),
+		"FILES_API_URL":                os.Getenv("FILES_API_URL"),
 		"FILTER_API_URL":               os.Getenv("FILTER_API_URL"),
 		"IMAGE_API_URL":                os.Getenv("IMAGE_API_URL"),
 		"GRACEFUL_SHUTDOWN_TIMEOUT":    os.Getenv("GRACEFUL_SHUTDOWN_TIMEOUT"),
@@ -72,6 +73,7 @@ func TestSpec(t *testing.T) {
 				So(config.DatasetAPIURL, ShouldEqual, "http://localhost:22000")
 				So(config.DatasetAuthToken, ShouldEqual, "FD0108EA-825D-411C-9B1D-41EF7727F465")
 				So(config.DownloadServiceToken, ShouldEqual, "QB0108EZ-825D-412C-9B1D-41EF7747F462")
+				So(config.FilesAPIURL, ShouldEqual, "http://localhost:26900")
 				So(config.FilterAPIURL, ShouldEqual, "http://localhost:22100")
 				So(config.ImageAPIURL, ShouldEqual, "http://localhost:24700")
 				So(config.GracefulShutdownTimeout, ShouldEqual, 5*time.Second)
