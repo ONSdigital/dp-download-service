@@ -9,28 +9,30 @@ import (
 	"path"
 	"strings"
 
-	iclient "github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	dprequest "github.com/ONSdigital/dp-net/v3/request"
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/files"
 	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
+	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 )
 
 // CreateV1DownloadHandler handles generic download file requests.
-func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, filesClient downloads.FilesClient, identityClient *iclient.Client, cfg *config.Config) http.HandlerFunc {
+func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, identityClient downloads.IdentityClient, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if cfg.IsPublishing {
 			w.Header().Set("Cache-Control", "no-cache")
 		}
 
+		accessToken := getAccessTokenFromHeaders(req.Header)
+
 		ctx, requestedFilePath := parseRequest(req)
 		log.Info(ctx, fmt.Sprintf("Handling request for %s", requestedFilePath))
 
-		metadata, err := fetchMetadata(ctx, requestedFilePath)
+		metadata, err := fetchMetadata(ctx, requestedFilePath, filesAPISDK.Headers{Authorization: accessToken})
 		if err != nil {
 			if strings.Contains(err.Error(), files.ErrFileNotRegistered.Error()) {
 				handleError(ctx, "Error fetching metadata", w, files.ErrFileNotRegistered)
@@ -43,16 +45,6 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 
 		if handleUnsupportedMetadataStates(ctx, *metadata, cfg, requestedFilePath, w) {
 			return
-		}
-
-		if cfg.IsPublishing {
-			authToken := req.Header.Get(dprequest.AuthHeaderKey)
-			if authToken != "" {
-				if err := LogFileEvent(ctx, filesClient, identityClient, req, requestedFilePath, metadata); err != nil {
-					handleError(ctx, "Failed to log file event", w, err)
-					return
-				}
-			}
 		}
 
 		setContentHeaders(w, *metadata)
@@ -71,66 +63,27 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 			setStatusInternalServerError(w)
 			return
 		}
-	}
-}
 
-func LogFileEvent(ctx context.Context, filesClient downloads.FilesClient, identityClient *iclient.Client, req *http.Request, filePath string, metadata *filesAPIModels.StoredRegisteredMetaData) error {
-	requestedBy := GetUserIdentity(ctx, identityClient, req)
+		if cfg.IsPublishing {
+			identifier, err := getTokenIdentifier(ctx, accessToken, identityClient)
+			if err != nil {
+				handleError(ctx, "Failed to get token identifier from access token", w, err)
+				return
+			}
 
-	event := filesAPIModels.FileEvent{
-		RequestedBy: requestedBy,
-		Action:      filesAPIModels.ActionRead,
-		Resource:    req.URL.Path,
-		File: &filesAPIModels.FileMetaData{
-			Path:          metadata.Path,
-			IsPublishable: metadata.IsPublishable,
-			CollectionID:  metadata.CollectionID,
-			BundleID:      metadata.BundleID,
-			Title:         metadata.Title,
-			SizeInBytes:   metadata.SizeInBytes,
-			Type:          metadata.Type,
-			Licence:       metadata.Licence,
-			LicenceURL:    metadata.LicenceURL,
-			State:         metadata.State,
-			Etag:          metadata.Etag,
-		},
-	}
+			// Passing identifier as both user and email parameters as the identity client only provides a single identifier
+			auditEvent, err := files.PopulateFileEvent(identifier, identifier, requestedFilePath, filesAPIModels.ActionRead, metadata)
+			if err != nil {
+				handleError(ctx, "Failed to populate file event", w, err)
+				return
+			}
 
-	_, err := filesClient.CreateFileEvent(ctx, event)
-	if err != nil {
-		log.Error(ctx, "failed to create file event", err, log.Data{
-			"file_path": filePath,
-			"user_id":   requestedBy.ID,
-		})
-		return fmt.Errorf("failed to create file event: %w", err)
-	}
-
-	return nil
-}
-
-func GetUserIdentity(ctx context.Context, identityClient *iclient.Client, req *http.Request) *filesAPIModels.RequestedBy {
-	authToken := req.Header.Get(dprequest.AuthHeaderKey)
-	authToken = strings.TrimPrefix(authToken, dprequest.BearerPrefix)
-
-	identityResp, err := identityClient.CheckTokenIdentity(ctx, authToken, iclient.TokenTypeUser)
-	if err == nil && identityResp != nil {
-		return &filesAPIModels.RequestedBy{
-			ID:    identityResp.Identifier,
-			Email: identityResp.Identifier,
+			_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: accessToken})
+			if err != nil {
+				handleError(ctx, "Failed to create file event", w, err)
+				return
+			}
 		}
-	}
-
-	identityResp, err = identityClient.CheckTokenIdentity(ctx, authToken, iclient.TokenTypeService)
-	if err == nil && identityResp != nil {
-		return &filesAPIModels.RequestedBy{
-			ID:    identityResp.Identifier,
-			Email: "",
-		}
-	}
-
-	log.Error(ctx, "failed to validate token with identity service", err)
-	return &filesAPIModels.RequestedBy{
-		ID: "unauthorised",
 	}
 }
 
