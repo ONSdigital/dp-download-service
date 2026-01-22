@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
-	iclient "github.com/ONSdigital/dp-api-clients-go/v2/identity"
+	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-api-clients-go/v2/middleware"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
@@ -29,9 +29,10 @@ import (
 // Download represents the configuration to run the download service
 type Download struct {
 	datasetClient       downloads.DatasetClient
-	filterClient        downloads.FilterClient
-	imageClient         downloads.ImageClient
 	filesClient         downloads.FilesClient
+	filterClient        downloads.FilterClient
+	identityClient      downloads.IdentityClient
+	imageClient         downloads.ImageClient
 	s3Client            content.S3Client
 	zebedeeHealthClient *health.Client
 	router              *mux.Router
@@ -43,18 +44,18 @@ type Download struct {
 // Generate mocks of dependencies
 //
 //go:generate moq -pkg service_test -out moq_service_test.go . Dependencies HealthChecker HTTPServer
-//go:generate moq -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilterClient ImageClient FilesClient
+//go:generate moq -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilesClient FilterClient IdentityClient ImageClient
 //go:generate moq -pkg service_test -out moq_content_test.go ../content S3Client
 
 // Dependencies holds constructors/factories for all external dependencies
-//
 
 type Dependencies interface {
 	DatasetClient(string) downloads.DatasetClient
+	FilesClient(string) downloads.FilesClient
 	FilterClient(string) downloads.FilterClient
+	IdentityClient(string) downloads.IdentityClient
 	ImageClient(string) downloads.ImageClient
 	S3Client(context.Context, *config.Config) (content.S3Client, error)
-	FilesClient(*config.Config) downloads.FilesClient
 	HealthCheck(*config.Config, string, string, string) (HealthChecker, error)
 	HttpServer(*config.Config, http.Handler) HTTPServer
 }
@@ -78,16 +79,15 @@ type HTTPServer interface {
 func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.Config, deps Dependencies) (*Download, error) {
 	svc := &Download{
 		datasetClient: deps.DatasetClient(cfg.DatasetAPIURL),
+		filesClient:   deps.FilesClient(cfg.FilesAPIURL),
 		filterClient:  deps.FilterClient(cfg.FilterAPIURL),
 		imageClient:   deps.ImageClient(cfg.ImageAPIURL),
-		filesClient:   deps.FilesClient(cfg),
 		shutdown:      cfg.GracefulShutdownTimeout,
 	}
 
 	var err error
 
 	// Set up S3 client.
-	//
 	s3, err := deps.S3Client(ctx, cfg)
 	if err != nil {
 		log.Error(ctx, "could not create the s3 client", err)
@@ -95,18 +95,15 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	}
 	svc.s3Client = s3
 
-	// Create Health client for Zebedee only if we are in publishing mode.
-	//
-	var zc *health.Client
-	var identityClient *iclient.Client
+	// Create Zebedee and Identity clients if publishing is enabled.
+	var identityClient *identity.Client
 	if cfg.IsPublishing {
-		zc = health.NewClient("Zebedee", cfg.ZebedeeURL)
-		identityClient = iclient.NewWithHealthClient(zc)
+		svc.zebedeeHealthClient = health.NewClient("Zebedee", cfg.ZebedeeURL)
+		identityClient = identity.New(cfg.ZebedeeURL)
+		svc.identityClient = identityClient
 	}
-	svc.zebedeeHealthClient = zc
 
 	// Set up health checkers for enabled dependencies.
-	//
 	hc, err := deps.HealthCheck(cfg, buildTime, gitCommit, version)
 	if err != nil {
 		log.Fatal(ctx, "could not create health checker", err)
@@ -118,7 +115,6 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	}
 
 	// Set up download handler.
-	//
 	downloader := downloads.Downloader{
 		FilterCli:  svc.filterClient,
 		DatasetCli: svc.datasetClient,
@@ -136,14 +132,13 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	downloadHandler := api.CreateV1DownloadHandler(
 		files.FetchMetadata(svc.filesClient),
 		files.DownloadFile(ctx, svc.s3Client),
-		svc.filesClient,
-		identityClient,
+		files.CreateFileEvent(svc.filesClient),
+		svc.identityClient,
 		cfg,
 	)
 
 	// The 'Do' functions eventually get to the S3 bucket, which is all of them except the V1 downloader
 	// And tie routes to download handler methods.
-	//
 	router := mux.NewRouter()
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.DoDatasetVersion("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
 	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.DoDatasetVersion("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
@@ -162,7 +157,6 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	svc.router = router
 
 	// Create new middleware chain with whitelisted handler for /health endpoint
-	//
 	middlewareChain := alice.New(middleware.Whitelist(middleware.HealthcheckFilter(hc.Handler)))
 	middlewareChain = middlewareChain.Append(api.Limiter(cfg.MaxConcurrentHandlers))
 
@@ -171,8 +165,8 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		router.Use(otelmux.Middleware(cfg.OTServiceName))
 		middlewareChain = middlewareChain.Append(otelhttp.NewMiddleware(cfg.OTServiceName))
 	}
+
 	// For non-whitelisted endpoints, do identityHandler or corsHandler
-	//
 	if cfg.IsPublishing {
 		log.Info(ctx, "private endpoints are enabled. using identity middleware")
 		identityHandler := dphandlers.IdentityWithHTTPClient(identityClient)
@@ -201,6 +195,11 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 		log.Error(ctx, "error adding check for dataset api", err)
 	}
 
+	if err := hc.AddCheck("Files API", svc.filesClient.Checker); err != nil {
+		hasErrors = true
+		log.Error(ctx, "error adding check for files api", err)
+	}
+
 	if err := hc.AddCheck("Filter API", svc.filterClient.Checker); err != nil {
 		hasErrors = true
 		log.Error(ctx, "error adding check for filter api", err)
@@ -211,6 +210,7 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 		log.Error(ctx, "error adding check for image api", err)
 	}
 
+	// Identity API uses ZebedeeURL so only the checker for Zebedee is needed to cover both.
 	if svc.zebedeeHealthClient != nil {
 		if err := hc.AddCheck("Zebedee", svc.zebedeeHealthClient.Checker); err != nil {
 			hasErrors = true
@@ -230,8 +230,6 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 }
 
 func (d Download) Run(ctx context.Context) {
-	//d.server.HandleOSSignals = false
-
 	d.healthCheck.Start(ctx)
 	go func() {
 		log.Info(ctx, "starting download service...")

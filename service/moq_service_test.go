@@ -27,7 +27,7 @@ var _ service.Dependencies = &DependenciesMock{}
 //			DatasetClientFunc: func(s string) downloads.DatasetClient {
 //				panic("mock out the DatasetClient method")
 //			},
-//			FilesClientFunc: func(configMoqParam *config.Config) downloads.FilesClient {
+//			FilesClientFunc: func(s string) downloads.FilesClient {
 //				panic("mock out the FilesClient method")
 //			},
 //			FilterClientFunc: func(s string) downloads.FilterClient {
@@ -38,6 +38,9 @@ var _ service.Dependencies = &DependenciesMock{}
 //			},
 //			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
 //				panic("mock out the HttpServer method")
+//			},
+//			IdentityClientFunc: func(s string) downloads.IdentityClient {
+//				panic("mock out the IdentityClient method")
 //			},
 //			ImageClientFunc: func(s string) downloads.ImageClient {
 //				panic("mock out the ImageClient method")
@@ -56,7 +59,7 @@ type DependenciesMock struct {
 	DatasetClientFunc func(s string) downloads.DatasetClient
 
 	// FilesClientFunc mocks the FilesClient method.
-	FilesClientFunc func(configMoqParam *config.Config) downloads.FilesClient
+	FilesClientFunc func(s string) downloads.FilesClient
 
 	// FilterClientFunc mocks the FilterClient method.
 	FilterClientFunc func(s string) downloads.FilterClient
@@ -66,6 +69,9 @@ type DependenciesMock struct {
 
 	// HttpServerFunc mocks the HttpServer method.
 	HttpServerFunc func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer
+
+	// IdentityClientFunc mocks the IdentityClient method.
+	IdentityClientFunc func(s string) downloads.IdentityClient
 
 	// ImageClientFunc mocks the ImageClient method.
 	ImageClientFunc func(s string) downloads.ImageClient
@@ -82,8 +88,8 @@ type DependenciesMock struct {
 		}
 		// FilesClient holds details about calls to the FilesClient method.
 		FilesClient []struct {
-			// ConfigMoqParam is the configMoqParam argument value.
-			ConfigMoqParam *config.Config
+			// S is the s argument value.
+			S string
 		}
 		// FilterClient holds details about calls to the FilterClient method.
 		FilterClient []struct {
@@ -108,6 +114,11 @@ type DependenciesMock struct {
 			// Handler is the handler argument value.
 			Handler http.Handler
 		}
+		// IdentityClient holds details about calls to the IdentityClient method.
+		IdentityClient []struct {
+			// S is the s argument value.
+			S string
+		}
 		// ImageClient holds details about calls to the ImageClient method.
 		ImageClient []struct {
 			// S is the s argument value.
@@ -121,13 +132,14 @@ type DependenciesMock struct {
 			ConfigMoqParam *config.Config
 		}
 	}
-	lockDatasetClient sync.RWMutex
-	lockFilesClient   sync.RWMutex
-	lockFilterClient  sync.RWMutex
-	lockHealthCheck   sync.RWMutex
-	lockHttpServer    sync.RWMutex
-	lockImageClient   sync.RWMutex
-	lockS3Client      sync.RWMutex
+	lockDatasetClient  sync.RWMutex
+	lockFilesClient    sync.RWMutex
+	lockFilterClient   sync.RWMutex
+	lockHealthCheck    sync.RWMutex
+	lockHttpServer     sync.RWMutex
+	lockIdentityClient sync.RWMutex
+	lockImageClient    sync.RWMutex
+	lockS3Client       sync.RWMutex
 }
 
 // DatasetClient calls DatasetClientFunc.
@@ -163,19 +175,19 @@ func (mock *DependenciesMock) DatasetClientCalls() []struct {
 }
 
 // FilesClient calls FilesClientFunc.
-func (mock *DependenciesMock) FilesClient(configMoqParam *config.Config) downloads.FilesClient {
+func (mock *DependenciesMock) FilesClient(s string) downloads.FilesClient {
 	if mock.FilesClientFunc == nil {
 		panic("DependenciesMock.FilesClientFunc: method is nil but Dependencies.FilesClient was just called")
 	}
 	callInfo := struct {
-		ConfigMoqParam *config.Config
+		S string
 	}{
-		ConfigMoqParam: configMoqParam,
+		S: s,
 	}
 	mock.lockFilesClient.Lock()
 	mock.calls.FilesClient = append(mock.calls.FilesClient, callInfo)
 	mock.lockFilesClient.Unlock()
-	return mock.FilesClientFunc(configMoqParam)
+	return mock.FilesClientFunc(s)
 }
 
 // FilesClientCalls gets all the calls that were made to FilesClient.
@@ -183,10 +195,10 @@ func (mock *DependenciesMock) FilesClient(configMoqParam *config.Config) downloa
 //
 //	len(mockedDependencies.FilesClientCalls())
 func (mock *DependenciesMock) FilesClientCalls() []struct {
-	ConfigMoqParam *config.Config
+	S string
 } {
 	var calls []struct {
-		ConfigMoqParam *config.Config
+		S string
 	}
 	mock.lockFilesClient.RLock()
 	calls = mock.calls.FilesClient
@@ -303,6 +315,38 @@ func (mock *DependenciesMock) HttpServerCalls() []struct {
 	mock.lockHttpServer.RLock()
 	calls = mock.calls.HttpServer
 	mock.lockHttpServer.RUnlock()
+	return calls
+}
+
+// IdentityClient calls IdentityClientFunc.
+func (mock *DependenciesMock) IdentityClient(s string) downloads.IdentityClient {
+	if mock.IdentityClientFunc == nil {
+		panic("DependenciesMock.IdentityClientFunc: method is nil but Dependencies.IdentityClient was just called")
+	}
+	callInfo := struct {
+		S string
+	}{
+		S: s,
+	}
+	mock.lockIdentityClient.Lock()
+	mock.calls.IdentityClient = append(mock.calls.IdentityClient, callInfo)
+	mock.lockIdentityClient.Unlock()
+	return mock.IdentityClientFunc(s)
+}
+
+// IdentityClientCalls gets all the calls that were made to IdentityClient.
+// Check the length with:
+//
+//	len(mockedDependencies.IdentityClientCalls())
+func (mock *DependenciesMock) IdentityClientCalls() []struct {
+	S string
+} {
+	var calls []struct {
+		S string
+	}
+	mock.lockIdentityClient.RLock()
+	calls = mock.calls.IdentityClient
+	mock.lockIdentityClient.RUnlock()
 	return calls
 }
 

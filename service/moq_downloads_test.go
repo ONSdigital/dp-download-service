@@ -7,10 +7,13 @@ import (
 	"context"
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
+	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	"github.com/ONSdigital/dp-download-service/downloads"
-	filesSDK "github.com/ONSdigital/dp-files-api/files"
+	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
+	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dprequest "github.com/ONSdigital/dp-net/v3/request"
 	"sync"
 )
 
@@ -246,6 +249,190 @@ func (mock *DatasetClientMock) GetVersionCalls() []struct {
 	return calls
 }
 
+// Ensure, that FilesClientMock does implement downloads.FilesClient.
+// If this is not the case, regenerate this file with moq.
+var _ downloads.FilesClient = &FilesClientMock{}
+
+// FilesClientMock is a mock implementation of downloads.FilesClient.
+//
+//	func TestSomethingThatUsesFilesClient(t *testing.T) {
+//
+//		// make and configure a mocked downloads.FilesClient
+//		mockedFilesClient := &FilesClientMock{
+//			CheckerFunc: func(ctx context.Context, state *healthcheck.CheckState) error {
+//				panic("mock out the Checker method")
+//			},
+//			CreateFileEventFunc: func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
+//				panic("mock out the CreateFileEvent method")
+//			},
+//			GetFileFunc: func(ctx context.Context, filePath string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
+//				panic("mock out the GetFile method")
+//			},
+//		}
+//
+//		// use mockedFilesClient in code that requires downloads.FilesClient
+//		// and then make assertions.
+//
+//	}
+type FilesClientMock struct {
+	// CheckerFunc mocks the Checker method.
+	CheckerFunc func(ctx context.Context, state *healthcheck.CheckState) error
+
+	// CreateFileEventFunc mocks the CreateFileEvent method.
+	CreateFileEventFunc func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error)
+
+	// GetFileFunc mocks the GetFile method.
+	GetFileFunc func(ctx context.Context, filePath string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error)
+
+	// calls tracks calls to the methods.
+	calls struct {
+		// Checker holds details about calls to the Checker method.
+		Checker []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// State is the state argument value.
+			State *healthcheck.CheckState
+		}
+		// CreateFileEvent holds details about calls to the CreateFileEvent method.
+		CreateFileEvent []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Event is the event argument value.
+			Event filesAPIModels.FileEvent
+			// Headers is the headers argument value.
+			Headers filesAPISDK.Headers
+		}
+		// GetFile holds details about calls to the GetFile method.
+		GetFile []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// FilePath is the filePath argument value.
+			FilePath string
+			// Headers is the headers argument value.
+			Headers filesAPISDK.Headers
+		}
+	}
+	lockChecker         sync.RWMutex
+	lockCreateFileEvent sync.RWMutex
+	lockGetFile         sync.RWMutex
+}
+
+// Checker calls CheckerFunc.
+func (mock *FilesClientMock) Checker(ctx context.Context, state *healthcheck.CheckState) error {
+	if mock.CheckerFunc == nil {
+		panic("FilesClientMock.CheckerFunc: method is nil but FilesClient.Checker was just called")
+	}
+	callInfo := struct {
+		Ctx   context.Context
+		State *healthcheck.CheckState
+	}{
+		Ctx:   ctx,
+		State: state,
+	}
+	mock.lockChecker.Lock()
+	mock.calls.Checker = append(mock.calls.Checker, callInfo)
+	mock.lockChecker.Unlock()
+	return mock.CheckerFunc(ctx, state)
+}
+
+// CheckerCalls gets all the calls that were made to Checker.
+// Check the length with:
+//
+//	len(mockedFilesClient.CheckerCalls())
+func (mock *FilesClientMock) CheckerCalls() []struct {
+	Ctx   context.Context
+	State *healthcheck.CheckState
+} {
+	var calls []struct {
+		Ctx   context.Context
+		State *healthcheck.CheckState
+	}
+	mock.lockChecker.RLock()
+	calls = mock.calls.Checker
+	mock.lockChecker.RUnlock()
+	return calls
+}
+
+// CreateFileEvent calls CreateFileEventFunc.
+func (mock *FilesClientMock) CreateFileEvent(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
+	if mock.CreateFileEventFunc == nil {
+		panic("FilesClientMock.CreateFileEventFunc: method is nil but FilesClient.CreateFileEvent was just called")
+	}
+	callInfo := struct {
+		Ctx     context.Context
+		Event   filesAPIModels.FileEvent
+		Headers filesAPISDK.Headers
+	}{
+		Ctx:     ctx,
+		Event:   event,
+		Headers: headers,
+	}
+	mock.lockCreateFileEvent.Lock()
+	mock.calls.CreateFileEvent = append(mock.calls.CreateFileEvent, callInfo)
+	mock.lockCreateFileEvent.Unlock()
+	return mock.CreateFileEventFunc(ctx, event, headers)
+}
+
+// CreateFileEventCalls gets all the calls that were made to CreateFileEvent.
+// Check the length with:
+//
+//	len(mockedFilesClient.CreateFileEventCalls())
+func (mock *FilesClientMock) CreateFileEventCalls() []struct {
+	Ctx     context.Context
+	Event   filesAPIModels.FileEvent
+	Headers filesAPISDK.Headers
+} {
+	var calls []struct {
+		Ctx     context.Context
+		Event   filesAPIModels.FileEvent
+		Headers filesAPISDK.Headers
+	}
+	mock.lockCreateFileEvent.RLock()
+	calls = mock.calls.CreateFileEvent
+	mock.lockCreateFileEvent.RUnlock()
+	return calls
+}
+
+// GetFile calls GetFileFunc.
+func (mock *FilesClientMock) GetFile(ctx context.Context, filePath string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
+	if mock.GetFileFunc == nil {
+		panic("FilesClientMock.GetFileFunc: method is nil but FilesClient.GetFile was just called")
+	}
+	callInfo := struct {
+		Ctx      context.Context
+		FilePath string
+		Headers  filesAPISDK.Headers
+	}{
+		Ctx:      ctx,
+		FilePath: filePath,
+		Headers:  headers,
+	}
+	mock.lockGetFile.Lock()
+	mock.calls.GetFile = append(mock.calls.GetFile, callInfo)
+	mock.lockGetFile.Unlock()
+	return mock.GetFileFunc(ctx, filePath, headers)
+}
+
+// GetFileCalls gets all the calls that were made to GetFile.
+// Check the length with:
+//
+//	len(mockedFilesClient.GetFileCalls())
+func (mock *FilesClientMock) GetFileCalls() []struct {
+	Ctx      context.Context
+	FilePath string
+	Headers  filesAPISDK.Headers
+} {
+	var calls []struct {
+		Ctx      context.Context
+		FilePath string
+		Headers  filesAPISDK.Headers
+	}
+	mock.lockGetFile.RLock()
+	calls = mock.calls.GetFile
+	mock.lockGetFile.RUnlock()
+	return calls
+}
+
 // Ensure, that FilterClientMock does implement downloads.FilterClient.
 // If this is not the case, regenerate this file with moq.
 var _ downloads.FilterClient = &FilterClientMock{}
@@ -392,6 +579,84 @@ func (mock *FilterClientMock) GetOutputCalls() []struct {
 	return calls
 }
 
+// Ensure, that IdentityClientMock does implement downloads.IdentityClient.
+// If this is not the case, regenerate this file with moq.
+var _ downloads.IdentityClient = &IdentityClientMock{}
+
+// IdentityClientMock is a mock implementation of downloads.IdentityClient.
+//
+//	func TestSomethingThatUsesIdentityClient(t *testing.T) {
+//
+//		// make and configure a mocked downloads.IdentityClient
+//		mockedIdentityClient := &IdentityClientMock{
+//			CheckTokenIdentityFunc: func(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error) {
+//				panic("mock out the CheckTokenIdentity method")
+//			},
+//		}
+//
+//		// use mockedIdentityClient in code that requires downloads.IdentityClient
+//		// and then make assertions.
+//
+//	}
+type IdentityClientMock struct {
+	// CheckTokenIdentityFunc mocks the CheckTokenIdentity method.
+	CheckTokenIdentityFunc func(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error)
+
+	// calls tracks calls to the methods.
+	calls struct {
+		// CheckTokenIdentity holds details about calls to the CheckTokenIdentity method.
+		CheckTokenIdentity []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Token is the token argument value.
+			Token string
+			// TokenType is the tokenType argument value.
+			TokenType identity.TokenType
+		}
+	}
+	lockCheckTokenIdentity sync.RWMutex
+}
+
+// CheckTokenIdentity calls CheckTokenIdentityFunc.
+func (mock *IdentityClientMock) CheckTokenIdentity(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error) {
+	if mock.CheckTokenIdentityFunc == nil {
+		panic("IdentityClientMock.CheckTokenIdentityFunc: method is nil but IdentityClient.CheckTokenIdentity was just called")
+	}
+	callInfo := struct {
+		Ctx       context.Context
+		Token     string
+		TokenType identity.TokenType
+	}{
+		Ctx:       ctx,
+		Token:     token,
+		TokenType: tokenType,
+	}
+	mock.lockCheckTokenIdentity.Lock()
+	mock.calls.CheckTokenIdentity = append(mock.calls.CheckTokenIdentity, callInfo)
+	mock.lockCheckTokenIdentity.Unlock()
+	return mock.CheckTokenIdentityFunc(ctx, token, tokenType)
+}
+
+// CheckTokenIdentityCalls gets all the calls that were made to CheckTokenIdentity.
+// Check the length with:
+//
+//	len(mockedIdentityClient.CheckTokenIdentityCalls())
+func (mock *IdentityClientMock) CheckTokenIdentityCalls() []struct {
+	Ctx       context.Context
+	Token     string
+	TokenType identity.TokenType
+} {
+	var calls []struct {
+		Ctx       context.Context
+		Token     string
+		TokenType identity.TokenType
+	}
+	mock.lockCheckTokenIdentity.RLock()
+	calls = mock.calls.CheckTokenIdentity
+	mock.lockCheckTokenIdentity.RUnlock()
+	return calls
+}
+
 // Ensure, that ImageClientMock does implement downloads.ImageClient.
 // If this is not the case, regenerate this file with moq.
 var _ downloads.ImageClient = &ImageClientMock{}
@@ -535,177 +800,5 @@ func (mock *ImageClientMock) GetDownloadVariantCalls() []struct {
 	mock.lockGetDownloadVariant.RLock()
 	calls = mock.calls.GetDownloadVariant
 	mock.lockGetDownloadVariant.RUnlock()
-	return calls
-}
-
-// Ensure, that FilesClientMock does implement downloads.FilesClient.
-// If this is not the case, regenerate this file with moq.
-var _ downloads.FilesClient = &FilesClientMock{}
-
-// FilesClientMock is a mock implementation of downloads.FilesClient.
-//
-//	func TestSomethingThatUsesFilesClient(t *testing.T) {
-//
-//		// make and configure a mocked downloads.FilesClient
-//		mockedFilesClient := &FilesClientMock{
-//			CheckerFunc: func(ctx context.Context, state *healthcheck.CheckState) error {
-//				panic("mock out the Checker method")
-//			},
-//			CreateFileEventFunc: func(ctx context.Context, event filesSDK.FileEvent) (*filesSDK.FileEvent, error) {
-//				panic("mock out the CreateFileEvent method")
-//			},
-//			GetFileFunc: func(ctx context.Context, path string) (*filesSDK.StoredRegisteredMetaData, error) {
-//				panic("mock out the GetFile method")
-//			},
-//		}
-//
-//		// use mockedFilesClient in code that requires downloads.FilesClient
-//		// and then make assertions.
-//
-//	}
-type FilesClientMock struct {
-	// CheckerFunc mocks the Checker method.
-	CheckerFunc func(ctx context.Context, state *healthcheck.CheckState) error
-
-	// CreateFileEventFunc mocks the CreateFileEvent method.
-	CreateFileEventFunc func(ctx context.Context, event filesSDK.FileEvent) (*filesSDK.FileEvent, error)
-
-	// GetFileFunc mocks the GetFile method.
-	GetFileFunc func(ctx context.Context, path string) (*filesSDK.StoredRegisteredMetaData, error)
-
-	// calls tracks calls to the methods.
-	calls struct {
-		// Checker holds details about calls to the Checker method.
-		Checker []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// State is the state argument value.
-			State *healthcheck.CheckState
-		}
-		// CreateFileEvent holds details about calls to the CreateFileEvent method.
-		CreateFileEvent []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Event is the event argument value.
-			Event filesSDK.FileEvent
-		}
-		// GetFile holds details about calls to the GetFile method.
-		GetFile []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Path is the path argument value.
-			Path string
-		}
-	}
-	lockChecker         sync.RWMutex
-	lockCreateFileEvent sync.RWMutex
-	lockGetFile         sync.RWMutex
-}
-
-// Checker calls CheckerFunc.
-func (mock *FilesClientMock) Checker(ctx context.Context, state *healthcheck.CheckState) error {
-	if mock.CheckerFunc == nil {
-		panic("FilesClientMock.CheckerFunc: method is nil but FilesClient.Checker was just called")
-	}
-	callInfo := struct {
-		Ctx   context.Context
-		State *healthcheck.CheckState
-	}{
-		Ctx:   ctx,
-		State: state,
-	}
-	mock.lockChecker.Lock()
-	mock.calls.Checker = append(mock.calls.Checker, callInfo)
-	mock.lockChecker.Unlock()
-	return mock.CheckerFunc(ctx, state)
-}
-
-// CheckerCalls gets all the calls that were made to Checker.
-// Check the length with:
-//
-//	len(mockedFilesClient.CheckerCalls())
-func (mock *FilesClientMock) CheckerCalls() []struct {
-	Ctx   context.Context
-	State *healthcheck.CheckState
-} {
-	var calls []struct {
-		Ctx   context.Context
-		State *healthcheck.CheckState
-	}
-	mock.lockChecker.RLock()
-	calls = mock.calls.Checker
-	mock.lockChecker.RUnlock()
-	return calls
-}
-
-// CreateFileEvent calls CreateFileEventFunc.
-func (mock *FilesClientMock) CreateFileEvent(ctx context.Context, event filesSDK.FileEvent) (*filesSDK.FileEvent, error) {
-	if mock.CreateFileEventFunc == nil {
-		panic("FilesClientMock.CreateFileEventFunc: method is nil but FilesClient.CreateFileEvent was just called")
-	}
-	callInfo := struct {
-		Ctx   context.Context
-		Event filesSDK.FileEvent
-	}{
-		Ctx:   ctx,
-		Event: event,
-	}
-	mock.lockCreateFileEvent.Lock()
-	mock.calls.CreateFileEvent = append(mock.calls.CreateFileEvent, callInfo)
-	mock.lockCreateFileEvent.Unlock()
-	return mock.CreateFileEventFunc(ctx, event)
-}
-
-// CreateFileEventCalls gets all the calls that were made to CreateFileEvent.
-// Check the length with:
-//
-//	len(mockedFilesClient.CreateFileEventCalls())
-func (mock *FilesClientMock) CreateFileEventCalls() []struct {
-	Ctx   context.Context
-	Event filesSDK.FileEvent
-} {
-	var calls []struct {
-		Ctx   context.Context
-		Event filesSDK.FileEvent
-	}
-	mock.lockCreateFileEvent.RLock()
-	calls = mock.calls.CreateFileEvent
-	mock.lockCreateFileEvent.RUnlock()
-	return calls
-}
-
-// GetFile calls GetFileFunc.
-func (mock *FilesClientMock) GetFile(ctx context.Context, path string) (*filesSDK.StoredRegisteredMetaData, error) {
-	if mock.GetFileFunc == nil {
-		panic("FilesClientMock.GetFileFunc: method is nil but FilesClient.GetFile was just called")
-	}
-	callInfo := struct {
-		Ctx  context.Context
-		Path string
-	}{
-		Ctx:  ctx,
-		Path: path,
-	}
-	mock.lockGetFile.Lock()
-	mock.calls.GetFile = append(mock.calls.GetFile, callInfo)
-	mock.lockGetFile.Unlock()
-	return mock.GetFileFunc(ctx, path)
-}
-
-// GetFileCalls gets all the calls that were made to GetFile.
-// Check the length with:
-//
-//	len(mockedFilesClient.GetFileCalls())
-func (mock *FilesClientMock) GetFileCalls() []struct {
-	Ctx  context.Context
-	Path string
-} {
-	var calls []struct {
-		Ctx  context.Context
-		Path string
-	}
-	mock.lockGetFile.RLock()
-	calls = mock.calls.GetFile
-	mock.lockGetFile.RUnlock()
 	return calls
 }

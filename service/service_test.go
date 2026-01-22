@@ -47,15 +47,15 @@ func TestNew(t *testing.T) {
 			CheckerFunc: checker,
 		}
 
+		mockedFilesClient := &FilesClientMock{
+			CheckerFunc: checker,
+		}
+
 		mockedFilterClient := &FilterClientMock{
 			CheckerFunc: checker,
 		}
 
 		mockedImageClient := &ImageClientMock{
-			CheckerFunc: checker,
-		}
-
-		mockedFilesClient := &FilesClientMock{
 			CheckerFunc: checker,
 		}
 
@@ -75,6 +75,9 @@ func TestNew(t *testing.T) {
 			DatasetClientFunc: func(s string) downloads.DatasetClient {
 				return mockedDatasetClient
 			},
+			FilesClientFunc: func(s string) downloads.FilesClient {
+				return mockedFilesClient
+			},
 			FilterClientFunc: func(s string) downloads.FilterClient {
 				return mockedFilterClient
 			},
@@ -90,9 +93,6 @@ func TestNew(t *testing.T) {
 			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
 				return mockedHttpServer
 			},
-			FilesClientFunc: func(configMoqParam *config.Config) downloads.FilesClient {
-				return mockedFilesClient
-			},
 		}
 
 		Convey("When all is well", func() {
@@ -102,10 +102,10 @@ func TestNew(t *testing.T) {
 				So(svc, ShouldNotBeNil)
 				So(err, ShouldBeNil)
 				So(svc.GetDatasetClient(), ShouldEqual, mockedDatasetClient)
+				So(svc.GetFilesClient(), ShouldEqual, mockedFilesClient)
 				So(svc.GetFilterClient(), ShouldEqual, mockedFilterClient)
 				So(svc.GetImageClient(), ShouldEqual, mockedImageClient)
 				So(svc.GetS3Client(), ShouldEqual, mockedS3Client)
-				So(svc.GetFilesClient(), ShouldEqual, mockedFilesClient)
 				So(svc.GetZebedeeHealthClient(), ShouldNotBeNil)
 				So(svc.GetShutdownTimeout(), ShouldEqual, cfg.GracefulShutdownTimeout)
 				So(svc.GetHealthChecker(), ShouldEqual, mockedHealthChecker)
@@ -154,6 +154,19 @@ func TestNew(t *testing.T) {
 		Convey("When dataset api healthcheck setup fails", func() {
 			mockedHealthChecker.AddCheckFunc = func(name string, checker healthcheck.Checker) error {
 				return failIfNameMatches(name, "Dataset API")
+			}
+
+			svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
+
+			Convey("New should fail", func() {
+				So(svc, ShouldBeNil)
+				So(err.Error(), ShouldContainSubstring, "registering checkers for healthcheck")
+			})
+		})
+
+		Convey("When files api healthcheck setup fails", func() {
+			mockedHealthChecker.AddCheckFunc = func(name string, checker healthcheck.Checker) error {
+				return failIfNameMatches(name, "Files API")
 			}
 
 			svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
