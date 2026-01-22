@@ -3,8 +3,8 @@ package files_test
 import (
 	"testing"
 
-	fclient "github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-download-service/files"
+	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +20,7 @@ func TestUnpublished(t *testing.T) {
 	}
 
 	for _, file := range testFiles {
-		m := fclient.FileMetaData{
+		m := filesAPIModels.FileMetaData{
 			State: file.State,
 		}
 
