@@ -34,6 +34,7 @@ Feature: Download preview feature
         Then the HTTP status code should be "200"
         And the response header "Cache-Control" should be "no-cache"
         And the response header "Content-Disposition" should be "attachment; filename=unpublished.csv"
+        And a file event with action "READ" and resource "data/unpublished.csv" should be created by user "dave@ons.gov.uk"
 
     Scenario: ONS previewer requests data-file with weird characters that has been uploaded but not yet published
         Given the file "data/weird&chars#unpublished.csv" has the metadata:
@@ -63,3 +64,4 @@ Feature: Download preview feature
         When I GET "/downloads-new/data/weird&chars#unpublished.csv"
         Then the HTTP status code should be "200"
         And the response header "Cache-Control" should be "no-cache"
+        And a file event with action "READ" and resource "data/weird&chars#unpublished.csv" should be created by user "dave@ons.gov.uk"

@@ -38,6 +38,7 @@ Feature: ONS Public Website Download files
       russ,3
       Ioannis,4
       """
+    And no file event should be logged
 
   Scenario: Download a file with weird characters that has been published
     Given the file "data/weird&chars#published.csv" has the metadata:
@@ -74,6 +75,7 @@ Feature: ONS Public Website Download files
       russ,3
       Ioannis,4
       """
+    And no file event should be logged
 
   Scenario: Trying to download a file that has not been uploaded yet
     Given the file "data/missing.csv" has not been uploaded

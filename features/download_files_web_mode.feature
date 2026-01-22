@@ -30,6 +30,7 @@ Feature: Download files feature - web
     When I GET "/downloads/files/data/return301.csv"
     Then the HTTP status code should be "301"
     And the response header "Location" should be "http://public-bucket.com/data/return301.csv"
+    And no file event should be logged
 
   Scenario: File is not uploaded and not published returns 404
     Given the file "data/missing.csv" has not been uploaded
@@ -101,3 +102,4 @@ Feature: Download files feature - web
     When I GET "/downloads/files/data/published.csv"
     Then the HTTP status code should be "200"
     And the response header "Content-Disposition" should be "attachment; filename=published.csv"
+    And no file event should be logged

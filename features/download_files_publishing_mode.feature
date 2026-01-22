@@ -33,6 +33,7 @@ Feature: Download preview feature - publishing
     Then the HTTP status code should be "200"
     And the response header "Cache-Control" should be "no-cache"
     And the response header "Content-Disposition" should be "attachment; filename=published.csv"
+    And a file event with action "READ" and resource "data/published.csv" should be created by user "dave@ons.gov.uk"
 
   Scenario: File is not uploaded and not published returns 404
     Given the file "data/missing.csv" has not been uploaded
@@ -77,6 +78,7 @@ Feature: Download preview feature - publishing
     Then the HTTP status code should be "200"
     And the response header "Cache-Control" should be "no-cache"
     And the response header "Content-Disposition" should be "attachment; filename=unpublished.csv"
+    And a file event with action "READ" and resource "data/unpublished.csv" should be created by user "dave@ons.gov.uk"
 
   Scenario: File is uploaded but collection is published and file is downloaded
     Given the file "data/published.csv" has the metadata:
@@ -107,75 +109,4 @@ Feature: Download preview feature - publishing
     Then the HTTP status code should be "200"
     And the response header "Cache-Control" should be "no-cache"
     And the response header "Content-Disposition" should be "attachment; filename=published.csv"
-
-  Scenario: File event is logged when downloading in publishing mode
-    Given the file "data/published.csv" has the metadata:
-      """
-      {
-        "path": "data/published.csv",
-        "is_publishable": true,
-        "title": "Published Data",
-        "size_in_bytes": 29,
-        "type": "text/csv",
-        "licence": "OGL v3",
-        "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
-        "state": "PUBLISHED"
-      }
-      """
-    And the file "data/published.csv" is in S3 with content:
-      """
-      mark,1
-      jon,2
-      russ,3
-      """
-    When I GET "/downloads-new/data/published.csv"
-    Then the HTTP status code should be "200"
-    And the response header "Cache-Control" should be "no-cache"
     And a file event with action "READ" and resource "data/published.csv" should be created by user "dave@ons.gov.uk"
-
-  Scenario: File download works when file event logging fails
-    Given the file "data/published.csv" has the metadata:
-      """
-      {
-        "path": "data/published.csv",
-        "is_publishable": true,
-        "title": "Published Data",
-        "size_in_bytes": 29,
-        "type": "text/csv",
-        "licence": "OGL v3",
-        "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
-        "state": "PUBLISHED"
-      }
-      """
-    And the file "data/published.csv" is in S3 with content:
-      """
-      mark,1
-      jon,2
-      """
-    When I GET "/downloads-new/data/published.csv"
-    Then the HTTP status code should be "200"
-    And a file event with action "READ" and resource "data/published.csv" should be created by user "dave@ons.gov.uk"
-
-  Scenario: File event logged for uploaded file in publishing mode
-    Given the file "data/unpublished.csv" has the metadata:
-      """
-      {
-        "path": "data/unpublished.csv",
-        "is_publishable": true,
-        "title": "Uploaded Data",
-        "size_in_bytes": 29,
-        "type": "text/csv",
-        "licence": "OGL v3",
-        "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
-        "state": "UPLOADED"
-      }
-      """
-    And the file "data/unpublished.csv" is in S3 with content:
-      """
-      mark,1
-      jon,2
-      """
-    When I GET "/downloads-new/data/unpublished.csv"
-    Then the HTTP status code should be "200"
-    And the response header "Cache-Control" should be "no-cache"
-    And a file event with action "READ" and resource "data/unpublished.csv" should be created by user "dave@ons.gov.uk"
