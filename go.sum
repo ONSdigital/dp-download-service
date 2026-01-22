@@ -23,6 +23,8 @@ github.com/ONSdigital/dp-component-test v0.28.0 h1:45uMpYmKG07HVi5fZCW4MAq3kbVny
 github.com/ONSdigital/dp-component-test v0.28.0/go.mod h1:3MSQQ/kQl7H4prGk8dPCVmyKgk3eBDyCmI5N2XyRaJY=
 github.com/ONSdigital/dp-files-api v1.14.0 h1:OYXBkni8402DxmSXFTo6o3vq6ts4s9xAnabF389/Z3o=
 github.com/ONSdigital/dp-files-api v1.14.0/go.mod h1:ywXbYQ06tvy8/UqD87sCXUj1FK70Npm6pZBSdMEu/0M=
+github.com/ONSdigital/dp-files-api v1.16.0 h1:fpQlVJbPsXT5rSJCctVrG7A2wNXIUL/b1H8+vDY3RM4=
+github.com/ONSdigital/dp-files-api v1.16.0/go.mod h1:ywXbYQ06tvy8/UqD87sCXUj1FK70Npm6pZBSdMEu/0M=
 github.com/ONSdigital/dp-healthcheck v1.6.4 h1:FhWOuVmob36dYq7AzCdbgyf0Vk58IFitSl8y8pWJ8ck=
 github.com/ONSdigital/dp-healthcheck v1.6.4/go.mod h1:j3UNbGT4ZJg1chrRkPLE6YUVYCg1su3AAQ8frcBrvgc=
 github.com/ONSdigital/dp-kafka/v3 v3.11.0 h1:A2rOt2c+7unDM7McFvZEl4EsS0FbT9GJhGHR40iOM1M=

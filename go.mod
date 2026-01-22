@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/ONSdigital/dp-api-clients-go/v2 v2.270.0
 	github.com/ONSdigital/dp-component-test v0.28.0
-	github.com/ONSdigital/dp-files-api v1.14.0
+	github.com/ONSdigital/dp-files-api v1.16.0
 	github.com/ONSdigital/dp-healthcheck v1.6.4
 	github.com/ONSdigital/dp-net/v3 v3.9.0
 	github.com/ONSdigital/dp-otel-go v0.0.8
