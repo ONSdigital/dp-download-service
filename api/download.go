@@ -49,21 +49,6 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 
 		setContentHeaders(w, *metadata)
 
-		file, err := downloadFileFromBucket(requestedFilePath)
-		if err != nil {
-			handleError(ctx, fmt.Sprintf("Error downloading file %s", requestedFilePath), w, err)
-			return
-		}
-
-		defer closeDownloadedFile(ctx, file)
-
-		err = writeFileToResponse(w, file)
-		if err != nil {
-			log.Error(ctx, "Failed to stream file content", err)
-			setStatusInternalServerError(w)
-			return
-		}
-
 		if cfg.IsPublishing {
 			identifier, err := getTokenIdentifier(ctx, accessToken, identityClient)
 			if err != nil {
@@ -83,6 +68,21 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 				handleError(ctx, "Failed to create file event", w, err)
 				return
 			}
+		}
+
+		file, err := downloadFileFromBucket(requestedFilePath)
+		if err != nil {
+			handleError(ctx, fmt.Sprintf("Error downloading file %s", requestedFilePath), w, err)
+			return
+		}
+
+		defer closeDownloadedFile(ctx, file)
+
+		err = writeFileToResponse(w, file)
+		if err != nil {
+			log.Error(ctx, "Failed to stream file content", err)
+			setStatusInternalServerError(w)
+			return
 		}
 	}
 }

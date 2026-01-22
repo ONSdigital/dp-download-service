@@ -64,12 +64,12 @@ func TestHandlingAuthErrorFetchingMetadata(t *testing.T) {
 		return nil, files.ErrNotAuthorised
 	}
 
-	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
-
 	createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
 		t.Fatal("createFileEvent should not have been called")
 		return nil, nil
 	}
+
+	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
 
 	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{})
 	h.ServeHTTP(rec, req)
@@ -86,12 +86,12 @@ func TestHandlingUnexpectedErrorFetchingMetadata(t *testing.T) {
 		return nil, files.ErrUnknown
 	}
 
-	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
-
 	createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
 		t.Fatal("createFileEvent should not have been called")
 		return nil, nil
 	}
+
+	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
 
 	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{})
 	h.ServeHTTP(rec, req)
@@ -107,12 +107,12 @@ func TestHandlingErrorGettingFileContent(t *testing.T) {
 		return &filesAPIModels.StoredRegisteredMetaData{State: "PUBLISHED"}, nil
 	}
 
-	downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
-
 	createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
 		t.Fatal("createFileEvent should not have been called")
 		return nil, nil
 	}
+
+	downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
 
 	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{})
 	h.ServeHTTP(rec, req)
@@ -129,12 +129,12 @@ func TestHandlingErrorGettingFileNotAvailable(t *testing.T) {
 		return nil, files.ErrFileNotRegistered
 	}
 
-	downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
-
 	createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
 		t.Fatal("createFileEvent should not have been called")
 		return nil, nil
 	}
+
+	downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
 
 	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{})
 	h.ServeHTTP(rec, req)
@@ -161,12 +161,12 @@ func TestHandleFileNotPublished(t *testing.T) {
 				return &filesAPIModels.StoredRegisteredMetaData{State: tt.state}, nil
 			}
 
-			downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
-
 			createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
 				t.Fatal("createFileEvent should not have been called")
 				return nil, nil
 			}
+
+			downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
 
 			h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{})
 			h.ServeHTTP(rec, req)
@@ -188,12 +188,12 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 			return &filesAPIModels.StoredRegisteredMetaData{State: files.CREATED}, nil
 		}
 
-		downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
-
 		createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
 			t.Fatal("createFileEvent should not have been called")
 			return nil, nil
 		}
+
+		downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
 
 		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{IsPublishing: true})
 		h.ServeHTTP(rec, req)
@@ -217,7 +217,35 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 			return &filesAPIModels.StoredRegisteredMetaData{State: files.UPLOADED}, nil
 		}
 
+		createFileEventCalled := false
+		createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
+			createFileEventCalled = true
+			return nil, nil
+		}
+
 		downloadFile := func(path string) (io.ReadCloser, error) { return io.NopCloser(strings.NewReader("testing")), nil }
+
+		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, mockIdentityClient, &config.Config{IsPublishing: true})
+		h.ServeHTTP(rec, req)
+
+		assert.Equalf(t, http.StatusOK, rec.Code, "CreateV1DownloadHandler(%v)", "Test UPLOADED")
+		assert.True(t, createFileEventCalled, "createFileEvent should have been called")
+	})
+
+	t.Run("Test UPLOADED but download fails", func(t *testing.T) {
+		rec := &ErrorWriter{header: make(http.Header)}
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockIdentityClient := mocks.NewMockIdentityClient(ctrl)
+		mockIdentityClient.EXPECT().
+			CheckTokenIdentity(gomock.Any(), testAccessToken, identity.TokenTypeUser).
+			Return(&dprequest.IdentityResponse{Identifier: testIdentifier}, nil)
+
+		fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
+			return &filesAPIModels.StoredRegisteredMetaData{State: files.UPLOADED}, nil
+		}
 
 		createFileEventCalled := false
 		createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
@@ -225,10 +253,13 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 			return nil, nil
 		}
 
+		downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
+
 		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, mockIdentityClient, &config.Config{IsPublishing: true})
 		h.ServeHTTP(rec, req)
 
-		assert.Equalf(t, http.StatusOK, rec.Code, "CreateV1DownloadHandler(%v)", "Test UPLOADED")
+		assert.Equalf(t, http.StatusInternalServerError, rec.status, "CreateV1DownloadHandler(%v)", "Test UPLOADED but download fails")
+		assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
 		assert.True(t, createFileEventCalled, "createFileEvent should have been called")
 	})
 }
@@ -243,12 +274,12 @@ func TestContentTypeHeader(t *testing.T) {
 		return &filesAPIModels.StoredRegisteredMetaData{Type: expectedType, State: files.PUBLISHED}, nil
 	}
 
-	downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
-
 	createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
 		t.Fatal("createFileEvent should not have been called")
 		return nil, nil
 	}
+
+	downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
 
 	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{})
 	h.ServeHTTP(rec, req)
