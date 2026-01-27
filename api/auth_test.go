@@ -13,49 +13,57 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestGetAccessTokenFromHeaders(t *testing.T) {
+var (
+	testAuthToken = "test-token"
+)
+
+func TestGetAccessTokenFromRequest(t *testing.T) {
 	testCases := []struct {
-		name          string
-		headers       http.Header
-		expectedToken string
+		name                string
+		authorizationHeader string
+		accessTokenCookie   *http.Cookie
+		expectedToken       string
 	}{
 		{
-			name: "Authorization header with Bearer prefix",
-			headers: http.Header{
-				"Authorization": []string{"Bearer access-token"},
-			},
-			expectedToken: "access-token",
+			name:                "Token only in Authorization header",
+			authorizationHeader: dprequest.BearerPrefix + testAuthToken,
+			expectedToken:       testAuthToken,
 		},
 		{
-			name: "Authorization header without Bearer prefix",
-			headers: http.Header{
-				"Authorization": []string{"access-token"},
-			},
-			expectedToken: "access-token",
+			name:              "Token only in cookie",
+			accessTokenCookie: &http.Cookie{Name: dprequest.FlorenceCookieKey, Value: testAuthToken},
+			expectedToken:     testAuthToken,
 		},
 		{
-			name:          "No Authorization header",
-			headers:       http.Header{},
-			expectedToken: "",
+			name:                "Token in both header and cookie, header value is used",
+			authorizationHeader: dprequest.BearerPrefix + testAuthToken,
+			accessTokenCookie:   &http.Cookie{Name: dprequest.FlorenceCookieKey, Value: "other-token"},
+			expectedToken:       testAuthToken,
 		},
 		{
-			name:          "Nil headers",
-			headers:       nil,
+			name:          "No token in header or cookie",
 			expectedToken: "",
 		},
 	}
 
-	for _, tc := range testCases {
-		Convey("Given: "+tc.name, t, func() {
-			Convey("When getAccessTokenFromHeaders is called", func() {
-				token := getAccessTokenFromHeaders(tc.headers)
+	Convey("Testing getAccessTokenFromRequest", t, func() {
+		for _, tc := range testCases {
+			Convey(tc.name, func() {
+				req, err := http.NewRequest("GET", "http://example.com", http.NoBody)
+				So(err, ShouldBeNil)
 
-				Convey("Then the expected token is returned", func() {
-					So(token, ShouldEqual, tc.expectedToken)
-				})
+				if tc.authorizationHeader != "" {
+					req.Header.Set(dprequest.AuthHeaderKey, tc.authorizationHeader)
+				}
+				if tc.accessTokenCookie != nil {
+					req.AddCookie(tc.accessTokenCookie)
+				}
+
+				token := getAccessTokenFromRequest(req)
+				So(token, ShouldEqual, tc.expectedToken)
 			})
-		})
-	}
+		}
+	})
 }
 
 func TestGetTokenIdentifier(t *testing.T) {

@@ -11,10 +11,22 @@ import (
 	dprequest "github.com/ONSdigital/dp-net/v3/request"
 )
 
-// getAccessTokenFromHeaders extracts the access token from Authorization header.
-// It removes the "Bearer " prefix if present.
-func getAccessTokenFromHeaders(headers http.Header) string {
-	return strings.TrimPrefix(headers.Get(dprequest.AuthHeaderKey), dprequest.BearerPrefix)
+// getAccessTokenFromRequest retrieves the access token from the request headers or cookies.
+// If no token is found, it returns an empty string.
+func getAccessTokenFromRequest(r *http.Request) string {
+	accessToken := r.Header.Get(dprequest.AuthHeaderKey)
+
+	// If no access token in header, check if it is present in cookies
+	if accessToken == "" {
+		// The only possible error is ErrNoCookie, which is not considered an error here
+		c, err := r.Cookie(dprequest.FlorenceCookieKey)
+		if err != nil {
+			return ""
+		}
+		accessToken = c.Value
+	}
+
+	return strings.TrimPrefix(accessToken, dprequest.BearerPrefix)
 }
 
 // getTokenIdentifier validates the access token returns the identifier associated with it.

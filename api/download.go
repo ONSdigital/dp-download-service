@@ -27,7 +27,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 			w.Header().Set("Cache-Control", "no-cache")
 		}
 
-		accessToken := getAccessTokenFromHeaders(req.Header)
+		accessToken := getAccessTokenFromRequest(req)
 
 		ctx, requestedFilePath := parseRequest(req)
 		log.Info(ctx, fmt.Sprintf("Handling request for %s", requestedFilePath))
