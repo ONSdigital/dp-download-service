@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/ONSdigital/dp-authorisation/v2/authorisation"
 	"github.com/ONSdigital/log.go/v2/log"
 
 	"github.com/kelseyhightower/envconfig"
@@ -38,6 +39,7 @@ type Config struct {
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
 	PublicBucketURL            ConfigUrl     `envconfig:"PUBLIC_BUCKET_URL"`
 	MaxConcurrentHandlers      int           `envconfig:"MAX_CONCURRENT_HANDLERS"`
+	AuthorisationConfig        *authorisation.Config
 }
 
 var cfg *Config
@@ -89,6 +91,7 @@ func Get() (*Config, error) {
 		IsPublishing:               true,
 		PublicBucketURL:            ConfigUrl{},
 		MaxConcurrentHandlers:      0, // unlimited
+		AuthorisationConfig:        authorisation.NewDefaultConfig(),
 	}
 
 	if err := envconfig.Process("", cfg); err != nil {
