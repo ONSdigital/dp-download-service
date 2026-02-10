@@ -23,7 +23,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const datasetEditionVersionReadPermission = "dataset-editions-versions:read"
+const staticFilesReadPermission = "static-files:read"
 
 // CreateV1DownloadHandler handles generic download file requests.
 func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, identityClient downloads.IdentityClient, authMiddleware authorisation.Middleware, permissionsChecker authorisation.PermissionsChecker, cfg *config.Config) http.HandlerFunc {
@@ -259,7 +259,7 @@ func authoriseUnpublishedFile(ctx context.Context, userToken, accessToken string
 		return http.StatusForbidden, err
 	}
 
-	hasPermission, err := permissionsChecker.HasPermission(ctx, *entityData, datasetEditionVersionReadPermission, attributes)
+	hasPermission, err := permissionsChecker.HasPermission(ctx, *entityData, staticFilesReadPermission, attributes)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
