@@ -83,7 +83,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 					setStatusInternalServerError(w)
 					return
 				}
-			} else if userToken == "" {
+			} else if userToken == "" && accessToken == "" {
 				setStatusUnauthorized(w)
 				return
 			}
@@ -93,7 +93,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 
 		if cfg.IsPublishing {
 			if userToken == "" {
-				if files.Unpublished(metadata) && (cfg.AuthorisationConfig == nil || !cfg.AuthorisationConfig.Enabled) {
+				if files.Unpublished(metadata) && accessToken == "" && (cfg.AuthorisationConfig == nil || !cfg.AuthorisationConfig.Enabled) {
 					setStatusUnauthorized(w)
 					return
 				}

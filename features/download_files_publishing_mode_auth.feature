@@ -28,7 +28,7 @@ Feature: Download preview feature - publishing auth cases
       brian,4
       jon,5
       """
-    And I use an X Florence user token "valid.jwt.token"
+    And I use an X Florence user token "test-valid-jwt-token"
     And the files api allows access
     When I GET "/downloads/files/data/unpublished.csv"
     Then the HTTP status code should be "200"
@@ -58,7 +58,7 @@ Feature: Download preview feature - publishing auth cases
       brian,4
       jon,5
       """
-    And I use an X Florence user token "valid.jwt.token"
+    And I use an X Florence user token "test-valid-jwt-token"
     And the files api denies access
     When I GET "/downloads/files/data/unpublished.csv"
     Then the HTTP status code should be "403"
@@ -117,12 +117,12 @@ Feature: Download preview feature - publishing auth cases
       brian,4
       jon,5
       """
-    And I use an X Florence user token "invalid.jwt.token"
+    And I use an X Florence user token "test-invalid-jwt-token"
     When I GET "/downloads/files/data/unpublished.csv"
     Then the HTTP status code should be "401"
 
   Scenario: Unpublished file with valid service token returns 200
-    Given I am not identified
+    Given I am identified as "service"
     And the file "data/unpublished.csv" has the metadata:
       """
       {

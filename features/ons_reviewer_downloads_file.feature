@@ -3,7 +3,7 @@ Feature: Download preview feature
   Background:
     Given the application is in "publishing" mode
     And I am identified as "dave@ons.gov.uk"
-    And I use an X Florence user token "valid.jwt.token"
+    And I use an X Florence user token "test-valid-jwt-token"
 
     Scenario: ONS previewer requests data-file that has been uploaded but not yet published
         Given the file "data/unpublished.csv" has the metadata:

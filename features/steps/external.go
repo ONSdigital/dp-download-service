@@ -51,7 +51,7 @@ func (e *External) IdentityClient(s string) downloads.IdentityClient {
 	m := mocks.NewMockIdentityClient(c)
 	m.EXPECT().CheckTokenIdentity(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error) {
-			if token == "invalid.jwt.token" {
+			if token == "test-invalid-jwt-token" {
 				return nil, fmt.Errorf("unauthorised")
 			}
 			switch tokenType {
