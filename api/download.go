@@ -9,10 +9,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-authorisation/v2/authorisation"
 	dprequest "github.com/ONSdigital/dp-net/v3/request"
-	permissionsAPISDK "github.com/ONSdigital/dp-permissions-api/sdk"
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/downloads"
@@ -22,8 +20,6 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 )
-
-const staticFilesReadPermission = "static-files:read"
 
 // CreateV1DownloadHandler handles generic download file requests.
 func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, identityClient downloads.IdentityClient, authMiddleware authorisation.Middleware, permissionsChecker authorisation.PermissionsChecker, cfg *config.Config) http.HandlerFunc {
@@ -41,17 +37,25 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		ctx, requestedFilePath := parseRequest(req)
 		log.Info(ctx, fmt.Sprintf("Handling request for %s", requestedFilePath))
 
-		filesAPIToken := accessToken
-		if cfg.IsPublishing && userToken != "" {
-			filesAPIToken = userToken
-		}
-
-		metadata, err := fetchMetadata(ctx, requestedFilePath, filesAPISDK.Headers{Authorization: filesAPIToken})
+		metadata, err := fetchMetadata(ctx, requestedFilePath, filesAPISDK.Headers{Authorization: accessToken})
 		if err != nil {
 			if strings.Contains(err.Error(), files.ErrFileNotRegistered.Error()) {
 				handleError(ctx, "Error fetching metadata", w, files.ErrFileNotRegistered)
 				return
 			}
+
+			if status := httpStatusFromErr(err); status != 0 {
+				switch status {
+				case http.StatusUnauthorized:
+					setStatusUnauthorized(w)
+				case http.StatusForbidden:
+					setStatusForbidden(w)
+				default:
+					w.WriteHeader(status)
+				}
+				return
+			}
+
 			handleError(ctx, "Error fetching metadata", w, err)
 			return
 		}
@@ -61,61 +65,26 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 			return
 		}
 
-		if cfg.IsPublishing && files.Unpublished(metadata) {
-			if cfg.AuthorisationConfig != nil && cfg.AuthorisationConfig.Enabled {
-				if authMiddleware == nil || permissionsChecker == nil {
-					log.Error(ctx, "Authorisation is enabled but middleware or permissions checker is not configured", fmt.Errorf("authorisation dependencies missing"))
-					setStatusInternalServerError(w)
-					return
-				}
-				status, err := authoriseUnpublishedFile(ctx, userToken, accessToken, metadata, authMiddleware, permissionsChecker, identityClient)
-				if err != nil {
-					log.Error(ctx, "Failed to authorise unpublished file", err)
-				}
-				switch status {
-				case http.StatusUnauthorized:
-					setStatusUnauthorized(w)
-					return
-				case http.StatusForbidden:
-					setStatusForbidden(w)
-					return
-				case http.StatusInternalServerError:
-					setStatusInternalServerError(w)
-					return
-				}
-			} else if userToken == "" && accessToken == "" {
-				setStatusUnauthorized(w)
-				return
-			}
-		}
-
 		setContentHeaders(w, *metadata)
 
 		if cfg.IsPublishing {
-			if userToken == "" {
-				if files.Unpublished(metadata) && accessToken == "" && (cfg.AuthorisationConfig == nil || !cfg.AuthorisationConfig.Enabled) {
-					setStatusUnauthorized(w)
-					return
-				}
-			} else {
+			if userToken != "" {
 				identifier, err := getTokenIdentifier(ctx, userToken, identityClient)
 				if err != nil {
-					log.Error(ctx, "Failed to get token identifier from access token", err)
 					setStatusUnauthorized(w)
 					return
 				}
 
-				// Passing identifier as both user and email parameters as the identity client only provides a single identifier
 				auditEvent, err := files.PopulateFileEvent(identifier, identifier, requestedFilePath, filesAPIModels.ActionRead, metadata)
 				if err != nil {
 					handleError(ctx, "Failed to populate file event", w, err)
 					return
-				}
-
-				_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: userToken})
-				if err != nil {
-					handleError(ctx, "Failed to create file event", w, err)
-					return
+				} else {
+					_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: accessToken})
+					if err != nil {
+						handleError(ctx, "Failed to create file event", w, err)
+						return
+					}
 				}
 			}
 		}
@@ -125,16 +94,33 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 			handleError(ctx, fmt.Sprintf("Error downloading file %s", requestedFilePath), w, err)
 			return
 		}
-
 		defer closeDownloadedFile(ctx, file)
 
-		err = writeFileToResponse(w, file)
-		if err != nil {
+		if err := writeFileToResponse(w, file); err != nil {
 			log.Error(ctx, "Failed to stream file content", err)
 			setStatusInternalServerError(w)
 			return
 		}
 	}
+}
+
+func httpStatusFromErr(err error) int {
+	if err == nil {
+		return 0
+	}
+	msg := err.Error()
+
+	if strings.Contains(msg, "status code 401") {
+		return http.StatusUnauthorized
+	}
+	if strings.Contains(msg, "status code 403") {
+		return http.StatusForbidden
+	}
+	if strings.Contains(msg, files.ErrNotAuthorised.Error()) {
+		return http.StatusForbidden
+	}
+
+	return 0
 }
 
 func parseRequest(req *http.Request) (context.Context, string) {
@@ -227,60 +213,4 @@ func setContentHeaders(w http.ResponseWriter, m filesAPIModels.StoredRegisteredM
 	w.Header().Set("Content-Type", m.Type)
 	w.Header().Set("Content-Length", files.GetContentLength(&m))
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", files.GetFilename(&m)))
-}
-
-func authoriseUnpublishedFile(ctx context.Context, userToken, accessToken string, metadata *filesAPIModels.StoredRegisteredMetaData, authMiddleware authorisation.Middleware, permissionsChecker authorisation.PermissionsChecker, identityClient downloads.IdentityClient) (int, error) {
-	var (
-		entityData *permissionsAPISDK.EntityData
-		err        error
-	)
-
-	if userToken != "" {
-		entityData, err = authMiddleware.Parse(userToken)
-		if err != nil || entityData == nil {
-			return http.StatusUnauthorized, err
-		}
-	} else {
-		if accessToken == "" {
-			return http.StatusUnauthorized, nil
-		}
-		if identityClient == nil {
-			return http.StatusInternalServerError, fmt.Errorf("identity client is not configured")
-		}
-		identityResp, identityErr := identityClient.CheckTokenIdentity(ctx, accessToken, identity.TokenTypeService)
-		if identityErr != nil {
-			return http.StatusUnauthorized, identityErr
-		}
-		entityData = &permissionsAPISDK.EntityData{UserID: identityResp.Identifier}
-	}
-
-	attributes, err := datasetEditionAttributes(metadata)
-	if err != nil {
-		return http.StatusForbidden, err
-	}
-
-	hasPermission, err := permissionsChecker.HasPermission(ctx, *entityData, staticFilesReadPermission, attributes)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-	if !hasPermission {
-		return http.StatusForbidden, nil
-	}
-	return http.StatusOK, nil
-}
-
-func datasetEditionAttributes(metadata *filesAPIModels.StoredRegisteredMetaData) (map[string]string, error) {
-	if metadata == nil {
-		return nil, fmt.Errorf("missing content item metadata for permissions check")
-	}
-	datasetID := strings.TrimSpace(metadata.ContentItem.DatasetID)
-	if datasetID == "" {
-		return nil, fmt.Errorf("missing dataset ID in content item metadata")
-	}
-	edition := strings.TrimSpace(metadata.ContentItem.Edition)
-	datasetEdition := datasetID
-	if edition != "" {
-		datasetEdition = fmt.Sprintf("%s/%s", datasetID, edition)
-	}
-	return map[string]string{"dataset_edition": datasetEdition}, nil
 }
