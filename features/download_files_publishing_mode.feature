@@ -3,6 +3,7 @@ Feature: Download preview feature - publishing
   Background:
     Given the application is in "publishing" mode
     And I am identified as "dave@ons.gov.uk"
+    And I use an X Florence user token "test-valid-jwt-token"
 
   Scenario: File is published and downloaded successfully
     Given the file "data/published.csv" has the metadata:

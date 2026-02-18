@@ -180,6 +180,7 @@ func TestHandleFileNotPublished(t *testing.T) {
 func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
 	req.Header.Add(dprequest.AuthHeaderKey, testAuthorizationHeader)
+	req.Header.Add("X-Florence-Token", testAccessToken)
 
 	t.Run("Test CREATED", func(t *testing.T) {
 		rec := &ErrorWriter{header: make(http.Header)}

@@ -28,6 +28,10 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		}
 
 		accessToken := getAccessTokenFromRequest(req)
+		userToken := ""
+		if cfg.IsPublishing {
+			userToken = getUserTokenFromRequest(req)
+		}
 
 		ctx, requestedFilePath := parseRequest(req)
 		log.Info(ctx, fmt.Sprintf("Handling request for %s", requestedFilePath))
@@ -38,6 +42,19 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 				handleError(ctx, "Error fetching metadata", w, files.ErrFileNotRegistered)
 				return
 			}
+
+			if status := httpStatusFromErr(err); status != 0 {
+				switch status {
+				case http.StatusUnauthorized:
+					setStatusUnauthorized(w)
+				case http.StatusForbidden:
+					setStatusForbidden(w)
+				default:
+					w.WriteHeader(status)
+				}
+				return
+			}
+
 			handleError(ctx, "Error fetching metadata", w, err)
 			return
 		}
@@ -50,23 +67,24 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		setContentHeaders(w, *metadata)
 
 		if cfg.IsPublishing {
-			identifier, err := getTokenIdentifier(ctx, accessToken, identityClient)
-			if err != nil {
-				handleError(ctx, "Failed to get token identifier from access token", w, err)
-				return
-			}
+			if userToken != "" {
+				identifier, err := getTokenIdentifier(ctx, userToken, identityClient)
+				if err != nil {
+					setStatusUnauthorized(w)
+					return
+				}
+				// Passing identifier as both user and email parameters as the identity client only provides a single identifier
+				auditEvent, err := files.PopulateFileEvent(identifier, identifier, requestedFilePath, filesAPIModels.ActionRead, metadata)
+				if err != nil {
+					handleError(ctx, "Failed to populate file event", w, err)
+					return
+				}
+				_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: accessToken})
+				if err != nil {
+					handleError(ctx, "Failed to create file event", w, err)
+					return
+				}
 
-			// Passing identifier as both user and email parameters as the identity client only provides a single identifier
-			auditEvent, err := files.PopulateFileEvent(identifier, identifier, requestedFilePath, filesAPIModels.ActionRead, metadata)
-			if err != nil {
-				handleError(ctx, "Failed to populate file event", w, err)
-				return
-			}
-
-			_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: accessToken})
-			if err != nil {
-				handleError(ctx, "Failed to create file event", w, err)
-				return
 			}
 		}
 
@@ -75,16 +93,33 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 			handleError(ctx, fmt.Sprintf("Error downloading file %s", requestedFilePath), w, err)
 			return
 		}
-
 		defer closeDownloadedFile(ctx, file)
 
-		err = writeFileToResponse(w, file)
-		if err != nil {
+		if err := writeFileToResponse(w, file); err != nil {
 			log.Error(ctx, "Failed to stream file content", err)
 			setStatusInternalServerError(w)
 			return
 		}
 	}
+}
+
+func httpStatusFromErr(err error) int {
+	if err == nil {
+		return 0
+	}
+	msg := err.Error()
+
+	if strings.Contains(msg, "status code 401") {
+		return http.StatusUnauthorized
+	}
+	if strings.Contains(msg, "status code 403") {
+		return http.StatusForbidden
+	}
+	if strings.Contains(msg, files.ErrNotAuthorised.Error()) {
+		return http.StatusForbidden
+	}
+
+	return 0
 }
 
 func parseRequest(req *http.Request) (context.Context, string) {
@@ -137,6 +172,16 @@ func setStatusMovedPermanently(location string, w http.ResponseWriter) {
 func setStatusNotFound(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.WriteHeader(http.StatusNotFound)
+}
+
+func setStatusUnauthorized(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-cache")
+	w.WriteHeader(http.StatusUnauthorized)
+}
+
+func setStatusForbidden(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-cache")
+	w.WriteHeader(http.StatusForbidden)
 }
 
 func setStatusInternalServerError(w http.ResponseWriter) {
