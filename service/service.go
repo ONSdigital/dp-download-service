@@ -153,8 +153,6 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		files.DownloadFile(ctx, svc.s3Client),
 		files.CreateFileEvent(svc.filesClient),
 		svc.identityClient,
-		svc.authMiddleware,
-		svc.permissionsChecker,
 		cfg,
 	)
 

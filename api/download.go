@@ -9,7 +9,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/ONSdigital/dp-authorisation/v2/authorisation"
 	dprequest "github.com/ONSdigital/dp-net/v3/request"
 
 	"github.com/ONSdigital/dp-download-service/config"
@@ -22,7 +21,7 @@ import (
 )
 
 // CreateV1DownloadHandler handles generic download file requests.
-func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, identityClient downloads.IdentityClient, authMiddleware authorisation.Middleware, permissionsChecker authorisation.PermissionsChecker, cfg *config.Config) http.HandlerFunc {
+func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, identityClient downloads.IdentityClient, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if cfg.IsPublishing {
 			w.Header().Set("Cache-Control", "no-cache")
@@ -74,18 +73,18 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 					setStatusUnauthorized(w)
 					return
 				}
-
+				// Passing identifier as both user and email parameters as the identity client only provides a single identifier
 				auditEvent, err := files.PopulateFileEvent(identifier, identifier, requestedFilePath, filesAPIModels.ActionRead, metadata)
 				if err != nil {
 					handleError(ctx, "Failed to populate file event", w, err)
 					return
-				} else {
-					_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: accessToken})
-					if err != nil {
-						handleError(ctx, "Failed to create file event", w, err)
-						return
-					}
 				}
+				_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: accessToken})
+				if err != nil {
+					handleError(ctx, "Failed to create file event", w, err)
+					return
+				}
+
 			}
 		}
 
