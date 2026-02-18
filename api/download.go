@@ -116,7 +116,7 @@ func httpStatusFromErr(err error) int {
 		return http.StatusForbidden
 	}
 	if strings.Contains(msg, files.ErrNotAuthorised.Error()) {
-		return http.StatusForbidden
+		return http.StatusUnauthorized
 	}
 
 	return 0
