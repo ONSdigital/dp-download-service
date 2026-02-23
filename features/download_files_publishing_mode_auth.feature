@@ -28,7 +28,7 @@ Feature: Download preview feature - publishing auth cases
       brian,4
       jon,5
       """
-    And I use an X Florence user token "test-valid-jwt-token"
+    And I am authorised
     And the files api allows access
     When I GET "/downloads/files/data/unpublished.csv"
     Then the HTTP status code should be "200"
@@ -58,7 +58,7 @@ Feature: Download preview feature - publishing auth cases
       brian,4
       jon,5
       """
-    And I use an X Florence user token "test-valid-jwt-token"
+    And I am authorised
     And the files api denies access
     When I GET "/downloads/files/data/unpublished.csv"
     Then the HTTP status code should be "403"
@@ -117,7 +117,7 @@ Feature: Download preview feature - publishing auth cases
       brian,4
       jon,5
       """
-    And I use an X Florence user token "test-invalid-jwt-token"
+    And I am authorised
     When I GET "/downloads/files/data/unpublished.csv"
     Then the HTTP status code should be "401"
 

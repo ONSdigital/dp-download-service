@@ -93,16 +93,20 @@ func TestGetTokenIdentifier(t *testing.T) {
 	Convey("Given a valid service token", t, func() {
 		mockIdentityClient := mocks.NewMockIdentityClient(ctrl)
 		accessToken := "valid-service-token"
+		expectedIdentifier := "service-123"
 
 		mockIdentityClient.EXPECT().
 			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeUser).
 			Return(nil, fmt.Errorf("user token not valid"))
+		mockIdentityClient.EXPECT().
+			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeService).
+			Return(&dprequest.IdentityResponse{Identifier: expectedIdentifier}, nil)
 
 		Convey("When getTokenIdentifier is called", func() {
 			identifier, err := getTokenIdentifier(ctx, accessToken, mockIdentityClient)
 			Convey("Then the expected identifier is returned without error", func() {
-				So(err, ShouldNotBeNil)
-				So(identifier, ShouldEqual, "")
+				So(err, ShouldBeNil)
+				So(identifier, ShouldEqual, expectedIdentifier)
 			})
 		})
 	})
@@ -114,12 +118,15 @@ func TestGetTokenIdentifier(t *testing.T) {
 		mockIdentityClient.EXPECT().
 			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeUser).
 			Return(nil, fmt.Errorf("user token not valid"))
+		mockIdentityClient.EXPECT().
+			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeService).
+			Return(nil, fmt.Errorf("service token not valid"))
 
 		Convey("When getTokenIdentifier is called", func() {
 			identifier, err := getTokenIdentifier(ctx, accessToken, mockIdentityClient)
 
 			Convey("Then an error is returned indicating token validation failure", func() {
-				So(err.Error(), ShouldContainSubstring, "failed to validate user token with identity client")
+				So(err.Error(), ShouldContainSubstring, "failed to validate token with identity client")
 				So(identifier, ShouldEqual, "")
 			})
 		})

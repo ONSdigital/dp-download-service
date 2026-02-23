@@ -28,10 +28,6 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		}
 
 		accessToken := getAccessTokenFromRequest(req)
-		userToken := ""
-		if cfg.IsPublishing {
-			userToken = getUserTokenFromRequest(req)
-		}
 
 		ctx, requestedFilePath := parseRequest(req)
 		log.Info(ctx, fmt.Sprintf("Handling request for %s", requestedFilePath))
@@ -67,24 +63,32 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		setContentHeaders(w, *metadata)
 
 		if cfg.IsPublishing {
-			if userToken != "" {
-				identifier, err := getTokenIdentifier(ctx, userToken, identityClient)
-				if err != nil {
-					setStatusUnauthorized(w)
+			identifier, err := getTokenIdentifier(ctx, accessToken, identityClient)
+			if err != nil {
+				handleError(ctx, "Failed to get token identifier from access token", w, err)
+				return
+			}
+			// Passing identifier as both user and email parameters as the identity client only provides a single identifier
+			auditEvent, err := files.PopulateFileEvent(identifier, identifier, requestedFilePath, filesAPIModels.ActionRead, metadata)
+			if err != nil {
+				handleError(ctx, "Failed to populate file event", w, err)
+				return
+			}
+			_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: accessToken})
+			if err != nil {
+				if status := httpStatusFromErr(err); status != 0 {
+					switch status {
+					case http.StatusUnauthorized:
+						setStatusUnauthorized(w)
+					case http.StatusForbidden:
+						setStatusForbidden(w)
+					default:
+						w.WriteHeader(status)
+					}
 					return
 				}
-				// Passing identifier as both user and email parameters as the identity client only provides a single identifier
-				auditEvent, err := files.PopulateFileEvent(identifier, identifier, requestedFilePath, filesAPIModels.ActionRead, metadata)
-				if err != nil {
-					handleError(ctx, "Failed to populate file event", w, err)
-					return
-				}
-				_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: accessToken})
-				if err != nil {
-					handleError(ctx, "Failed to create file event", w, err)
-					return
-				}
-
+				handleError(ctx, "Failed to create file event", w, err)
+				return
 			}
 		}
 
@@ -116,7 +120,7 @@ func httpStatusFromErr(err error) int {
 		return http.StatusForbidden
 	}
 	if strings.Contains(msg, files.ErrNotAuthorised.Error()) {
-		return http.StatusUnauthorized
+		return http.StatusForbidden
 	}
 
 	return 0
