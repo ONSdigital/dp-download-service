@@ -21,6 +21,7 @@ import (
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/downloads/mocks"
+	"github.com/ONSdigital/dp-download-service/files"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/v3/http"
@@ -30,6 +31,7 @@ import (
 type External struct {
 	Server            *dphttp.Server
 	CreatedFileEvents []filesAPIModels.FileEvent
+	AllowFilesAccess  bool
 }
 
 func (e *External) FilterClient(s string) downloads.FilterClient {
@@ -55,9 +57,12 @@ func (e *External) IdentityClient(s string) downloads.IdentityClient {
 					Identifier: "user",
 				}, nil
 			case identity.TokenTypeService:
-				return &dprequest.IdentityResponse{
-					Identifier: "service",
-				}, nil
+				if token == "valid-service" {
+					return &dprequest.IdentityResponse{
+						Identifier: "service",
+					}, nil
+				}
+				return nil, fmt.Errorf("unauthorised")
 			default:
 				return nil, fmt.Errorf("unknown token type")
 			}
@@ -89,6 +94,9 @@ func (e *External) FilesClient(s string) downloads.FilesClient {
 
 	m.EXPECT().GetFile(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
+			if !e.AllowFilesAccess {
+				return nil, files.ErrNotAuthorised
+			}
 			switch path {
 			case "data/published.csv":
 				return &filesAPIModels.StoredRegisteredMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil

@@ -98,7 +98,6 @@ func TestGetTokenIdentifier(t *testing.T) {
 		mockIdentityClient.EXPECT().
 			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeUser).
 			Return(nil, fmt.Errorf("user token not valid"))
-
 		mockIdentityClient.EXPECT().
 			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeService).
 			Return(&dprequest.IdentityResponse{Identifier: expectedIdentifier}, nil)
@@ -119,7 +118,6 @@ func TestGetTokenIdentifier(t *testing.T) {
 		mockIdentityClient.EXPECT().
 			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeUser).
 			Return(nil, fmt.Errorf("user token not valid"))
-
 		mockIdentityClient.EXPECT().
 			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeService).
 			Return(nil, fmt.Errorf("service token not valid"))

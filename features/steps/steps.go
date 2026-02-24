@@ -36,6 +36,8 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the collection "([^"]*)" is marked as PUBLISHED$`, d.theCollectionIsMarkedAsPublished)
 	ctx.Step(`^a file event with action "([^"]*)" and resource "([^"]*)" should be created by user "([^"]*)"$`, d.aFileEventShouldBeCreated)
 	ctx.Step(`^no file event should be logged$`, d.noFileEventShouldBeLogged)
+	ctx.Step(`^the files api allows access$`, d.theFilesAPIAllowsAccess)
+	ctx.Step(`^the files api denies access$`, d.theFilesAPIDeniesAccess)
 }
 
 func (c *DownloadServiceComponent) theCollectionIsMarkedAsPublished(collectionID string) error {
@@ -179,4 +181,14 @@ func (d *DownloadServiceComponent) aFileEventShouldBeCreated(expectedAction, exp
 func (d *DownloadServiceComponent) noFileEventShouldBeLogged() error {
 	assert.Empty(d.ApiFeature, d.deps.CreatedFileEvents, "expected no file events but found some")
 	return d.ApiFeature.StepError()
+}
+
+func (d *DownloadServiceComponent) theFilesAPIAllowsAccess() error {
+	d.deps.AllowFilesAccess = true
+	return nil
+}
+
+func (d *DownloadServiceComponent) theFilesAPIDeniesAccess() error {
+	d.deps.AllowFilesAccess = false
+	return nil
 }

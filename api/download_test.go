@@ -262,6 +262,37 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 		assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
 		assert.True(t, createFileEventCalled, "createFileEvent should have been called")
 	})
+
+	t.Run("Test UPLOADED but create file event returns forbidden", func(t *testing.T) {
+		rec := &ErrorWriter{header: make(http.Header)}
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockIdentityClient := mocks.NewMockIdentityClient(ctrl)
+		mockIdentityClient.EXPECT().
+			CheckTokenIdentity(gomock.Any(), testAccessToken, identity.TokenTypeUser).
+			Return(&dprequest.IdentityResponse{Identifier: testIdentifier}, nil)
+
+		fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
+			return &filesAPIModels.StoredRegisteredMetaData{State: files.UPLOADED}, nil
+		}
+
+		createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
+			return nil, &filesAPISDK.APIError{StatusCode: http.StatusForbidden}
+		}
+
+		downloadFile := func(path string) (io.ReadCloser, error) {
+			t.Fatal("downloadFile should not have been called")
+			return nil, nil
+		}
+
+		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, mockIdentityClient, &config.Config{IsPublishing: true})
+		h.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusForbidden, rec.status)
+		assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
+	})
 }
 
 func TestContentTypeHeader(t *testing.T) {

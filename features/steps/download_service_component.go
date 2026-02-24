@@ -51,8 +51,10 @@ func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent
 	os.Setenv("IS_PUBLISHING", "false")
 
 	d.cfg, _ = config.Get()
+	d.cfg.ZebedeeURL = fake_auth_url
 
 	d.deps = &External{Server: d.DpHttpServer}
+	d.deps.AllowFilesAccess = true
 
 	return d
 }
@@ -68,6 +70,7 @@ func (d *DownloadServiceComponent) Initialiser() (http.Handler, error) {
 func (d *DownloadServiceComponent) Reset() {
 	// Clear file events from previous scenarios
 	d.deps.CreatedFileEvents = []filesAPIModels.FileEvent{}
+	d.deps.AllowFilesAccess = true
 
 	cfg, _ := config.Get()
 	ctx := context.Background()

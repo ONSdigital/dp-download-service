@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ONSdigital/dp-authorisation/v2/authorisation"
+	"github.com/ONSdigital/dp-authorisation/v2/permissions"
 	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/files"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
@@ -35,6 +37,8 @@ type Download struct {
 	imageClient         downloads.ImageClient
 	s3Client            content.S3Client
 	zebedeeHealthClient *health.Client
+	authMiddleware      authorisation.Middleware
+	permissionsChecker  authorisation.PermissionsChecker
 	router              *mux.Router
 	server              HTTPServer
 	shutdown            time.Duration
@@ -101,6 +105,21 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		svc.zebedeeHealthClient = health.NewClient("Zebedee", cfg.ZebedeeURL)
 		identityClient = identity.New(cfg.ZebedeeURL)
 		svc.identityClient = identityClient
+	}
+
+	if cfg.AuthorisationConfig != nil && cfg.AuthorisationConfig.Enabled {
+		authMiddleware, err := authorisation.NewMiddlewareFromConfig(ctx, cfg.AuthorisationConfig, nil)
+		if err != nil {
+			log.Error(ctx, "could not create authorisation middleware", err)
+			return nil, err
+		}
+		svc.authMiddleware = authMiddleware
+		svc.permissionsChecker = permissions.NewChecker(
+			ctx,
+			cfg.AuthorisationConfig.PermissionsAPIURL,
+			cfg.AuthorisationConfig.PermissionsCacheUpdateInterval,
+			cfg.AuthorisationConfig.PermissionsMaxCacheTime,
+		)
 	}
 
 	// Set up health checkers for enabled dependencies.
