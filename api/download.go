@@ -27,10 +27,13 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 			w.Header().Set("Cache-Control", "no-cache")
 		}
 
+		logData := log.Data{}
+
 		accessToken := getAccessTokenFromRequest(req)
 
 		ctx, requestedFilePath := parseRequest(req)
 		log.Info(ctx, fmt.Sprintf("Handling request for %s", requestedFilePath))
+		logData["filePath"] = requestedFilePath
 
 		metadata, err := fetchMetadata(ctx, requestedFilePath, filesAPISDK.Headers{Authorization: accessToken})
 		if err != nil {
@@ -68,6 +71,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 				handleError(ctx, "Failed to get token identifier from access token", w, err)
 				return
 			}
+			logData["identifier"] = identifier
 			// Passing identifier as both user and email parameters as the identity client only provides a single identifier
 			auditEvent, err := files.PopulateFileEvent(identifier, identifier, requestedFilePath, filesAPIModels.ActionRead, metadata)
 			if err != nil {
@@ -104,6 +108,8 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 			setStatusInternalServerError(w)
 			return
 		}
+		logData["status"] = "success"
+		log.Info(ctx, "File downloaded", log.Classification(log.ProtectiveMonitoring), logData)
 	}
 }
 

@@ -47,8 +47,8 @@ github.com/ONSdigital/dp-permissions-api v1.10.0 h1:iAdeeDSX84AJrhljIaVvPyenZP/N
 github.com/ONSdigital/dp-permissions-api v1.10.0/go.mod h1:HfQYvW7eLeJDIBRbwtES8Gr49yJvc4Zs3YgsQZulABk=
 github.com/ONSdigital/dp-s3/v3 v3.3.0 h1:l5QrJ4lFHMfhHmk0Cox+0xSNQ6RhkCHJ6ikqq5XNLi4=
 github.com/ONSdigital/dp-s3/v3 v3.3.0/go.mod h1:KT4ZL+3p3RDYv4zfgAKXb4ofPey2eDUFZKk0E/c/jr4=
-github.com/ONSdigital/log.go/v2 v2.5.1 h1:GCM270UHSP5+mv4OaQ2oHiWp0FiSgfnM6imW2zpAslw=
-github.com/ONSdigital/log.go/v2 v2.5.1/go.mod h1:KZNEweCUHD8dKwhlvoRvgd2Y2aUIuU3H9/MmbFyVzW8=
+github.com/ONSdigital/log.go/v2 v2.5.2 h1:V6NYtbi+thHYTwckxOXPklZUgQCNBo1/fyPPIutu4V4=
+github.com/ONSdigital/log.go/v2 v2.5.2/go.mod h1:KZNEweCUHD8dKwhlvoRvgd2Y2aUIuU3H9/MmbFyVzW8=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Shopify/sarama v1.38.1 h1:lqqPUPQZ7zPqYlWpTh+LQ9bhYNu2xJL6k1SJN4WVe2A=
 github.com/Shopify/sarama v1.38.1/go.mod h1:iwv9a67Ha8VNa+TifujYoWGxWnu2kNVAQdSdZ4X2o5g=

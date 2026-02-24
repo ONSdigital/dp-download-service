@@ -11,7 +11,7 @@ require (
 	github.com/ONSdigital/dp-net/v3 v3.9.0
 	github.com/ONSdigital/dp-otel-go v0.0.8
 	github.com/ONSdigital/dp-s3/v3 v3.3.0
-	github.com/ONSdigital/log.go/v2 v2.5.1
+	github.com/ONSdigital/log.go/v2 v2.5.2
 	github.com/aws/aws-sdk-go-v2 v1.41.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.5
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.5
