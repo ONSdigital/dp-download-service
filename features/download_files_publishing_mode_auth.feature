@@ -93,7 +93,7 @@ Feature: Download preview feature - publishing auth cases
     Then the HTTP status code should be "401"
 
   Scenario: Unpublished file with invalid JWT returns 401
-    Given I am not identified
+    Given I am identified as "dave@ons.gov.uk"
     And the file "data/unpublished.csv" has the metadata:
       """
       {
@@ -117,7 +117,7 @@ Feature: Download preview feature - publishing auth cases
       brian,4
       jon,5
       """
-    And I am authorised
+    And I am not authorised
     When I GET "/downloads/files/data/unpublished.csv"
     Then the HTTP status code should be "401"
 
