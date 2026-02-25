@@ -86,7 +86,7 @@ func TestGetTokenIdentifier(t *testing.T) {
 			Convey("Then the expected identifier is returned without error", func() {
 				So(err, ShouldBeNil)
 				So(identifier, ShouldEqual, expectedIdentifier)
-				So(userType, ShouldEqual, "user")
+				So(userType, ShouldEqual, true)
 			})
 		})
 	})
@@ -108,7 +108,7 @@ func TestGetTokenIdentifier(t *testing.T) {
 			Convey("Then the expected identifier is returned without error", func() {
 				So(err, ShouldBeNil)
 				So(identifier, ShouldEqual, expectedIdentifier)
-				So(userType, ShouldEqual, "service")
+				So(userType, ShouldEqual, false)
 			})
 		})
 	})
@@ -130,7 +130,7 @@ func TestGetTokenIdentifier(t *testing.T) {
 			Convey("Then an error is returned indicating token validation failure", func() {
 				So(err.Error(), ShouldContainSubstring, "failed to validate token with identity client")
 				So(identifier, ShouldEqual, "")
-				So(userType, ShouldEqual, "")
+				So(userType, ShouldEqual, false)
 			})
 		})
 	})

@@ -63,12 +63,17 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		setContentHeaders(w, *metadata)
 
 		if cfg.IsPublishing {
-			identifier, userType, err := getTokenIdentifier(ctx, accessToken, identityClient)
+			identifier, identityTypeBool, err := getTokenIdentifier(ctx, accessToken, identityClient)
 			if err != nil {
 				handleError(ctx, "Failed to get token identifier from access token", w, err)
 				return
 			}
-			logData := log.Data{"filePath": requestedFilePath, "userIdentifier": identifier, "userType": userType}
+			identityType := log.SERVICE
+			if identityTypeBool {
+				identityType = log.USER
+			}
+			logAuth := log.Auth(identityType, identifier)
+			logData := log.Data{"filePath": requestedFilePath}
 			// Passing identifier as both user and email parameters as the identity client only provides a single identifier
 			auditEvent, err := files.PopulateFileEvent(identifier, identifier, requestedFilePath, filesAPIModels.ActionRead, metadata)
 			if err != nil {
@@ -91,7 +96,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 				handleError(ctx, "Failed to create file event", w, err)
 				return
 			}
-			log.Info(ctx, "Successfully created file event for download", log.Classification(log.ProtectiveMonitoring), logData)
+			log.Info(ctx, "Successfully created file event for download", log.Classification(log.ProtectiveMonitoring), logAuth, logData)
 		}
 
 		file, err := downloadFileFromBucket(requestedFilePath)
