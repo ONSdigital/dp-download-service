@@ -31,16 +31,16 @@ func getAccessTokenFromRequest(r *http.Request) string {
 
 // getTokenIdentifier validates the access token returns the identifier associated with it.
 // It first checks if the token is a user token, if not it checks if it's a service token.
-func getTokenIdentifier(ctx context.Context, accessToken string, identityClient downloads.IdentityClient) (string, error) {
+func getTokenIdentifier(ctx context.Context, accessToken string, identityClient downloads.IdentityClient) (string, string, error) {
 	identityResp, err := identityClient.CheckTokenIdentity(ctx, accessToken, identity.TokenTypeUser)
 	if err == nil {
-		return identityResp.Identifier, nil
+		return identityResp.Identifier, "user", nil
 	}
 
 	identityResp, err = identityClient.CheckTokenIdentity(ctx, accessToken, identity.TokenTypeService)
 	if err == nil {
-		return identityResp.Identifier, nil
+		return identityResp.Identifier, "service", nil
 	}
 
-	return "", fmt.Errorf("failed to validate token with identity client: %w", err)
+	return "", "", fmt.Errorf("failed to validate token with identity client: %w", err)
 }

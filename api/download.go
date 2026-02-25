@@ -27,13 +27,10 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 			w.Header().Set("Cache-Control", "no-cache")
 		}
 
-		logData := log.Data{}
-
 		accessToken := getAccessTokenFromRequest(req)
 
 		ctx, requestedFilePath := parseRequest(req)
 		log.Info(ctx, fmt.Sprintf("Handling request for %s", requestedFilePath))
-		logData["filePath"] = requestedFilePath
 
 		metadata, err := fetchMetadata(ctx, requestedFilePath, filesAPISDK.Headers{Authorization: accessToken})
 		if err != nil {
@@ -66,12 +63,12 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		setContentHeaders(w, *metadata)
 
 		if cfg.IsPublishing {
-			identifier, err := getTokenIdentifier(ctx, accessToken, identityClient)
+			identifier, userType, err := getTokenIdentifier(ctx, accessToken, identityClient)
 			if err != nil {
 				handleError(ctx, "Failed to get token identifier from access token", w, err)
 				return
 			}
-			logData["identifier"] = identifier
+			logData := log.Data{"filePath": requestedFilePath, "userIdentifier": identifier, "userType": userType}
 			// Passing identifier as both user and email parameters as the identity client only provides a single identifier
 			auditEvent, err := files.PopulateFileEvent(identifier, identifier, requestedFilePath, filesAPIModels.ActionRead, metadata)
 			if err != nil {
@@ -94,6 +91,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 				handleError(ctx, "Failed to create file event", w, err)
 				return
 			}
+			log.Info(ctx, "Successfully created file event for download", log.Classification(log.ProtectiveMonitoring), logData)
 		}
 
 		file, err := downloadFileFromBucket(requestedFilePath)
@@ -108,8 +106,6 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 			setStatusInternalServerError(w)
 			return
 		}
-		logData["status"] = "success"
-		log.Info(ctx, "File downloaded", log.Classification(log.ProtectiveMonitoring), logData)
 	}
 }
 
