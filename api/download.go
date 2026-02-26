@@ -63,13 +63,13 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 		setContentHeaders(w, *metadata)
 
 		if cfg.IsPublishing {
-			identifier, identityTypeBool, err := getTokenIdentifier(ctx, accessToken, identityClient)
+			identifier, isUser, err := getTokenIdentifier(ctx, accessToken, identityClient)
 			if err != nil {
 				handleError(ctx, "Failed to get token identifier from access token", w, err)
 				return
 			}
 			identityType := log.SERVICE
-			if identityTypeBool {
+			if isUser {
 				identityType = log.USER
 			}
 			logAuth := log.Auth(identityType, identifier)
