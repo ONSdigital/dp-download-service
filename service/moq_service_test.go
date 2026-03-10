@@ -5,11 +5,11 @@ package service_test
 
 import (
 	"context"
+	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/service"
-	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"net/http"
 	"sync"
 )
@@ -24,6 +24,9 @@ var _ service.Dependencies = &DependenciesMock{}
 //
 //		// make and configure a mocked service.Dependencies
 //		mockedDependencies := &DependenciesMock{
+//			AuthMiddlewareFunc: func(contextMoqParam context.Context, configMoqParam *config.Config) (auth.Middleware, error) {
+//				panic("mock out the AuthMiddleware method")
+//			},
 //			DatasetClientFunc: func(s string) downloads.DatasetClient {
 //				panic("mock out the DatasetClient method")
 //			},
@@ -39,9 +42,6 @@ var _ service.Dependencies = &DependenciesMock{}
 //			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
 //				panic("mock out the HttpServer method")
 //			},
-//			IdentityClientFunc: func(s string) downloads.IdentityClient {
-//				panic("mock out the IdentityClient method")
-//			},
 //			ImageClientFunc: func(s string) downloads.ImageClient {
 //				panic("mock out the ImageClient method")
 //			},
@@ -55,6 +55,9 @@ var _ service.Dependencies = &DependenciesMock{}
 //
 //	}
 type DependenciesMock struct {
+	// AuthMiddlewareFunc mocks the AuthMiddleware method.
+	AuthMiddlewareFunc func(contextMoqParam context.Context, configMoqParam *config.Config) (auth.Middleware, error)
+
 	// DatasetClientFunc mocks the DatasetClient method.
 	DatasetClientFunc func(s string) downloads.DatasetClient
 
@@ -70,9 +73,6 @@ type DependenciesMock struct {
 	// HttpServerFunc mocks the HttpServer method.
 	HttpServerFunc func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer
 
-	// IdentityClientFunc mocks the IdentityClient method.
-	IdentityClientFunc func(s string) downloads.IdentityClient
-
 	// ImageClientFunc mocks the ImageClient method.
 	ImageClientFunc func(s string) downloads.ImageClient
 
@@ -81,6 +81,13 @@ type DependenciesMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// AuthMiddleware holds details about calls to the AuthMiddleware method.
+		AuthMiddleware []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// ConfigMoqParam is the configMoqParam argument value.
+			ConfigMoqParam *config.Config
+		}
 		// DatasetClient holds details about calls to the DatasetClient method.
 		DatasetClient []struct {
 			// S is the s argument value.
@@ -114,11 +121,6 @@ type DependenciesMock struct {
 			// Handler is the handler argument value.
 			Handler http.Handler
 		}
-		// IdentityClient holds details about calls to the IdentityClient method.
-		IdentityClient []struct {
-			// S is the s argument value.
-			S string
-		}
 		// ImageClient holds details about calls to the ImageClient method.
 		ImageClient []struct {
 			// S is the s argument value.
@@ -132,14 +134,50 @@ type DependenciesMock struct {
 			ConfigMoqParam *config.Config
 		}
 	}
+	lockAuthMiddleware sync.RWMutex
 	lockDatasetClient  sync.RWMutex
 	lockFilesClient    sync.RWMutex
 	lockFilterClient   sync.RWMutex
 	lockHealthCheck    sync.RWMutex
 	lockHttpServer     sync.RWMutex
-	lockIdentityClient sync.RWMutex
 	lockImageClient    sync.RWMutex
 	lockS3Client       sync.RWMutex
+}
+
+// AuthMiddleware calls AuthMiddlewareFunc.
+func (mock *DependenciesMock) AuthMiddleware(contextMoqParam context.Context, configMoqParam *config.Config) (auth.Middleware, error) {
+	if mock.AuthMiddlewareFunc == nil {
+		panic("DependenciesMock.AuthMiddlewareFunc: method is nil but Dependencies.AuthMiddleware was just called")
+	}
+	callInfo := struct {
+		ContextMoqParam context.Context
+		ConfigMoqParam  *config.Config
+	}{
+		ContextMoqParam: contextMoqParam,
+		ConfigMoqParam:  configMoqParam,
+	}
+	mock.lockAuthMiddleware.Lock()
+	mock.calls.AuthMiddleware = append(mock.calls.AuthMiddleware, callInfo)
+	mock.lockAuthMiddleware.Unlock()
+	return mock.AuthMiddlewareFunc(contextMoqParam, configMoqParam)
+}
+
+// AuthMiddlewareCalls gets all the calls that were made to AuthMiddleware.
+// Check the length with:
+//
+//	len(mockedDependencies.AuthMiddlewareCalls())
+func (mock *DependenciesMock) AuthMiddlewareCalls() []struct {
+	ContextMoqParam context.Context
+	ConfigMoqParam  *config.Config
+} {
+	var calls []struct {
+		ContextMoqParam context.Context
+		ConfigMoqParam  *config.Config
+	}
+	mock.lockAuthMiddleware.RLock()
+	calls = mock.calls.AuthMiddleware
+	mock.lockAuthMiddleware.RUnlock()
+	return calls
 }
 
 // DatasetClient calls DatasetClientFunc.
@@ -318,38 +356,6 @@ func (mock *DependenciesMock) HttpServerCalls() []struct {
 	return calls
 }
 
-// IdentityClient calls IdentityClientFunc.
-func (mock *DependenciesMock) IdentityClient(s string) downloads.IdentityClient {
-	if mock.IdentityClientFunc == nil {
-		panic("DependenciesMock.IdentityClientFunc: method is nil but Dependencies.IdentityClient was just called")
-	}
-	callInfo := struct {
-		S string
-	}{
-		S: s,
-	}
-	mock.lockIdentityClient.Lock()
-	mock.calls.IdentityClient = append(mock.calls.IdentityClient, callInfo)
-	mock.lockIdentityClient.Unlock()
-	return mock.IdentityClientFunc(s)
-}
-
-// IdentityClientCalls gets all the calls that were made to IdentityClient.
-// Check the length with:
-//
-//	len(mockedDependencies.IdentityClientCalls())
-func (mock *DependenciesMock) IdentityClientCalls() []struct {
-	S string
-} {
-	var calls []struct {
-		S string
-	}
-	mock.lockIdentityClient.RLock()
-	calls = mock.calls.IdentityClient
-	mock.lockIdentityClient.RUnlock()
-	return calls
-}
-
 // ImageClient calls ImageClientFunc.
 func (mock *DependenciesMock) ImageClient(s string) downloads.ImageClient {
 	if mock.ImageClientFunc == nil {
@@ -415,311 +421,5 @@ func (mock *DependenciesMock) S3ClientCalls() []struct {
 	mock.lockS3Client.RLock()
 	calls = mock.calls.S3Client
 	mock.lockS3Client.RUnlock()
-	return calls
-}
-
-// Ensure, that HealthCheckerMock does implement service.HealthChecker.
-// If this is not the case, regenerate this file with moq.
-var _ service.HealthChecker = &HealthCheckerMock{}
-
-// HealthCheckerMock is a mock implementation of service.HealthChecker.
-//
-//	func TestSomethingThatUsesHealthChecker(t *testing.T) {
-//
-//		// make and configure a mocked service.HealthChecker
-//		mockedHealthChecker := &HealthCheckerMock{
-//			AddCheckFunc: func(s string, checker healthcheck.Checker) error {
-//				panic("mock out the AddCheck method")
-//			},
-//			HandlerFunc: func(responseWriter http.ResponseWriter, request *http.Request)  {
-//				panic("mock out the Handler method")
-//			},
-//			StartFunc: func(contextMoqParam context.Context)  {
-//				panic("mock out the Start method")
-//			},
-//			StopFunc: func()  {
-//				panic("mock out the Stop method")
-//			},
-//		}
-//
-//		// use mockedHealthChecker in code that requires service.HealthChecker
-//		// and then make assertions.
-//
-//	}
-type HealthCheckerMock struct {
-	// AddCheckFunc mocks the AddCheck method.
-	AddCheckFunc func(s string, checker healthcheck.Checker) error
-
-	// HandlerFunc mocks the Handler method.
-	HandlerFunc func(responseWriter http.ResponseWriter, request *http.Request)
-
-	// StartFunc mocks the Start method.
-	StartFunc func(contextMoqParam context.Context)
-
-	// StopFunc mocks the Stop method.
-	StopFunc func()
-
-	// calls tracks calls to the methods.
-	calls struct {
-		// AddCheck holds details about calls to the AddCheck method.
-		AddCheck []struct {
-			// S is the s argument value.
-			S string
-			// Checker is the checker argument value.
-			Checker healthcheck.Checker
-		}
-		// Handler holds details about calls to the Handler method.
-		Handler []struct {
-			// ResponseWriter is the responseWriter argument value.
-			ResponseWriter http.ResponseWriter
-			// Request is the request argument value.
-			Request *http.Request
-		}
-		// Start holds details about calls to the Start method.
-		Start []struct {
-			// ContextMoqParam is the contextMoqParam argument value.
-			ContextMoqParam context.Context
-		}
-		// Stop holds details about calls to the Stop method.
-		Stop []struct {
-		}
-	}
-	lockAddCheck sync.RWMutex
-	lockHandler  sync.RWMutex
-	lockStart    sync.RWMutex
-	lockStop     sync.RWMutex
-}
-
-// AddCheck calls AddCheckFunc.
-func (mock *HealthCheckerMock) AddCheck(s string, checker healthcheck.Checker) error {
-	if mock.AddCheckFunc == nil {
-		panic("HealthCheckerMock.AddCheckFunc: method is nil but HealthChecker.AddCheck was just called")
-	}
-	callInfo := struct {
-		S       string
-		Checker healthcheck.Checker
-	}{
-		S:       s,
-		Checker: checker,
-	}
-	mock.lockAddCheck.Lock()
-	mock.calls.AddCheck = append(mock.calls.AddCheck, callInfo)
-	mock.lockAddCheck.Unlock()
-	return mock.AddCheckFunc(s, checker)
-}
-
-// AddCheckCalls gets all the calls that were made to AddCheck.
-// Check the length with:
-//
-//	len(mockedHealthChecker.AddCheckCalls())
-func (mock *HealthCheckerMock) AddCheckCalls() []struct {
-	S       string
-	Checker healthcheck.Checker
-} {
-	var calls []struct {
-		S       string
-		Checker healthcheck.Checker
-	}
-	mock.lockAddCheck.RLock()
-	calls = mock.calls.AddCheck
-	mock.lockAddCheck.RUnlock()
-	return calls
-}
-
-// Handler calls HandlerFunc.
-func (mock *HealthCheckerMock) Handler(responseWriter http.ResponseWriter, request *http.Request) {
-	if mock.HandlerFunc == nil {
-		panic("HealthCheckerMock.HandlerFunc: method is nil but HealthChecker.Handler was just called")
-	}
-	callInfo := struct {
-		ResponseWriter http.ResponseWriter
-		Request        *http.Request
-	}{
-		ResponseWriter: responseWriter,
-		Request:        request,
-	}
-	mock.lockHandler.Lock()
-	mock.calls.Handler = append(mock.calls.Handler, callInfo)
-	mock.lockHandler.Unlock()
-	mock.HandlerFunc(responseWriter, request)
-}
-
-// HandlerCalls gets all the calls that were made to Handler.
-// Check the length with:
-//
-//	len(mockedHealthChecker.HandlerCalls())
-func (mock *HealthCheckerMock) HandlerCalls() []struct {
-	ResponseWriter http.ResponseWriter
-	Request        *http.Request
-} {
-	var calls []struct {
-		ResponseWriter http.ResponseWriter
-		Request        *http.Request
-	}
-	mock.lockHandler.RLock()
-	calls = mock.calls.Handler
-	mock.lockHandler.RUnlock()
-	return calls
-}
-
-// Start calls StartFunc.
-func (mock *HealthCheckerMock) Start(contextMoqParam context.Context) {
-	if mock.StartFunc == nil {
-		panic("HealthCheckerMock.StartFunc: method is nil but HealthChecker.Start was just called")
-	}
-	callInfo := struct {
-		ContextMoqParam context.Context
-	}{
-		ContextMoqParam: contextMoqParam,
-	}
-	mock.lockStart.Lock()
-	mock.calls.Start = append(mock.calls.Start, callInfo)
-	mock.lockStart.Unlock()
-	mock.StartFunc(contextMoqParam)
-}
-
-// StartCalls gets all the calls that were made to Start.
-// Check the length with:
-//
-//	len(mockedHealthChecker.StartCalls())
-func (mock *HealthCheckerMock) StartCalls() []struct {
-	ContextMoqParam context.Context
-} {
-	var calls []struct {
-		ContextMoqParam context.Context
-	}
-	mock.lockStart.RLock()
-	calls = mock.calls.Start
-	mock.lockStart.RUnlock()
-	return calls
-}
-
-// Stop calls StopFunc.
-func (mock *HealthCheckerMock) Stop() {
-	if mock.StopFunc == nil {
-		panic("HealthCheckerMock.StopFunc: method is nil but HealthChecker.Stop was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockStop.Lock()
-	mock.calls.Stop = append(mock.calls.Stop, callInfo)
-	mock.lockStop.Unlock()
-	mock.StopFunc()
-}
-
-// StopCalls gets all the calls that were made to Stop.
-// Check the length with:
-//
-//	len(mockedHealthChecker.StopCalls())
-func (mock *HealthCheckerMock) StopCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockStop.RLock()
-	calls = mock.calls.Stop
-	mock.lockStop.RUnlock()
-	return calls
-}
-
-// Ensure, that HTTPServerMock does implement service.HTTPServer.
-// If this is not the case, regenerate this file with moq.
-var _ service.HTTPServer = &HTTPServerMock{}
-
-// HTTPServerMock is a mock implementation of service.HTTPServer.
-//
-//	func TestSomethingThatUsesHTTPServer(t *testing.T) {
-//
-//		// make and configure a mocked service.HTTPServer
-//		mockedHTTPServer := &HTTPServerMock{
-//			ListenAndServeFunc: func() error {
-//				panic("mock out the ListenAndServe method")
-//			},
-//			ShutdownFunc: func(ctx context.Context) error {
-//				panic("mock out the Shutdown method")
-//			},
-//		}
-//
-//		// use mockedHTTPServer in code that requires service.HTTPServer
-//		// and then make assertions.
-//
-//	}
-type HTTPServerMock struct {
-	// ListenAndServeFunc mocks the ListenAndServe method.
-	ListenAndServeFunc func() error
-
-	// ShutdownFunc mocks the Shutdown method.
-	ShutdownFunc func(ctx context.Context) error
-
-	// calls tracks calls to the methods.
-	calls struct {
-		// ListenAndServe holds details about calls to the ListenAndServe method.
-		ListenAndServe []struct {
-		}
-		// Shutdown holds details about calls to the Shutdown method.
-		Shutdown []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-		}
-	}
-	lockListenAndServe sync.RWMutex
-	lockShutdown       sync.RWMutex
-}
-
-// ListenAndServe calls ListenAndServeFunc.
-func (mock *HTTPServerMock) ListenAndServe() error {
-	if mock.ListenAndServeFunc == nil {
-		panic("HTTPServerMock.ListenAndServeFunc: method is nil but HTTPServer.ListenAndServe was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockListenAndServe.Lock()
-	mock.calls.ListenAndServe = append(mock.calls.ListenAndServe, callInfo)
-	mock.lockListenAndServe.Unlock()
-	return mock.ListenAndServeFunc()
-}
-
-// ListenAndServeCalls gets all the calls that were made to ListenAndServe.
-// Check the length with:
-//
-//	len(mockedHTTPServer.ListenAndServeCalls())
-func (mock *HTTPServerMock) ListenAndServeCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockListenAndServe.RLock()
-	calls = mock.calls.ListenAndServe
-	mock.lockListenAndServe.RUnlock()
-	return calls
-}
-
-// Shutdown calls ShutdownFunc.
-func (mock *HTTPServerMock) Shutdown(ctx context.Context) error {
-	if mock.ShutdownFunc == nil {
-		panic("HTTPServerMock.ShutdownFunc: method is nil but HTTPServer.Shutdown was just called")
-	}
-	callInfo := struct {
-		Ctx context.Context
-	}{
-		Ctx: ctx,
-	}
-	mock.lockShutdown.Lock()
-	mock.calls.Shutdown = append(mock.calls.Shutdown, callInfo)
-	mock.lockShutdown.Unlock()
-	return mock.ShutdownFunc(ctx)
-}
-
-// ShutdownCalls gets all the calls that were made to Shutdown.
-// Check the length with:
-//
-//	len(mockedHTTPServer.ShutdownCalls())
-func (mock *HTTPServerMock) ShutdownCalls() []struct {
-	Ctx context.Context
-} {
-	var calls []struct {
-		Ctx context.Context
-	}
-	mock.lockShutdown.RLock()
-	calls = mock.calls.Shutdown
-	mock.lockShutdown.RUnlock()
 	return calls
 }

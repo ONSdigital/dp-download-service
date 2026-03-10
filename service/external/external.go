@@ -11,6 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
+	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
 	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
@@ -46,6 +48,17 @@ func (*External) FilterClient(filterAPIURL string) downloads.FilterClient {
 // IdentityClient reuses Zebedee URL
 func (*External) IdentityClient(zebedeeURL string) downloads.IdentityClient {
 	return identity.New(zebedeeURL)
+}
+
+func (*External) AuthMiddleware(ctx context.Context, cfg *config.Config) (auth.Middleware, error) {
+	fmt.Println("CREATING AUTH MIDDLEWARE")
+	fmt.Println(cfg.AuthConfig)
+	authMiddleware, err := auth.NewFeatureFlaggedMiddleware(ctx, cfg.AuthConfig, nil)
+	if err != nil {
+		fmt.Println("ERRORED IN HERE")
+		return nil, fmt.Errorf("could not create auth middleware: %w", err)
+	}
+	return authMiddleware, nil
 }
 
 func (*External) ImageClient(imageAPIURL string) downloads.ImageClient {

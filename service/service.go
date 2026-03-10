@@ -6,13 +6,15 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ONSdigital/dp-authorisation/v2/authorisation"
+	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
+	"github.com/ONSdigital/dp-authorisation/v2/permissions"
 	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/files"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
-	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-api-clients-go/v2/middleware"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
@@ -31,7 +33,6 @@ type Download struct {
 	datasetClient       downloads.DatasetClient
 	filesClient         downloads.FilesClient
 	filterClient        downloads.FilterClient
-	identityClient      downloads.IdentityClient
 	imageClient         downloads.ImageClient
 	s3Client            content.S3Client
 	zebedeeHealthClient *health.Client
@@ -39,11 +40,13 @@ type Download struct {
 	server              HTTPServer
 	shutdown            time.Duration
 	healthCheck         HealthChecker
+	authMiddleware      authorisation.Middleware
+	permissionsChecker  authorisation.PermissionsChecker
 }
 
 // Generate mocks of dependencies
 //
-//go:generate moq -pkg service_test -out moq_service_test.go . Dependencies HealthChecker HTTPServer
+//go:generate moq -pkg service_test -out moq_service_test.go . Dependencies HealthChecker HTTPServer auth.Middleware
 //go:generate moq -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilesClient FilterClient IdentityClient ImageClient
 //go:generate moq -pkg service_test -out moq_content_test.go ../content S3Client
 
@@ -53,11 +56,11 @@ type Dependencies interface {
 	DatasetClient(string) downloads.DatasetClient
 	FilesClient(string) downloads.FilesClient
 	FilterClient(string) downloads.FilterClient
-	IdentityClient(string) downloads.IdentityClient
 	ImageClient(string) downloads.ImageClient
 	S3Client(context.Context, *config.Config) (content.S3Client, error)
 	HealthCheck(*config.Config, string, string, string) (HealthChecker, error)
 	HttpServer(*config.Config, http.Handler) HTTPServer
+	AuthMiddleware(context.Context, *config.Config) (auth.Middleware, error)
 }
 
 // HealthChecker abstracts healthcheck.HealthCheck so we can create a mock.
@@ -95,12 +98,27 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	}
 	svc.s3Client = s3
 
-	// Create Zebedee and Identity clients if publishing is enabled.
-	var identityClient *identity.Client
+	// Create auth middleware if publishing is enabled.
+	//var authMiddleware *auth.PermissionCheckMiddleware
 	if cfg.IsPublishing {
 		svc.zebedeeHealthClient = health.NewClient("Zebedee", cfg.ZebedeeURL)
-		identityClient = identity.New(cfg.ZebedeeURL)
-		svc.identityClient = identityClient
+
+		if cfg.AuthConfig != nil && cfg.AuthConfig.Enabled {
+			//authMiddleware, err = authorisation.NewMiddlewareFromConfig(ctx, cfg.AuthConfig, nil)
+			authMiddleware, err := deps.AuthMiddleware(ctx, cfg)
+			if err != nil {
+				log.Error(ctx, "could not create authorisation middleware", err)
+				return nil, err
+			}
+			svc.authMiddleware = authMiddleware
+
+			svc.permissionsChecker = permissions.NewChecker(
+				ctx,
+				cfg.AuthConfig.PermissionsAPIURL,
+				cfg.AuthConfig.PermissionsCacheUpdateInterval,
+				cfg.AuthConfig.PermissionsMaxCacheTime,
+			)
+		}
 	}
 
 	// Set up health checkers for enabled dependencies.
@@ -128,31 +146,50 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		IsPublishing: cfg.IsPublishing,
 	}
 
-	// Flagged off? Assumption that downloads-new is related to uploads-new
 	downloadHandler := api.CreateV1DownloadHandler(
 		files.FetchMetadata(svc.filesClient),
 		files.DownloadFile(ctx, svc.s3Client),
 		files.CreateFileEvent(svc.filesClient),
-		svc.identityClient,
+		&svc.authMiddleware,
 		cfg,
+		svc.permissionsChecker,
 	)
 
 	// The 'Do' functions eventually get to the S3 bucket, which is all of them except the V1 downloader
 	// And tie routes to download handler methods.
 	router := mux.NewRouter()
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.DoDatasetVersion("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.DoDatasetVersion("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.txt").HandlerFunc(d.DoDatasetVersion("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xls").HandlerFunc(d.DoDatasetVersion("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.DoDatasetVersion("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoFilterOutput("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.xls").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.txt").HandlerFunc(d.DoFilterOutput("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads/filter-outputs/{filterOutputID}.csv-metadata.json").HandlerFunc(d.DoFilterOutput("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))
-	router.Path("/downloads-new/{path:.*}").HandlerFunc(downloadHandler)
-	router.Path("/downloads/files/{path:.*}").HandlerFunc(downloadHandler)
+
+	if cfg.IsPublishing {
+		router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoDatasetVersion("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
+		router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoDatasetVersion("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
+		router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.txt").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoDatasetVersion("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
+		router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xls").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoDatasetVersion("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
+		router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoDatasetVersion("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
+		router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoFilterOutput("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
+		router.Path("/downloads/filter-outputs/{filterOutputID}.xls").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
+		router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
+		router.Path("/downloads/filter-outputs/{filterOutputID}.txt").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoFilterOutput("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
+		router.Path("/downloads/filter-outputs/{filterOutputID}.csv-metadata.json").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoFilterOutput("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
+		router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
+	} else {
+		router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.DoDatasetVersion("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
+		router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.DoDatasetVersion("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
+		router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.txt").HandlerFunc(d.DoDatasetVersion("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
+		router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xls").HandlerFunc(d.DoDatasetVersion("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
+		router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.xlsx").HandlerFunc(d.DoDatasetVersion("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
+		router.Path("/downloads/filter-outputs/{filterOutputID}.csv").HandlerFunc(d.DoFilterOutput("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
+		router.Path("/downloads/filter-outputs/{filterOutputID}.xls").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
+		router.Path("/downloads/filter-outputs/{filterOutputID}.xlsx").HandlerFunc(d.DoFilterOutput("xls", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
+		router.Path("/downloads/filter-outputs/{filterOutputID}.txt").HandlerFunc(d.DoFilterOutput("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
+		router.Path("/downloads/filter-outputs/{filterOutputID}.csv-metadata.json").HandlerFunc(d.DoFilterOutput("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
+		router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
+
+	}
+
+	// Auth is handled within the handler function for these endpoints
+	router.Path("/downloads-new/{path:.*}").HandlerFunc(downloadHandler).Methods(http.MethodGet)
+	router.Path("/downloads/files/{path:.*}").HandlerFunc(downloadHandler).Methods(http.MethodGet)
+
 	router.HandleFunc("/health", hc.Handler)
 	svc.router = router
 
@@ -166,12 +203,8 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		middlewareChain = middlewareChain.Append(otelhttp.NewMiddleware(cfg.OTServiceName))
 	}
 
-	// For non-whitelisted endpoints, do identityHandler or corsHandler
-	if cfg.IsPublishing {
-		log.Info(ctx, "private endpoints are enabled. using identity middleware")
-		identityHandler := dphandlers.IdentityWithHTTPClient(identityClient)
-		middlewareChain = middlewareChain.Append(identityHandler)
-	} else {
+	// For non-whitelisted endpoints, do corsHandler
+	if !cfg.IsPublishing {
 		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))
 		middlewareChain = middlewareChain.Append(corsHandler)
 	}
