@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ONSdigital/dp-authorisation/v2/authorisation"
+	authMock "github.com/ONSdigital/dp-authorisation/v2/authorisation/mock"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
@@ -37,10 +39,18 @@ func TestNew(t *testing.T) {
 		// Set up happy path clients and dependencies.
 		//
 
+		authConfig := authorisation.Config{
+			Enabled:                        true,
+			PermissionsAPIURL:              "http://localhost:1112",
+			PermissionsCacheUpdateInterval: 5 * time.Second,
+			PermissionsMaxCacheTime:        10 * time.Second,
+		}
+
 		ctx := context.Background()
 		cfg := &config.Config{
 			GracefulShutdownTimeout: 5 * time.Minute,
 			IsPublishing:            true,
+			AuthorisationConfig:     &authConfig,
 		}
 
 		mockedDatasetClient := &DatasetClientMock{
@@ -71,7 +81,16 @@ func TestNew(t *testing.T) {
 
 		mockedHttpServer := &HTTPServerMock{}
 
+		authmock := &authMock.MiddlewareMock{
+			RequireFunc: func(permission string, handlerFunc http.HandlerFunc) http.HandlerFunc {
+				return handlerFunc
+			},
+		}
+
 		mockedDependencies := &DependenciesMock{
+			AuthMiddlewareFunc: func(contextMoqParam context.Context, configMoqParam *config.Config) (authorisation.Middleware, error) {
+				return authmock, nil
+			},
 			DatasetClientFunc: func(s string) downloads.DatasetClient {
 				return mockedDatasetClient
 			},
@@ -90,7 +109,7 @@ func TestNew(t *testing.T) {
 			HealthCheckFunc: func(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
 				return mockedHealthChecker, nil
 			},
-			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
+			HTTPServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
 				return mockedHttpServer
 			},
 		}
@@ -106,7 +125,6 @@ func TestNew(t *testing.T) {
 				So(svc.GetFilterClient(), ShouldEqual, mockedFilterClient)
 				So(svc.GetImageClient(), ShouldEqual, mockedImageClient)
 				So(svc.GetS3Client(), ShouldEqual, mockedS3Client)
-				So(svc.GetZebedeeHealthClient(), ShouldNotBeNil)
 				So(svc.GetShutdownTimeout(), ShouldEqual, cfg.GracefulShutdownTimeout)
 				So(svc.GetHealthChecker(), ShouldEqual, mockedHealthChecker)
 			})
@@ -216,37 +234,5 @@ func TestNew(t *testing.T) {
 			})
 		})
 
-		Convey("When zebedee healthcheck setup fails", func() {
-			mockedHealthChecker.AddCheckFunc = func(name string, checker healthcheck.Checker) error {
-				return failIfNameMatches(name, "Zebedee")
-			}
-
-			svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
-
-			Convey("New should fail", func() {
-				So(svc, ShouldBeNil)
-				So(err.Error(), ShouldContainSubstring, "registering checkers for healthcheck")
-			})
-		})
-
-		// Some feature flag tests
-		//
-
-		// Ensure Zebedee health check setup is not run when IsPublish is false
-		//
-		Convey("When IsPublishing is false", func() {
-			mockedHealthChecker.AddCheckFunc = func(name string, checker healthcheck.Checker) error {
-				return failIfNameMatches(name, "Zebedee")
-			}
-
-			cfg.IsPublishing = false // just to be explicit
-			svc, err := service.New(ctx, buildTime, gitCommit, version, cfg, mockedDependencies)
-
-			Convey("Zebedee should not be set up", func() {
-				So(svc, ShouldNotBeNil)
-				So(err, ShouldBeNil)
-				So(svc.GetZebedeeHealthClient(), ShouldBeNil)
-			})
-		})
 	})
 }

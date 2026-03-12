@@ -2,6 +2,7 @@ package steps
 
 import (
 	"context"
+	"crypto/rsa"
 	"fmt"
 	"net/http"
 	"os"
@@ -25,12 +26,14 @@ const (
 )
 
 type DownloadServiceComponent struct {
-	DpHttpServer *dphttp.Server
-	svc          *service.Download
-	ApiFeature   *componenttest.APIFeature
-	errChan      chan error
-	cfg          *config.Config
-	deps         *External
+	DpHttpServer  *dphttp.Server
+	svc           *service.Download
+	ApiFeature    *componenttest.APIFeature
+	errChan       chan error
+	cfg           *config.Config
+	deps          *External
+	viewerPrivKey *rsa.PrivateKey
+	viewerKID     string
 }
 
 func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent {
@@ -51,10 +54,8 @@ func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent
 	os.Setenv("IS_PUBLISHING", "false")
 
 	d.cfg, _ = config.Get()
-	d.cfg.ZebedeeURL = fake_auth_url
 
 	d.deps = &External{Server: d.DpHttpServer}
-	d.deps.AllowFilesAccess = true
 
 	return d
 }
@@ -70,7 +71,6 @@ func (d *DownloadServiceComponent) Initialiser() (http.Handler, error) {
 func (d *DownloadServiceComponent) Reset() {
 	// Clear file events from previous scenarios
 	d.deps.CreatedFileEvents = []filesAPIModels.FileEvent{}
-	d.deps.AllowFilesAccess = true
 
 	cfg, _ := config.Get()
 	ctx := context.Background()

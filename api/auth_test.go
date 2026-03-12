@@ -2,15 +2,16 @@ package api
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/http"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
-	"github.com/ONSdigital/dp-download-service/downloads/mocks"
+	authMock "github.com/ONSdigital/dp-authorisation/v2/authorisation/mock"
 	dprequest "github.com/ONSdigital/dp-net/v3/request"
-	"github.com/golang/mock/gomock"
+	permissionsAPISDK "github.com/ONSdigital/dp-permissions-api/sdk"
+	"github.com/ONSdigital/log.go/v2/log"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -66,72 +67,65 @@ func TestGetAccessTokenFromRequest(t *testing.T) {
 	})
 }
 
-func TestGetTokenIdentifier(t *testing.T) {
-	ctx := context.Background()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func TestGetAuthEntityData(t *testing.T) {
 
-	Convey("Given a valid user token", t, func() {
-		mockIdentityClient := mocks.NewMockIdentityClient(ctrl)
-		accessToken := "valid-user-token"
-		expectedIdentifier := "user-123"
+	Convey("Testing getAuthEntityData invalid JWT token error", t, func() {
+		authorisationMock := &authMock.MiddlewareMock{
+			ParseFunc: func(token string) (*permissionsAPISDK.EntityData, error) {
+				return nil, errors.New("parse error")
+			},
+		}
 
-		mockIdentityClient.EXPECT().
-			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeUser).
-			Return(&dprequest.IdentityResponse{Identifier: expectedIdentifier}, nil)
-
-		Convey("When getTokenIdentifier is called", func() {
-			identifier, userType, err := getTokenIdentifier(ctx, accessToken, mockIdentityClient)
-
-			Convey("Then the expected identifier is returned without error", func() {
-				So(err, ShouldBeNil)
-				So(identifier, ShouldEqual, expectedIdentifier)
-				So(userType, ShouldEqual, true)
-			})
-		})
+		authEntityData, err := getAuthEntityData(context.Background(), authorisationMock, "invalid.token", nil)
+		assert.NotNil(t, err)
+		assert.Nil(t, authEntityData)
 	})
 
-	Convey("Given a valid service token", t, func() {
-		mockIdentityClient := mocks.NewMockIdentityClient(ctrl)
-		accessToken := "valid-service-token"
-		expectedIdentifier := "service-123"
+	Convey("Testing getAuthEntityData returns success", t, func() {
+		authorisationMock := &authMock.MiddlewareMock{
+			ParseFunc: func(token string) (*permissionsAPISDK.EntityData, error) {
+				return &permissionsAPISDK.EntityData{UserID: "user-1"}, nil
+			},
+		}
 
-		mockIdentityClient.EXPECT().
-			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeUser).
-			Return(nil, fmt.Errorf("user token not valid"))
-		mockIdentityClient.EXPECT().
-			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeService).
-			Return(&dprequest.IdentityResponse{Identifier: expectedIdentifier}, nil)
+		authEntityData, err := getAuthEntityData(context.Background(), authorisationMock, "valid.test-token", nil)
+		assert.NotNil(t, authEntityData)
+		assert.Nil(t, err)
+		assert.Equal(t, authEntityData.UserID, "user-1")
+	})
+}
 
-		Convey("When getTokenIdentifier is called", func() {
-			identifier, userType, err := getTokenIdentifier(ctx, accessToken, mockIdentityClient)
-			Convey("Then the expected identifier is returned without error", func() {
-				So(err, ShouldBeNil)
-				So(identifier, ShouldEqual, expectedIdentifier)
-				So(userType, ShouldEqual, false)
-			})
-		})
+func TestCheckUserPermissions(t *testing.T) {
+
+	permissionAttrs := map[string]string{
+		"dataset_edition": "test-dataset/edition1",
+	}
+
+	Convey("Testing user does not have permissions for a specific dataset/edition", t, func() {
+
+		permissionsChecker := &authMock.PermissionsCheckerMock{
+			HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
+				return false, nil
+			},
+		}
+
+		entityData := permissionsAPISDK.EntityData{UserID: "user-1"}
+
+		authorised := checkUserPermission(context.Background(), log.Data{}, "static-files:read", permissionAttrs, permissionsChecker, &entityData)
+		assert.False(t, authorised)
 	})
 
-	Convey("Given an invalid token", t, func() {
-		mockIdentityClient := mocks.NewMockIdentityClient(ctrl)
-		accessToken := "invalid-token"
+	Convey("Testing user has permissions for a specific dataset/edition", t, func() {
 
-		mockIdentityClient.EXPECT().
-			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeUser).
-			Return(nil, fmt.Errorf("user token not valid"))
-		mockIdentityClient.EXPECT().
-			CheckTokenIdentity(ctx, accessToken, identity.TokenTypeService).
-			Return(nil, fmt.Errorf("service token not valid"))
+		permissionsChecker := &authMock.PermissionsCheckerMock{
+			HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
+				return true, nil
+			},
+		}
 
-		Convey("When getTokenIdentifier is called", func() {
-			identifier, userType, err := getTokenIdentifier(ctx, accessToken, mockIdentityClient)
+		entityData := permissionsAPISDK.EntityData{UserID: "user-1"}
 
-			Convey("Then an error is returned indicating token validation failure", func() {
-				So(err.Error(), ShouldContainSubstring, "failed to validate token with identity client")
-				So(identifier, ShouldEqual, "")
-				So(userType, ShouldEqual, false)
-			})
-		})
+		authorised := checkUserPermission(context.Background(), log.Data{}, "static-files:read", permissionAttrs, permissionsChecker, &entityData)
+		assert.True(t, authorised)
 	})
 }
