@@ -78,7 +78,6 @@ func (c *DownloadServiceComponent) viewerNotAllowedJWTToken() error {
 }
 
 func (c *DownloadServiceComponent) viewerAllowedJWTToken() error {
-	//c.isViewerAllowed = true
 	token, err := c.generateViewerAccessToken(
 		"viewer1@ons.gov.uk",
 		[]string{"role-viewer-allowed"},
@@ -149,9 +148,7 @@ func (c *DownloadServiceComponent) ensureViewerKeys() error {
 }
 
 func (c *DownloadServiceComponent) iAmAnAdminUserAccessingTheFileThroughABrowser() error {
-	//c.ApiFeature.requestHeaders["Cookie"] = "access_token=Bearer " + authorisationtest.AdminJWTToken + ";"
 	c.ApiFeature.ISetTheHeaderTo("Cookie", "access_token="+authorisationtest.AdminJWTToken+";")
-	//assert.NoError(c.ApiFeature, err)
 	return nil
 }
 
@@ -262,9 +259,6 @@ func (d *DownloadServiceComponent) theFileMetadata(filepath string, metadata *go
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(metadata.Content))
 	}))
-
-	fmt.Println("THE METADATA CONTENT IS ", metadata.Content)
-
 	d.cfg.FilesAPIURL = server.URL
 
 	return d.ApiFeature.StepError()
