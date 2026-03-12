@@ -3,18 +3,29 @@ package steps
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"time"
 
+	"github.com/ONSdigital/dp-authorisation/v2/authorisation"
+	"github.com/ONSdigital/dp-authorisation/v2/authorisationtest"
 	dprequest "github.com/ONSdigital/dp-net/v3/request"
+	permissionsAPISDK "github.com/ONSdigital/dp-permissions-api/sdk"
 	s3client "github.com/ONSdigital/dp-s3/v3"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/cucumber/godog"
@@ -36,6 +47,9 @@ func (d *DownloadServiceComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the collection "([^"]*)" is marked as PUBLISHED$`, d.theCollectionIsMarkedAsPublished)
 	ctx.Step(`^a file event with action "([^"]*)" and resource "([^"]*)" should be created by user "([^"]*)"$`, d.aFileEventShouldBeCreated)
 	ctx.Step(`^no file event should be logged$`, d.noFileEventShouldBeLogged)
+	ctx.Step(`^I am an admin user accessing the file through a browser$`, d.iAmAnAdminUserAccessingTheFileThroughABrowser)
+	ctx.Step(`^I am a viewer user with permission$`, d.viewerAllowedJWTToken)
+	ctx.Step(`^I am a viewer user without permission$`, d.viewerNotAllowedJWTToken)
 }
 
 func (c *DownloadServiceComponent) theCollectionIsMarkedAsPublished(collectionID string) error {
@@ -49,6 +63,96 @@ func (c *DownloadServiceComponent) theCollectionIsMarkedAsPublished(collectionID
 	)
 	assert.NoError(c.ApiFeature, err)
 	return c.ApiFeature.StepError()
+}
+
+func (c *DownloadServiceComponent) viewerNotAllowedJWTToken() error {
+	token, err := c.generateViewerAccessToken(
+		"viewer2@ons.gov.uk",
+		[]string{"role-viewer-not-allowed"},
+	)
+	if err != nil {
+		return err
+	}
+
+	return c.ApiFeature.ISetTheHeaderTo("Authorization", "Bearer "+token)
+}
+
+func (c *DownloadServiceComponent) viewerAllowedJWTToken() error {
+	//c.isViewerAllowed = true
+	token, err := c.generateViewerAccessToken(
+		"viewer1@ons.gov.uk",
+		[]string{"role-viewer-allowed"},
+	)
+	if err != nil {
+		return err
+	}
+
+	return c.ApiFeature.ISetTheHeaderTo("Authorization", "Bearer "+token)
+}
+
+func (c *DownloadServiceComponent) generateViewerAccessToken(email string, groups []string) (string, error) {
+	if err := c.ensureViewerKeys(); err != nil {
+		return "", err
+	}
+
+	now := time.Now().Unix()
+
+	claims := jwt.MapClaims{
+		"sub":            "viewer-sub",
+		"token_use":      "access",
+		"auth_time":      now,
+		"iss":            "https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_example",
+		"exp":            now + 3600,
+		"iat":            now,
+		"client_id":      "component-test-client",
+		"username":       email,
+		"cognito:groups": groups,
+	}
+
+	t := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	t.Header["kid"] = c.viewerKID
+
+	return t.SignedString(c.viewerPrivKey)
+}
+
+func (c *DownloadServiceComponent) ensureViewerKeys() error {
+	if c.viewerPrivKey != nil && c.viewerKID != "" {
+		return nil
+	}
+
+	// Generate RSA keypair
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return fmt.Errorf("generate viewer RSA key: %w", err)
+	}
+	if err := priv.Validate(); err != nil {
+		return fmt.Errorf("validate viewer RSA key: %w", err)
+	}
+
+	// Create kid
+	kid := uuid.New().String()
+
+	// Convert public key to PKIX DER and base64 encode
+	pubDER, err := x509.MarshalPKIXPublicKey(&priv.PublicKey)
+	if err != nil {
+		return fmt.Errorf("marshal viewer public key: %w", err)
+	}
+
+	if c.cfg.AuthorisationConfig.JWTVerificationPublicKeys == nil {
+		c.cfg.AuthorisationConfig.JWTVerificationPublicKeys = map[string]string{}
+	}
+	c.cfg.AuthorisationConfig.JWTVerificationPublicKeys[kid] = base64.StdEncoding.EncodeToString(pubDER)
+
+	c.viewerPrivKey = priv
+	c.viewerKID = kid
+	return nil
+}
+
+func (c *DownloadServiceComponent) iAmAnAdminUserAccessingTheFileThroughABrowser() error {
+	//c.ApiFeature.requestHeaders["Cookie"] = "access_token=Bearer " + authorisationtest.AdminJWTToken + ";"
+	c.ApiFeature.ISetTheHeaderTo("Cookie", "access_token="+authorisationtest.AdminJWTToken+";")
+	//assert.NoError(c.ApiFeature, err)
+	return nil
 }
 
 func (d *DownloadServiceComponent) theResponseBodyShouldContain(expected string) error {
@@ -65,7 +169,67 @@ func (d *DownloadServiceComponent) theResponseBodyShouldContain(expected string)
 
 func (d *DownloadServiceComponent) weAreInWebMode(mode string) error {
 	d.cfg.IsPublishing = mode == "publishing"
+	if d.cfg.IsPublishing {
+		d.cfg.AuthorisationConfig = authorisation.NewDefaultConfig()
+		d.cfg.AuthorisationConfig.Enabled = true
+
+		fakePermissionsAPI := setupFakePermissionsAPI()
+
+		d.cfg.AuthorisationConfig.PermissionsAPIURL = fakePermissionsAPI.URL()
+	}
 	return nil
+}
+
+func setupFakePermissionsAPI() *authorisationtest.FakePermissionsAPI {
+	fakePermissionsAPI := authorisationtest.NewFakePermissionsAPI()
+	bundle := getPermissionsBundle()
+	fakePermissionsAPI.Reset()
+	if err := fakePermissionsAPI.UpdatePermissionsBundleResponse(bundle); err != nil {
+		log.Error(context.Background(), "failed to update permissions bundle response", err)
+	}
+	return fakePermissionsAPI
+}
+
+func getPermissionsBundle() *permissionsAPISDK.Bundle {
+	return &permissionsAPISDK.Bundle{
+		"static-files:read": {
+			"users/service": {
+				{
+					ID: "1",
+				},
+			},
+			"groups/role-publisher": {
+				{
+					ID: "1",
+				},
+			},
+			"groups/role-admin": {
+				{
+					ID: "1",
+				},
+			},
+			"groups/role-viewer-allowed": {
+				{
+					ID: "1",
+					Condition: permissionsAPISDK.Condition{
+						Values:    []string{"cpih01/feb-2026"},
+						Attribute: "dataset_edition",
+						Operator:  "StringEquals",
+					},
+				},
+			},
+			"groups/role-viewer-not-allowed": {
+				{
+					ID: "1",
+					Condition: permissionsAPISDK.Condition{
+						Values:    []string{"1/45"},
+						Attribute: "dataset_edition",
+						Operator:  "StringEquals",
+					},
+				},
+			},
+		},
+	}
 }
 
 func (d *DownloadServiceComponent) theHeadersShouldBe(expectedHeaders *godog.Table) error {
@@ -98,6 +262,8 @@ func (d *DownloadServiceComponent) theFileMetadata(filepath string, metadata *go
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(metadata.Content))
 	}))
+
+	fmt.Println("THE METADATA CONTENT IS ", metadata.Content)
 
 	d.cfg.FilesAPIURL = server.URL
 

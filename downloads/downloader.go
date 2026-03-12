@@ -10,16 +10,14 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
-	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
 	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dprequest "github.com/ONSdigital/dp-net/v3/request"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/downloads DatasetClient,FilesClient,FilterClient,IdentityClient,ImageClient
+//go:generate mockgen -destination mocks/mocks.go -package mocks github.com/ONSdigital/dp-download-service/downloads DatasetClient,FilesClient,FilterClient,ImageClient
 
 // DatasetClient is an interface to represent methods called to action on the dataset api
 type DatasetClient interface {
@@ -39,11 +37,6 @@ type FilesClient interface {
 type FilterClient interface {
 	GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID string) (m filter.Model, err error)
 	Checker(ctx context.Context, check *healthcheck.CheckState) error
-}
-
-// IdentityClient is an interface to represent methods called to action on the identity api
-type IdentityClient interface {
-	CheckTokenIdentity(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error)
 }
 
 // ImageClient is an interface to represent methods called to action on the image api
@@ -96,7 +89,6 @@ type Downloader struct {
 // Get requests the required metadata using a client depending on the provided paramters
 func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType, variant string) (Model, error) {
 	switch fileType {
-
 	case TypeImage:
 		log.Info(ctx, "getting image downloads", log.Data{
 			"image_id": p.ImageID,
@@ -123,7 +115,6 @@ func (d Downloader) Get(ctx context.Context, p Parameters, fileType FileType, va
 
 	default:
 		return Model{}, errors.New("unsupported file type")
-
 	}
 }
 
@@ -212,11 +203,11 @@ func (m Model) IsPublicLinkAvailable() bool {
 }
 
 func parseURL(urlString string) (path string, filename string, err error) {
-	parsedUrl, err := url.Parse(urlString)
+	parsedURL, err := url.Parse(urlString)
 	if err != nil {
 		return
 	}
-	path = strings.TrimLeft(parsedUrl.Path, "/")
-	filename = filepath.Base(parsedUrl.Path)
+	path = strings.TrimLeft(parsedURL.Path, "/")
+	filename = filepath.Base(parsedURL.Path)
 	return
 }

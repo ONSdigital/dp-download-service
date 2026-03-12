@@ -15,7 +15,6 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
-	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
 
@@ -45,17 +44,9 @@ func (*External) FilterClient(filterAPIURL string) downloads.FilterClient {
 	return filter.New(filterAPIURL)
 }
 
-// IdentityClient reuses Zebedee URL
-func (*External) IdentityClient(zebedeeURL string) downloads.IdentityClient {
-	return identity.New(zebedeeURL)
-}
-
 func (*External) AuthMiddleware(ctx context.Context, cfg *config.Config) (auth.Middleware, error) {
-	fmt.Println("CREATING AUTH MIDDLEWARE")
-	fmt.Println(cfg.AuthConfig)
-	authMiddleware, err := auth.NewFeatureFlaggedMiddleware(ctx, cfg.AuthConfig, nil)
+	authMiddleware, err := auth.NewFeatureFlaggedMiddleware(ctx, cfg.AuthorisationConfig, nil)
 	if err != nil {
-		fmt.Println("ERRORED IN HERE")
 		return nil, fmt.Errorf("could not create auth middleware: %w", err)
 	}
 	return authMiddleware, nil
@@ -101,7 +92,7 @@ func (*External) HealthCheck(cfg *config.Config, buildTime, gitCommit, version s
 	return &hc, nil
 }
 
-func (*External) HttpServer(cfg *config.Config, r http.Handler) service.HTTPServer {
+func (*External) HTTPServer(cfg *config.Config, r http.Handler) service.HTTPServer {
 	s := dphttp.NewServer(cfg.BindAddr, r)
 	s.HandleOSSignals = false
 

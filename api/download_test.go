@@ -11,22 +11,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
+	authMock "github.com/ONSdigital/dp-authorisation/v2/authorisation/mock"
+
 	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/config"
-	"github.com/ONSdigital/dp-download-service/downloads/mocks"
 	"github.com/ONSdigital/dp-download-service/files"
 	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
 	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
 	dprequest "github.com/ONSdigital/dp-net/v3/request"
+	permissionsAPISDK "github.com/ONSdigital/dp-permissions-api/sdk"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	testAccessToken         = "valid-access-token"
+	testAccessToken         = "valid.access-token"
 	testAuthorizationHeader = dprequest.BearerPrefix + testAccessToken
-	testIdentifier          = "test-identifier"
 )
 
 type ErrorWriter struct {
@@ -56,7 +56,7 @@ func (d FailingReadCloser) Close() error {
 	return nil
 }
 
-func TestHandlingAuthErrorFetchingMetadata(t *testing.T) {
+func TestHandlingForbiddenErrorFetchingMetadata(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
 	rec := &ErrorWriter{header: make(http.Header)}
 
@@ -71,11 +71,133 @@ func TestHandlingAuthErrorFetchingMetadata(t *testing.T) {
 
 	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{})
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusForbidden, rec.status)
 	assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
+}
+
+func TestHandlingNotAuthorisedErrorFetchingMetadata(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	rec := &ErrorWriter{header: make(http.Header)}
+
+	fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
+		return nil, files.ErrInvalidAuth
+	}
+
+	createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
+		t.Fatal("createFileEvent should not have been called")
+		return nil, nil
+	}
+
+	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
+
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
+	h.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.status)
+	assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
+}
+
+func TestHandlingGetAuthEntityFails(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	rec := &ErrorWriter{header: make(http.Header)}
+	req.Header.Add(dprequest.AuthHeaderKey, "invalid.user-token")
+
+	fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
+		return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED"}, nil
+	}
+
+	createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
+		t.Fatal("createFileEvent should not have been called")
+		return nil, nil
+	}
+
+	authorisationMock := &authMock.MiddlewareMock{
+		ParseFunc: func(token string) (*permissionsAPISDK.EntityData, error) {
+			return nil, errors.New("unable to parse jwt")
+		},
+	}
+
+	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
+
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, nil)
+	h.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.status)
+	assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
+}
+
+func TestHandlingCheckUserPermissionsSuccess(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	req.Header.Add(dprequest.AuthHeaderKey, "valid.user-token")
+
+	rec := httptest.NewRecorder()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
+		return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED", ContentItem: &filesAPIModels.StoredContentItem{DatasetID: "dataset-1", Edition: "feb-2026"}}, nil
+	}
+
+	createFileEventCalled := false
+	createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
+		createFileEventCalled = true
+		return nil, nil
+	}
+
+	authorisationMock := &authMock.MiddlewareMock{
+		ParseFunc: func(token string) (*permissionsAPISDK.EntityData, error) {
+			return &permissionsAPISDK.EntityData{UserID: "user-1"}, nil
+		},
+	}
+
+	permissionsChecker := &authMock.PermissionsCheckerMock{
+		HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
+			return true, nil
+		},
+	}
+	downloadFile := func(path string) (io.ReadCloser, error) { return io.NopCloser(strings.NewReader("testing")), nil }
+
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
+	h.ServeHTTP(rec, req)
+	assert.Equalf(t, http.StatusOK, rec.Code, "CreateV1DownloadHandler(%v)", "Test UPLOADED")
+	assert.True(t, createFileEventCalled, "createFileEvent should have been called")
+}
+
+func TestHandlingCheckUserPermissionsFails(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	rec := &ErrorWriter{header: make(http.Header)}
+	req.Header.Add(dprequest.AuthHeaderKey, "valid.user-token")
+
+	fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
+		return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED", ContentItem: &filesAPIModels.StoredContentItem{DatasetID: "dataset-1", Edition: "feb-2026"}}, nil
+	}
+
+	createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
+		t.Fatal("createFileEvent should not have been called")
+		return nil, nil
+	}
+
+	authorisationMock := &authMock.MiddlewareMock{
+		ParseFunc: func(token string) (*permissionsAPISDK.EntityData, error) {
+			return &permissionsAPISDK.EntityData{UserID: "user-1"}, nil
+		},
+	}
+
+	permissionsChecker := &authMock.PermissionsCheckerMock{
+		HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
+			return false, nil
+		},
+	}
+	downloadFile := func(path string) (io.ReadCloser, error) { return io.NopCloser(strings.NewReader("testing")), nil }
+
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
+	h.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusForbidden, rec.status)
+
 }
 
 func TestHandlingUnexpectedErrorFetchingMetadata(t *testing.T) {
@@ -93,7 +215,7 @@ func TestHandlingUnexpectedErrorFetchingMetadata(t *testing.T) {
 
 	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{})
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.status)
@@ -114,7 +236,7 @@ func TestHandlingErrorGettingFileContent(t *testing.T) {
 
 	downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{})
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.status)
@@ -136,7 +258,7 @@ func TestHandlingErrorGettingFileNotAvailable(t *testing.T) {
 
 	downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{})
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusNotFound, rec.status)
@@ -168,7 +290,7 @@ func TestHandleFileNotPublished(t *testing.T) {
 
 			downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
 
-			h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{})
+			h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
 			h.ServeHTTP(rec, req)
 
 			assert.Equalf(t, tt.expectedStatus, rec.status, "CreateV1DownloadHandler(%v)", tt.name)
@@ -181,6 +303,18 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
 	req.Header.Add(dprequest.AuthHeaderKey, testAuthorizationHeader)
 
+	permissionsChecker := &authMock.PermissionsCheckerMock{
+		HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
+			return true, nil
+		},
+	}
+
+	authorisationMock := &authMock.MiddlewareMock{
+		ParseFunc: func(token string) (*permissionsAPISDK.EntityData, error) {
+			return &permissionsAPISDK.EntityData{UserID: "admin"}, nil
+		},
+	}
+
 	t.Run("Test CREATED", func(t *testing.T) {
 		rec := &ErrorWriter{header: make(http.Header)}
 
@@ -188,18 +322,20 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 			return &filesAPIModels.StoredRegisteredMetaData{State: files.CREATED}, nil
 		}
 
+		createFileEventCalled := false
 		createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
-			t.Fatal("createFileEvent should not have been called")
+			createFileEventCalled = true
 			return nil, nil
 		}
 
 		downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
 
-		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{IsPublishing: true})
+		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
 		h.ServeHTTP(rec, req)
 
 		assert.Equalf(t, http.StatusNotFound, rec.status, "CreateV1DownloadHandler(%v)", "Test CREATED")
 		assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
+		assert.True(t, createFileEventCalled, "createFileEvent should have been called")
 	})
 
 	t.Run("Test UPLOADED", func(t *testing.T) {
@@ -207,11 +343,6 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-
-		mockIdentityClient := mocks.NewMockIdentityClient(ctrl)
-		mockIdentityClient.EXPECT().
-			CheckTokenIdentity(gomock.Any(), testAccessToken, identity.TokenTypeUser).
-			Return(&dprequest.IdentityResponse{Identifier: testIdentifier}, nil)
 
 		fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
 			return &filesAPIModels.StoredRegisteredMetaData{State: files.UPLOADED}, nil
@@ -225,7 +356,7 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 
 		downloadFile := func(path string) (io.ReadCloser, error) { return io.NopCloser(strings.NewReader("testing")), nil }
 
-		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, mockIdentityClient, &config.Config{IsPublishing: true})
+		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
 		h.ServeHTTP(rec, req)
 
 		assert.Equalf(t, http.StatusOK, rec.Code, "CreateV1DownloadHandler(%v)", "Test UPLOADED")
@@ -237,11 +368,6 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-
-		mockIdentityClient := mocks.NewMockIdentityClient(ctrl)
-		mockIdentityClient.EXPECT().
-			CheckTokenIdentity(gomock.Any(), testAccessToken, identity.TokenTypeUser).
-			Return(&dprequest.IdentityResponse{Identifier: testIdentifier}, nil)
 
 		fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
 			return &filesAPIModels.StoredRegisteredMetaData{State: files.UPLOADED}, nil
@@ -255,7 +381,7 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 
 		downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
 
-		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, mockIdentityClient, &config.Config{IsPublishing: true})
+		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
 		h.ServeHTTP(rec, req)
 
 		assert.Equalf(t, http.StatusInternalServerError, rec.status, "CreateV1DownloadHandler(%v)", "Test UPLOADED but download fails")
@@ -281,7 +407,7 @@ func TestContentTypeHeader(t *testing.T) {
 
 	downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{})
+	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, expectedType, rec.Header().Get("Content-Type"))
@@ -317,7 +443,7 @@ func TestRedirectLocation(t *testing.T) {
 	}
 	for _, test := range tests {
 		publicUrl, _ := url.Parse(test.publicUrlStr)
-		configUrl := config.ConfigUrl{*publicUrl}
+		configUrl := config.URL{*publicUrl}
 		concatenatedUrl := api.RedirectLocation(&config.Config{PublicBucketURL: configUrl}, test.filepath)
 		assert.Equal(t, expectedUrl, concatenatedUrl, fmt.Sprintf("testing %s: expected %s, got %s", test.desc, expectedUrl, concatenatedUrl))
 	}

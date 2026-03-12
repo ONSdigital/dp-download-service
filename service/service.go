@@ -11,10 +11,7 @@ import (
 	"github.com/ONSdigital/dp-authorisation/v2/permissions"
 	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/files"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/middleware"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
@@ -30,24 +27,23 @@ import (
 
 // Download represents the configuration to run the download service
 type Download struct {
-	datasetClient       downloads.DatasetClient
-	filesClient         downloads.FilesClient
-	filterClient        downloads.FilterClient
-	imageClient         downloads.ImageClient
-	s3Client            content.S3Client
-	zebedeeHealthClient *health.Client
-	router              *mux.Router
-	server              HTTPServer
-	shutdown            time.Duration
-	healthCheck         HealthChecker
-	authMiddleware      authorisation.Middleware
-	permissionsChecker  authorisation.PermissionsChecker
+	datasetClient      downloads.DatasetClient
+	filesClient        downloads.FilesClient
+	filterClient       downloads.FilterClient
+	imageClient        downloads.ImageClient
+	s3Client           content.S3Client
+	router             *mux.Router
+	server             HTTPServer
+	shutdown           time.Duration
+	healthCheck        HealthChecker
+	authMiddleware     authorisation.Middleware
+	permissionsChecker authorisation.PermissionsChecker
 }
 
 // Generate mocks of dependencies
 //
-//go:generate moq -pkg service_test -out moq_service_test.go . Dependencies HealthChecker HTTPServer auth.Middleware
-//go:generate moq -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilesClient FilterClient IdentityClient ImageClient
+//go:generate moq -pkg service_test -out moq_service_test.go . Dependencies HealthChecker HTTPServer
+//go:generate moq -pkg service_test -out moq_downloads_test.go ../downloads DatasetClient FilesClient FilterClient ImageClient
 //go:generate moq -pkg service_test -out moq_content_test.go ../content S3Client
 
 // Dependencies holds constructors/factories for all external dependencies
@@ -59,7 +55,7 @@ type Dependencies interface {
 	ImageClient(string) downloads.ImageClient
 	S3Client(context.Context, *config.Config) (content.S3Client, error)
 	HealthCheck(*config.Config, string, string, string) (HealthChecker, error)
-	HttpServer(*config.Config, http.Handler) HTTPServer
+	HTTPServer(*config.Config, http.Handler) HTTPServer
 	AuthMiddleware(context.Context, *config.Config) (auth.Middleware, error)
 }
 
@@ -99,12 +95,8 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	svc.s3Client = s3
 
 	// Create auth middleware if publishing is enabled.
-	//var authMiddleware *auth.PermissionCheckMiddleware
 	if cfg.IsPublishing {
-		svc.zebedeeHealthClient = health.NewClient("Zebedee", cfg.ZebedeeURL)
-
-		if cfg.AuthConfig != nil && cfg.AuthConfig.Enabled {
-			//authMiddleware, err = authorisation.NewMiddlewareFromConfig(ctx, cfg.AuthConfig, nil)
+		if cfg.AuthorisationConfig != nil && cfg.AuthorisationConfig.Enabled {
 			authMiddleware, err := deps.AuthMiddleware(ctx, cfg)
 			if err != nil {
 				log.Error(ctx, "could not create authorisation middleware", err)
@@ -114,9 +106,9 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 
 			svc.permissionsChecker = permissions.NewChecker(
 				ctx,
-				cfg.AuthConfig.PermissionsAPIURL,
-				cfg.AuthConfig.PermissionsCacheUpdateInterval,
-				cfg.AuthConfig.PermissionsMaxCacheTime,
+				cfg.AuthorisationConfig.PermissionsAPIURL,
+				cfg.AuthorisationConfig.PermissionsCacheUpdateInterval,
+				cfg.AuthorisationConfig.PermissionsMaxCacheTime,
 			)
 		}
 	}
@@ -150,7 +142,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		files.FetchMetadata(svc.filesClient),
 		files.DownloadFile(ctx, svc.s3Client),
 		files.CreateFileEvent(svc.filesClient),
-		&svc.authMiddleware,
+		svc.authMiddleware,
 		cfg,
 		svc.permissionsChecker,
 	)
@@ -183,7 +175,6 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		router.Path("/downloads/filter-outputs/{filterOutputID}.txt").HandlerFunc(d.DoFilterOutput("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
 		router.Path("/downloads/filter-outputs/{filterOutputID}.csv-metadata.json").HandlerFunc(d.DoFilterOutput("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
 		router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
-
 	}
 
 	// Auth is handled within the handler function for these endpoints
@@ -197,12 +188,6 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	middlewareChain := alice.New(middleware.Whitelist(middleware.HealthcheckFilter(hc.Handler)))
 	middlewareChain = middlewareChain.Append(api.Limiter(cfg.MaxConcurrentHandlers))
 
-	if cfg.OtelEnabled {
-		// Add middleware for open telemetry
-		router.Use(otelmux.Middleware(cfg.OTServiceName))
-		middlewareChain = middlewareChain.Append(otelhttp.NewMiddleware(cfg.OTServiceName))
-	}
-
 	// For non-whitelisted endpoints, do corsHandler
 	if !cfg.IsPublishing {
 		corsHandler := gorillahandlers.CORS(gorillahandlers.AllowedMethods([]string{"GET"}))
@@ -214,7 +199,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		Append(dphandlers.CheckHeader(dphandlers.CollectionID)).
 		Then(router)
 
-	svc.server = deps.HttpServer(cfg, r)
+	svc.server = deps.HTTPServer(cfg, r)
 
 	return svc, nil
 }
@@ -243,14 +228,6 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 		log.Error(ctx, "error adding check for image api", err)
 	}
 
-	// Identity API uses ZebedeeURL so only the checker for Zebedee is needed to cover both.
-	if svc.zebedeeHealthClient != nil {
-		if err := hc.AddCheck("Zebedee", svc.zebedeeHealthClient.Checker); err != nil {
-			hasErrors = true
-			log.Error(ctx, "error adding check for zebedee", err)
-		}
-	}
-
 	if err := hc.AddCheck("S3", svc.s3Client.Checker); err != nil {
 		hasErrors = true
 		log.Error(ctx, "error adding check for s3", err)
@@ -262,27 +239,27 @@ func (svc *Download) registerCheckers(ctx context.Context) error {
 	return nil
 }
 
-func (d Download) Run(ctx context.Context) {
-	d.healthCheck.Start(ctx)
+func (svc Download) Run(ctx context.Context) {
+	svc.healthCheck.Start(ctx)
 	go func() {
 		log.Info(ctx, "starting download service...")
-		if err := d.server.ListenAndServe(); err != nil {
+		if err := svc.server.ListenAndServe(); err != nil {
 			log.Error(ctx, "download service http service returned an error", err)
 		}
 	}()
 }
 
-func (d Download) Close(ctx context.Context) error {
-	shutdownCtx, cancel := context.WithTimeout(ctx, d.shutdown)
+func (svc Download) Close(ctx context.Context) error {
+	shutdownCtx, cancel := context.WithTimeout(ctx, svc.shutdown)
 	defer cancel()
 
 	// Gracefully shutdown the application closing any open resources.
-	log.Info(shutdownCtx, "shutdown with timeout", log.Data{"timeout": d.shutdown})
+	log.Info(shutdownCtx, "shutdown with timeout", log.Data{"timeout": svc.shutdown})
 
 	shutdownStart := time.Now()
-	d.healthCheck.Stop()
+	svc.healthCheck.Stop()
 
-	if err := d.server.Shutdown(ctx); err != nil {
+	if err := svc.server.Shutdown(ctx); err != nil {
 		return err
 	}
 

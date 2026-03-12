@@ -10,12 +10,10 @@ import (
 
 	dataset "github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	filter "github.com/ONSdigital/dp-api-clients-go/v2/filter"
-	identity "github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	image "github.com/ONSdigital/dp-api-clients-go/v2/image"
 	files "github.com/ONSdigital/dp-files-api/files"
 	sdk "github.com/ONSdigital/dp-files-api/sdk"
 	healthcheck "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	request "github.com/ONSdigital/dp-net/v3/request"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -204,44 +202,6 @@ func (m *MockFilterClient) GetOutput(arg0 context.Context, arg1, arg2, arg3, arg
 func (mr *MockFilterClientMockRecorder) GetOutput(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOutput", reflect.TypeOf((*MockFilterClient)(nil).GetOutput), arg0, arg1, arg2, arg3, arg4, arg5)
-}
-
-// MockIdentityClient is a mock of IdentityClient interface.
-type MockIdentityClient struct {
-	ctrl     *gomock.Controller
-	recorder *MockIdentityClientMockRecorder
-}
-
-// MockIdentityClientMockRecorder is the mock recorder for MockIdentityClient.
-type MockIdentityClientMockRecorder struct {
-	mock *MockIdentityClient
-}
-
-// NewMockIdentityClient creates a new mock instance.
-func NewMockIdentityClient(ctrl *gomock.Controller) *MockIdentityClient {
-	mock := &MockIdentityClient{ctrl: ctrl}
-	mock.recorder = &MockIdentityClientMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockIdentityClient) EXPECT() *MockIdentityClientMockRecorder {
-	return m.recorder
-}
-
-// CheckTokenIdentity mocks base method.
-func (m *MockIdentityClient) CheckTokenIdentity(arg0 context.Context, arg1 string, arg2 identity.TokenType) (*request.IdentityResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckTokenIdentity", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*request.IdentityResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckTokenIdentity indicates an expected call of CheckTokenIdentity.
-func (mr *MockIdentityClientMockRecorder) CheckTokenIdentity(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckTokenIdentity", reflect.TypeOf((*MockIdentityClient)(nil).CheckTokenIdentity), arg0, arg1, arg2)
 }
 
 // MockImageClient is a mock of ImageClient interface.

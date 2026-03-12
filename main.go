@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,7 +9,6 @@ import (
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-download-service/service/external"
-	dpotelgo "github.com/ONSdigital/dp-otel-go"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
@@ -32,7 +29,6 @@ func main() {
 
 	if err := run(ctx); err != nil {
 		log.Fatal(ctx, "fatal runtime error", err)
-		os.Exit(1)
 	}
 }
 
@@ -43,32 +39,12 @@ func run(ctx context.Context) error {
 	cfg, err := config.Get()
 	if err != nil {
 		log.Fatal(ctx, "error getting config", err)
-		os.Exit(1)
 	}
 	log.Info(ctx, "config on startup", log.Data{"config": cfg})
-
-	if cfg.OtelEnabled {
-		// Set up Open Telemetry
-		otelConfig := dpotelgo.Config{
-			OtelServiceName:          cfg.OTServiceName,
-			OtelExporterOtlpEndpoint: cfg.OTExporterOTLPEndpoint,
-			OtelBatchTimeout:         cfg.OTBatchTimeout,
-		}
-
-		otelShutdown, oErr := dpotelgo.SetupOTelSDK(ctx, otelConfig)
-		if oErr != nil {
-			return fmt.Errorf("error setting up OpenTelemetry - hint: ensure OTEL_EXPORTER_OTLP_ENDPOINT is set. %w", oErr)
-		}
-		// Handle shutdown properly so nothing leaks.
-		defer func() {
-			err = errors.Join(err, otelShutdown(context.Background()))
-		}()
-	}
 
 	svc, err := service.New(ctx, BuildTime, GitCommit, Version, cfg, &external.External{})
 	if err != nil {
 		log.Fatal(ctx, "could not set up Download service", err)
-		os.Exit(1)
 	}
 
 	svc.Run(ctx)

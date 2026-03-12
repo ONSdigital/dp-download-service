@@ -9,10 +9,10 @@ import (
 	"path"
 	"strings"
 
+	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
 	dprequest "github.com/ONSdigital/dp-net/v3/request"
 
 	"github.com/ONSdigital/dp-download-service/config"
-	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/files"
 	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
 	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
@@ -21,7 +21,7 @@ import (
 )
 
 // CreateV1DownloadHandler handles generic download file requests.
-func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, identityClient downloads.IdentityClient, cfg *config.Config) http.HandlerFunc {
+func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, authMiddleware auth.Middleware, cfg *config.Config, permissionsChecker auth.PermissionsChecker) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if cfg.IsPublishing {
 			w.Header().Set("Cache-Control", "no-cache")
@@ -34,41 +34,75 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 
 		metadata, err := fetchMetadata(ctx, requestedFilePath, filesAPISDK.Headers{Authorization: accessToken})
 		if err != nil {
-			if strings.Contains(err.Error(), files.ErrFileNotRegistered.Error()) {
+			switch {
+			case strings.Contains(err.Error(), files.ErrFileNotRegistered.Error()):
 				handleError(ctx, "Error fetching metadata", w, files.ErrFileNotRegistered)
-				return
+			case strings.Contains(err.Error(), files.ErrInvalidAuth.Error()):
+				handleError(ctx, "Error fetching metadata", w, files.ErrInvalidAuth)
+			case strings.Contains(err.Error(), files.ErrNotAuthorised.Error()):
+				handleError(ctx, "Error fetching metadata", w, files.ErrNotAuthorised)
+			default:
+				handleError(ctx, "Error fetching metadata", w, err)
 			}
-			handleError(ctx, "Error fetching metadata", w, err)
 			return
 		}
+
 		log.Info(ctx, fmt.Sprintf("Found metadata for file %s", requestedFilePath), log.Data{"metadata": metadata})
+
+		if cfg.IsPublishing {
+			logData := log.Data{
+				"method": req.Method,
+				"path":   req.URL.Path,
+			}
+			entityData, err := getAuthEntityData(ctx, authMiddleware, accessToken, logData)
+			if err != nil {
+				log.Error(req.Context(), "the request was not authorised", err, logData)
+				if strings.Contains(err.Error(), "key id unknown or invalid") || strings.Contains(err.Error(), "jwt token is malformed") || strings.Contains(err.Error(), "unable to parse jwt") {
+					handleError(ctx, "Unauthorised", w, files.ErrInvalidAuth)
+					return
+				}
+				handleError(ctx, "the request was not authorised - check token and user's permissions", w, err)
+				return
+			}
+
+			var permissionAttrs map[string]string
+			if metadata.ContentItem != nil {
+				if metadata.ContentItem.DatasetID != "" && metadata.ContentItem.Edition != "" {
+					permissionAttrs = map[string]string{
+						"dataset_edition": metadata.ContentItem.DatasetID + "/" + metadata.ContentItem.Edition,
+					}
+				}
+			}
+
+			logData = log.Data{
+				"entity_data": entityData,
+			}
+
+			if checkUserPermission(req.Context(), logData, "static-files:read", permissionAttrs, permissionsChecker, entityData) {
+				// Passing identifier as both user and email parameters as the identity client only provides a single identifier
+				auditEvent, err := files.PopulateFileEvent(entityData.UserID, entityData.UserID, requestedFilePath, filesAPIModels.ActionRead, metadata)
+				if err != nil {
+					handleError(ctx, "Failed to populate file event", w, err)
+					return
+				}
+
+				_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: accessToken})
+				if err != nil {
+					handleError(ctx, "Failed to create file event", w, err)
+					return
+				}
+			} else {
+				log.Info(req.Context(), "authorisation failed: request has no permission", log.Classification(log.ProtectiveMonitoring), log.Auth(log.USER, entityData.UserID), logData)
+				handleError(ctx, "the request was not authorised - check token and user's permissions", w, files.ErrNotAuthorised)
+				return
+			}
+		}
 
 		if handleUnsupportedMetadataStates(ctx, *metadata, cfg, requestedFilePath, w) {
 			return
 		}
 
 		setContentHeaders(w, *metadata)
-
-		if cfg.IsPublishing {
-			identifier, err := getTokenIdentifier(ctx, accessToken, identityClient)
-			if err != nil {
-				handleError(ctx, "Failed to get token identifier from access token", w, err)
-				return
-			}
-
-			// Passing identifier as both user and email parameters as the identity client only provides a single identifier
-			auditEvent, err := files.PopulateFileEvent(identifier, identifier, requestedFilePath, filesAPIModels.ActionRead, metadata)
-			if err != nil {
-				handleError(ctx, "Failed to populate file event", w, err)
-				return
-			}
-
-			_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: accessToken})
-			if err != nil {
-				handleError(ctx, "Failed to create file event", w, err)
-				return
-			}
-		}
 
 		file, err := downloadFileFromBucket(requestedFilePath)
 		if err != nil {

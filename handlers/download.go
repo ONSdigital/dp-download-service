@@ -27,11 +27,6 @@ type ClientError interface {
 	Code() int
 }
 
-// IdentityClient is an interface to represent methods called to action on the identity api
-type IdentityClient interface {
-	CheckRequest(*http.Request, string, string)
-}
-
 // S3Content is an interface to represent methods called to action on S3
 type S3Content interface {
 	StreamAndWrite(ctx context.Context, s3Path string, w io.Writer) error

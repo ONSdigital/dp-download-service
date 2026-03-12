@@ -2,6 +2,7 @@ package steps
 
 import (
 	"context"
+	"crypto/rsa"
 	"fmt"
 	"net/http"
 	"os"
@@ -25,12 +26,14 @@ const (
 )
 
 type DownloadServiceComponent struct {
-	DpHttpServer *dphttp.Server
-	svc          *service.Download
-	ApiFeature   *componenttest.APIFeature
-	errChan      chan error
-	cfg          *config.Config
-	deps         *External
+	DpHttpServer  *dphttp.Server
+	svc           *service.Download
+	ApiFeature    *componenttest.APIFeature
+	errChan       chan error
+	cfg           *config.Config
+	deps          *External
+	viewerPrivKey *rsa.PrivateKey
+	viewerKID     string
 }
 
 func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent {
