@@ -19,6 +19,7 @@ type HTTPClient interface {
 var ErrFileNotRegistered = errors.New("file not registered")
 var ErrBadJSONResponse = errors.New("could not decode JSON response from files api")
 var ErrNotAuthorised = errors.New("the request was not authorised - check token and user's permissions")
+var ErrInvalidAuth = errors.New("API error: status code 401")
 var ErrInternalServerError = errors.New("internal server error")
 var ErrUnknown = errors.New("an unknown error occurred")
 var ErrRequest = errors.New("an error occurred making a request to files api")

@@ -5,6 +5,7 @@ package service_test
 
 import (
 	"context"
+	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
@@ -24,6 +25,9 @@ var _ service.Dependencies = &DependenciesMock{}
 //
 //		// make and configure a mocked service.Dependencies
 //		mockedDependencies := &DependenciesMock{
+//			AuthMiddlewareFunc: func(contextMoqParam context.Context, configMoqParam *config.Config) (auth.Middleware, error) {
+//				panic("mock out the AuthMiddleware method")
+//			},
 //			DatasetClientFunc: func(s string) downloads.DatasetClient {
 //				panic("mock out the DatasetClient method")
 //			},
@@ -33,14 +37,11 @@ var _ service.Dependencies = &DependenciesMock{}
 //			FilterClientFunc: func(s string) downloads.FilterClient {
 //				panic("mock out the FilterClient method")
 //			},
+//			HTTPServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
+//				panic("mock out the HTTPServer method")
+//			},
 //			HealthCheckFunc: func(configMoqParam *config.Config, s1 string, s2 string, s3 string) (service.HealthChecker, error) {
 //				panic("mock out the HealthCheck method")
-//			},
-//			HttpServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
-//				panic("mock out the HttpServer method")
-//			},
-//			IdentityClientFunc: func(s string) downloads.IdentityClient {
-//				panic("mock out the IdentityClient method")
 //			},
 //			ImageClientFunc: func(s string) downloads.ImageClient {
 //				panic("mock out the ImageClient method")
@@ -55,6 +56,9 @@ var _ service.Dependencies = &DependenciesMock{}
 //
 //	}
 type DependenciesMock struct {
+	// AuthMiddlewareFunc mocks the AuthMiddleware method.
+	AuthMiddlewareFunc func(contextMoqParam context.Context, configMoqParam *config.Config) (auth.Middleware, error)
+
 	// DatasetClientFunc mocks the DatasetClient method.
 	DatasetClientFunc func(s string) downloads.DatasetClient
 
@@ -64,14 +68,11 @@ type DependenciesMock struct {
 	// FilterClientFunc mocks the FilterClient method.
 	FilterClientFunc func(s string) downloads.FilterClient
 
+	// HTTPServerFunc mocks the HTTPServer method.
+	HTTPServerFunc func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer
+
 	// HealthCheckFunc mocks the HealthCheck method.
 	HealthCheckFunc func(configMoqParam *config.Config, s1 string, s2 string, s3 string) (service.HealthChecker, error)
-
-	// HttpServerFunc mocks the HttpServer method.
-	HttpServerFunc func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer
-
-	// IdentityClientFunc mocks the IdentityClient method.
-	IdentityClientFunc func(s string) downloads.IdentityClient
 
 	// ImageClientFunc mocks the ImageClient method.
 	ImageClientFunc func(s string) downloads.ImageClient
@@ -81,6 +82,13 @@ type DependenciesMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// AuthMiddleware holds details about calls to the AuthMiddleware method.
+		AuthMiddleware []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// ConfigMoqParam is the configMoqParam argument value.
+			ConfigMoqParam *config.Config
+		}
 		// DatasetClient holds details about calls to the DatasetClient method.
 		DatasetClient []struct {
 			// S is the s argument value.
@@ -96,6 +104,13 @@ type DependenciesMock struct {
 			// S is the s argument value.
 			S string
 		}
+		// HTTPServer holds details about calls to the HTTPServer method.
+		HTTPServer []struct {
+			// ConfigMoqParam is the configMoqParam argument value.
+			ConfigMoqParam *config.Config
+			// Handler is the handler argument value.
+			Handler http.Handler
+		}
 		// HealthCheck holds details about calls to the HealthCheck method.
 		HealthCheck []struct {
 			// ConfigMoqParam is the configMoqParam argument value.
@@ -106,18 +121,6 @@ type DependenciesMock struct {
 			S2 string
 			// S3 is the s3 argument value.
 			S3 string
-		}
-		// HttpServer holds details about calls to the HttpServer method.
-		HttpServer []struct {
-			// ConfigMoqParam is the configMoqParam argument value.
-			ConfigMoqParam *config.Config
-			// Handler is the handler argument value.
-			Handler http.Handler
-		}
-		// IdentityClient holds details about calls to the IdentityClient method.
-		IdentityClient []struct {
-			// S is the s argument value.
-			S string
 		}
 		// ImageClient holds details about calls to the ImageClient method.
 		ImageClient []struct {
@@ -132,14 +135,50 @@ type DependenciesMock struct {
 			ConfigMoqParam *config.Config
 		}
 	}
+	lockAuthMiddleware sync.RWMutex
 	lockDatasetClient  sync.RWMutex
 	lockFilesClient    sync.RWMutex
 	lockFilterClient   sync.RWMutex
+	lockHTTPServer     sync.RWMutex
 	lockHealthCheck    sync.RWMutex
-	lockHttpServer     sync.RWMutex
-	lockIdentityClient sync.RWMutex
 	lockImageClient    sync.RWMutex
 	lockS3Client       sync.RWMutex
+}
+
+// AuthMiddleware calls AuthMiddlewareFunc.
+func (mock *DependenciesMock) AuthMiddleware(contextMoqParam context.Context, configMoqParam *config.Config) (auth.Middleware, error) {
+	if mock.AuthMiddlewareFunc == nil {
+		panic("DependenciesMock.AuthMiddlewareFunc: method is nil but Dependencies.AuthMiddleware was just called")
+	}
+	callInfo := struct {
+		ContextMoqParam context.Context
+		ConfigMoqParam  *config.Config
+	}{
+		ContextMoqParam: contextMoqParam,
+		ConfigMoqParam:  configMoqParam,
+	}
+	mock.lockAuthMiddleware.Lock()
+	mock.calls.AuthMiddleware = append(mock.calls.AuthMiddleware, callInfo)
+	mock.lockAuthMiddleware.Unlock()
+	return mock.AuthMiddlewareFunc(contextMoqParam, configMoqParam)
+}
+
+// AuthMiddlewareCalls gets all the calls that were made to AuthMiddleware.
+// Check the length with:
+//
+//	len(mockedDependencies.AuthMiddlewareCalls())
+func (mock *DependenciesMock) AuthMiddlewareCalls() []struct {
+	ContextMoqParam context.Context
+	ConfigMoqParam  *config.Config
+} {
+	var calls []struct {
+		ContextMoqParam context.Context
+		ConfigMoqParam  *config.Config
+	}
+	mock.lockAuthMiddleware.RLock()
+	calls = mock.calls.AuthMiddleware
+	mock.lockAuthMiddleware.RUnlock()
+	return calls
 }
 
 // DatasetClient calls DatasetClientFunc.
@@ -238,6 +277,42 @@ func (mock *DependenciesMock) FilterClientCalls() []struct {
 	return calls
 }
 
+// HTTPServer calls HTTPServerFunc.
+func (mock *DependenciesMock) HTTPServer(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
+	if mock.HTTPServerFunc == nil {
+		panic("DependenciesMock.HTTPServerFunc: method is nil but Dependencies.HTTPServer was just called")
+	}
+	callInfo := struct {
+		ConfigMoqParam *config.Config
+		Handler        http.Handler
+	}{
+		ConfigMoqParam: configMoqParam,
+		Handler:        handler,
+	}
+	mock.lockHTTPServer.Lock()
+	mock.calls.HTTPServer = append(mock.calls.HTTPServer, callInfo)
+	mock.lockHTTPServer.Unlock()
+	return mock.HTTPServerFunc(configMoqParam, handler)
+}
+
+// HTTPServerCalls gets all the calls that were made to HTTPServer.
+// Check the length with:
+//
+//	len(mockedDependencies.HTTPServerCalls())
+func (mock *DependenciesMock) HTTPServerCalls() []struct {
+	ConfigMoqParam *config.Config
+	Handler        http.Handler
+} {
+	var calls []struct {
+		ConfigMoqParam *config.Config
+		Handler        http.Handler
+	}
+	mock.lockHTTPServer.RLock()
+	calls = mock.calls.HTTPServer
+	mock.lockHTTPServer.RUnlock()
+	return calls
+}
+
 // HealthCheck calls HealthCheckFunc.
 func (mock *DependenciesMock) HealthCheck(configMoqParam *config.Config, s1 string, s2 string, s3 string) (service.HealthChecker, error) {
 	if mock.HealthCheckFunc == nil {
@@ -279,74 +354,6 @@ func (mock *DependenciesMock) HealthCheckCalls() []struct {
 	mock.lockHealthCheck.RLock()
 	calls = mock.calls.HealthCheck
 	mock.lockHealthCheck.RUnlock()
-	return calls
-}
-
-// HttpServer calls HttpServerFunc.
-func (mock *DependenciesMock) HttpServer(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
-	if mock.HttpServerFunc == nil {
-		panic("DependenciesMock.HttpServerFunc: method is nil but Dependencies.HttpServer was just called")
-	}
-	callInfo := struct {
-		ConfigMoqParam *config.Config
-		Handler        http.Handler
-	}{
-		ConfigMoqParam: configMoqParam,
-		Handler:        handler,
-	}
-	mock.lockHttpServer.Lock()
-	mock.calls.HttpServer = append(mock.calls.HttpServer, callInfo)
-	mock.lockHttpServer.Unlock()
-	return mock.HttpServerFunc(configMoqParam, handler)
-}
-
-// HttpServerCalls gets all the calls that were made to HttpServer.
-// Check the length with:
-//
-//	len(mockedDependencies.HttpServerCalls())
-func (mock *DependenciesMock) HttpServerCalls() []struct {
-	ConfigMoqParam *config.Config
-	Handler        http.Handler
-} {
-	var calls []struct {
-		ConfigMoqParam *config.Config
-		Handler        http.Handler
-	}
-	mock.lockHttpServer.RLock()
-	calls = mock.calls.HttpServer
-	mock.lockHttpServer.RUnlock()
-	return calls
-}
-
-// IdentityClient calls IdentityClientFunc.
-func (mock *DependenciesMock) IdentityClient(s string) downloads.IdentityClient {
-	if mock.IdentityClientFunc == nil {
-		panic("DependenciesMock.IdentityClientFunc: method is nil but Dependencies.IdentityClient was just called")
-	}
-	callInfo := struct {
-		S string
-	}{
-		S: s,
-	}
-	mock.lockIdentityClient.Lock()
-	mock.calls.IdentityClient = append(mock.calls.IdentityClient, callInfo)
-	mock.lockIdentityClient.Unlock()
-	return mock.IdentityClientFunc(s)
-}
-
-// IdentityClientCalls gets all the calls that were made to IdentityClient.
-// Check the length with:
-//
-//	len(mockedDependencies.IdentityClientCalls())
-func (mock *DependenciesMock) IdentityClientCalls() []struct {
-	S string
-} {
-	var calls []struct {
-		S string
-	}
-	mock.lockIdentityClient.RLock()
-	calls = mock.calls.IdentityClient
-	mock.lockIdentityClient.RUnlock()
 	return calls
 }
 

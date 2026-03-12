@@ -9,10 +9,11 @@ import (
 	"path"
 	"strings"
 
+	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
 	dprequest "github.com/ONSdigital/dp-net/v3/request"
+	permissionsAPISDK "github.com/ONSdigital/dp-permissions-api/sdk"
 
 	"github.com/ONSdigital/dp-download-service/config"
-	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/files"
 	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
 	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
@@ -21,7 +22,7 @@ import (
 )
 
 // CreateV1DownloadHandler handles generic download file requests.
-func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, identityClient downloads.IdentityClient, cfg *config.Config) http.HandlerFunc {
+func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, authMiddleware auth.Middleware, cfg *config.Config, permissionsChecker auth.PermissionsChecker) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if cfg.IsPublishing {
 			w.Header().Set("Cache-Control", "no-cache")
@@ -34,103 +35,114 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 
 		metadata, err := fetchMetadata(ctx, requestedFilePath, filesAPISDK.Headers{Authorization: accessToken})
 		if err != nil {
-			if strings.Contains(err.Error(), files.ErrFileNotRegistered.Error()) {
-				handleError(ctx, "Error fetching metadata", w, files.ErrFileNotRegistered)
-				return
-			}
-
-			if status := httpStatusFromErr(err); status != 0 {
-				switch status {
-				case http.StatusUnauthorized:
-					setStatusUnauthorized(w)
-				case http.StatusForbidden:
-					setStatusForbidden(w)
-				default:
-					w.WriteHeader(status)
-				}
-				return
-			}
-
-			handleError(ctx, "Error fetching metadata", w, err)
+			handleMetadataError(ctx, w, err)
 			return
 		}
+
 		log.Info(ctx, fmt.Sprintf("Found metadata for file %s", requestedFilePath), log.Data{"metadata": metadata})
+
+		if cfg.IsPublishing {
+			logData := log.Data{
+				"method": req.Method,
+				"path":   req.URL.Path,
+			}
+			entityData, err := getAuthEntityData(ctx, authMiddleware, accessToken, logData)
+			if err != nil {
+				log.Error(ctx, "the request was not authorised", err, logData)
+				if strings.Contains(err.Error(), "key id unknown or invalid") || strings.Contains(err.Error(), "jwt token is malformed") || strings.Contains(err.Error(), "unable to parse jwt") {
+					handleError(ctx, "Unauthorised", w, files.ErrInvalidAuth)
+					return
+				}
+				handleError(ctx, "the request was not authorised - check token and user's permissions", w, err)
+				return
+			}
+
+			permissionAttrs := setPermissionsAttributes(metadata)
+
+			logData = log.Data{
+				"entity_data": entityData,
+			}
+
+			if checkUserPermission(ctx, logData, "static-files:read", permissionAttrs, permissionsChecker, entityData) {
+				// Passing identifier as both user and email parameters as the identity client only provides a single identifier
+				err = recordFileEvent(ctx, *entityData, accessToken, requestedFilePath, metadata, w, createFileEvent)
+				if err != nil {
+					return
+				}
+			} else {
+				log.Info(req.Context(), "authorisation failed: request has no permission", log.Classification(log.ProtectiveMonitoring), log.Auth(log.USER, entityData.UserID), logData)
+				handleError(ctx, "the request was not authorised - check token and user's permissions", w, files.ErrNotAuthorised)
+				return
+			}
+		}
 
 		if handleUnsupportedMetadataStates(ctx, *metadata, cfg, requestedFilePath, w) {
 			return
 		}
 
-		setContentHeaders(w, *metadata)
-
-		if cfg.IsPublishing {
-			identifier, isUser, err := getTokenIdentifier(ctx, accessToken, identityClient)
-			if err != nil {
-				handleError(ctx, "Failed to get token identifier from access token", w, err)
-				return
-			}
-			identityType := log.SERVICE
-			if isUser {
-				identityType = log.USER
-			}
-			logAuth := log.Auth(identityType, identifier)
-			logData := log.Data{"filePath": requestedFilePath}
-			// Passing identifier as both user and email parameters as the identity client only provides a single identifier
-			auditEvent, err := files.PopulateFileEvent(identifier, identifier, requestedFilePath, filesAPIModels.ActionRead, metadata)
-			if err != nil {
-				handleError(ctx, "Failed to populate file event", w, err)
-				return
-			}
-			_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: accessToken})
-			if err != nil {
-				if status := httpStatusFromErr(err); status != 0 {
-					switch status {
-					case http.StatusUnauthorized:
-						setStatusUnauthorized(w)
-					case http.StatusForbidden:
-						setStatusForbidden(w)
-					default:
-						w.WriteHeader(status)
-					}
-					return
-				}
-				handleError(ctx, "Failed to create file event", w, err)
-				return
-			}
-			log.Info(ctx, "Successfully created file event for download", log.Classification(log.ProtectiveMonitoring), logAuth, logData)
-		}
-
-		file, err := downloadFileFromBucket(requestedFilePath)
-		if err != nil {
-			handleError(ctx, fmt.Sprintf("Error downloading file %s", requestedFilePath), w, err)
-			return
-		}
-		defer closeDownloadedFile(ctx, file)
-
-		if err := writeFileToResponse(w, file); err != nil {
-			log.Error(ctx, "Failed to stream file content", err)
-			setStatusInternalServerError(w)
-			return
-		}
+		streamFile(req.Context(), w, metadata, requestedFilePath, downloadFileFromBucket)
 	}
 }
 
-func httpStatusFromErr(err error) int {
-	if err == nil {
-		return 0
-	}
-	msg := err.Error()
-
-	if strings.Contains(msg, "status code 401") {
-		return http.StatusUnauthorized
-	}
-	if strings.Contains(msg, "status code 403") {
-		return http.StatusForbidden
-	}
-	if strings.Contains(msg, files.ErrNotAuthorised.Error()) {
-		return http.StatusForbidden
+func setPermissionsAttributes(metadata *filesAPIModels.StoredRegisteredMetaData) map[string]string {
+	var permissionAttrs map[string]string
+	if metadata.ContentItem != nil {
+		if metadata.ContentItem.DatasetID != "" && metadata.ContentItem.Edition != "" {
+			permissionAttrs = map[string]string{
+				"dataset_edition": metadata.ContentItem.DatasetID + "/" + metadata.ContentItem.Edition,
+			}
+		}
 	}
 
-	return 0
+	return permissionAttrs
+}
+
+func recordFileEvent(ctx context.Context, entityData permissionsAPISDK.EntityData, accessToken, requestedFilePath string, metadata *filesAPIModels.StoredRegisteredMetaData, w http.ResponseWriter, createFileEvent files.FileEventCreator) error {
+	auditEvent, err := files.PopulateFileEvent(entityData.UserID, entityData.UserID, requestedFilePath, filesAPIModels.ActionRead, metadata)
+	if err != nil {
+		handleError(ctx, "Failed to populate file event", w, err)
+		return err
+	}
+
+	_, err = createFileEvent(ctx, auditEvent, filesAPISDK.Headers{Authorization: accessToken})
+	if err != nil {
+		handleError(ctx, "Failed to create file event", w, err)
+		return err
+	}
+
+	return nil
+}
+
+func streamFile(ctx context.Context, w http.ResponseWriter, metadata *filesAPIModels.StoredRegisteredMetaData, requestedFilePath string, downloadFileFromBucket files.FileDownloader) {
+	setContentHeaders(w, *metadata)
+
+	file, err := downloadFileFromBucket(requestedFilePath)
+	if err != nil {
+		handleError(ctx, fmt.Sprintf("Error downloading file %s", requestedFilePath), w, err)
+		return
+	}
+
+	defer closeDownloadedFile(ctx, file)
+
+	err = writeFileToResponse(w, file)
+	if err != nil {
+		log.Error(ctx, "Failed to stream file content", err)
+		setStatusInternalServerError(w)
+		return
+	}
+}
+
+func handleMetadataError(ctx context.Context, w http.ResponseWriter, err error) {
+	switch {
+	case strings.Contains(err.Error(), files.ErrFileNotRegistered.Error()):
+		handleError(ctx, "Error fetching metadata", w, files.ErrFileNotRegistered)
+	case strings.Contains(err.Error(), files.ErrInvalidAuth.Error()):
+		handleError(ctx, "Error fetching metadata", w, files.ErrInvalidAuth)
+	case strings.Contains(err.Error(), files.ErrNotAuthorised.Error()):
+		handleError(ctx, "Error fetching metadata", w, files.ErrNotAuthorised)
+	default:
+		handleError(ctx, "Error fetching metadata", w, err)
+	}
 }
 
 func parseRequest(req *http.Request) (context.Context, string) {
@@ -183,16 +195,6 @@ func setStatusMovedPermanently(location string, w http.ResponseWriter) {
 func setStatusNotFound(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.WriteHeader(http.StatusNotFound)
-}
-
-func setStatusUnauthorized(w http.ResponseWriter) {
-	w.Header().Set("Cache-Control", "no-cache")
-	w.WriteHeader(http.StatusUnauthorized)
-}
-
-func setStatusForbidden(w http.ResponseWriter) {
-	w.Header().Set("Cache-Control", "no-cache")
-	w.WriteHeader(http.StatusForbidden)
 }
 
 func setStatusInternalServerError(w http.ResponseWriter) {

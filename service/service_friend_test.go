@@ -6,7 +6,6 @@ package service
 import (
 	"time"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
 )
@@ -29,10 +28,6 @@ func (svc *Download) GetFilesClient() downloads.FilesClient {
 
 func (svc *Download) GetS3Client() content.S3Client {
 	return svc.s3Client
-}
-
-func (svc *Download) GetZebedeeHealthClient() *health.Client {
-	return svc.zebedeeHealthClient
 }
 
 func (svc *Download) GetShutdownTimeout() time.Duration {

@@ -7,10 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
+	"github.com/ONSdigital/dp-authorisation/v2/authorisation"
 	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
 	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
-	dprequest "github.com/ONSdigital/dp-net/v3/request"
 	s3client "github.com/ONSdigital/dp-s3/v3"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
@@ -21,7 +20,6 @@ import (
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	"github.com/ONSdigital/dp-download-service/downloads/mocks"
-	"github.com/ONSdigital/dp-download-service/files"
 	"github.com/ONSdigital/dp-download-service/service"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/v3/http"
@@ -31,7 +29,15 @@ import (
 type External struct {
 	Server            *dphttp.Server
 	CreatedFileEvents []filesAPIModels.FileEvent
-	AllowFilesAccess  bool
+}
+
+func (e *External) AuthMiddleware(ctx context.Context, cfg *config.Config) (authorisation.Middleware, error) {
+	middleware, err := authorisation.NewMiddlewareFromConfig(ctx, cfg.AuthorisationConfig, cfg.AuthorisationConfig.JWTVerificationPublicKeys)
+	if err != nil {
+		return nil, err
+	}
+
+	return middleware, nil
 }
 
 func (e *External) FilterClient(s string) downloads.FilterClient {
@@ -42,31 +48,6 @@ func (e *External) FilterClient(s string) downloads.FilterClient {
 		check.Update("OK", "MsgHealthy", 0)
 		return nil
 	})
-	return m
-}
-
-func (e *External) IdentityClient(s string) downloads.IdentityClient {
-	t := &testing.T{}
-	c := gomock.NewController(t)
-	m := mocks.NewMockIdentityClient(c)
-	m.EXPECT().CheckTokenIdentity(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error) {
-			switch tokenType {
-			case identity.TokenTypeUser:
-				return &dprequest.IdentityResponse{
-					Identifier: "user",
-				}, nil
-			case identity.TokenTypeService:
-				if token == "valid-service" {
-					return &dprequest.IdentityResponse{
-						Identifier: "service",
-					}, nil
-				}
-				return nil, fmt.Errorf("unauthorised")
-			default:
-				return nil, fmt.Errorf("unknown token type")
-			}
-		})
 	return m
 }
 
@@ -94,14 +75,11 @@ func (e *External) FilesClient(s string) downloads.FilesClient {
 
 	m.EXPECT().GetFile(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
-			if !e.AllowFilesAccess {
-				return nil, files.ErrNotAuthorised
-			}
 			switch path {
 			case "data/published.csv":
 				return &filesAPIModels.StoredRegisteredMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/unpublished.csv":
-				return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
+				return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29, ContentItem: &filesAPIModels.StoredContentItem{DatasetID: "cpih01", Edition: "feb-2026"}}, nil
 			case "data/weird&chars#published.csv":
 				return &filesAPIModels.StoredRegisteredMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/weird&chars#unpublished.csv":
@@ -110,6 +88,8 @@ func (e *External) FilesClient(s string) downloads.FilesClient {
 				return &filesAPIModels.StoredRegisteredMetaData{State: "MOVED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/missing.csv":
 				return nil, fmt.Errorf("file not registered")
+			case "data/return401.csv":
+				return nil, fmt.Errorf("API error: status code 401")
 			default:
 				return nil, fmt.Errorf("unknown mock path")
 			}
@@ -157,7 +137,7 @@ func (e *External) DatasetClient(datasetAPIURL string) downloads.DatasetClient {
 	return m
 }
 
-func (e *External) HttpServer(cfg *config.Config, r http.Handler) service.HTTPServer {
+func (e *External) HTTPServer(cfg *config.Config, r http.Handler) service.HTTPServer {
 	e.Server.Server.Addr = cfg.BindAddr
 	e.Server.Server.Handler = r
 
