@@ -137,8 +137,14 @@ func handleMetadataError(ctx context.Context, w http.ResponseWriter, err error) 
 	case strings.Contains(err.Error(), files.ErrFileNotRegistered.Error()):
 		handleError(ctx, "Error fetching metadata", w, files.ErrFileNotRegistered)
 	case strings.Contains(err.Error(), files.ErrInvalidAuth.Error()):
+		// Unable to add any distinct user information here as the 401/403 is returned from files-api without this information
+		// Logs are present in files-api though to record all the data
+		log.Error(ctx, files.ErrInvalidAuth.Error(), err, log.Classification(log.ProtectiveMonitoring))
 		handleError(ctx, "Error fetching metadata", w, files.ErrInvalidAuth)
 	case strings.Contains(err.Error(), files.ErrNotAuthorised.Error()):
+		// Unable to add any distinct user information here as the 401/403 is returned from files-api without this information
+		// Logs are present in files-api though to record all the data
+		log.Error(ctx, files.ErrNotAuthorised.Error(), err, log.Classification(log.ProtectiveMonitoring))
 		handleError(ctx, "Error fetching metadata", w, files.ErrNotAuthorised)
 	default:
 		handleError(ctx, "Error fetching metadata", w, err)
