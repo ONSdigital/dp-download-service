@@ -69,6 +69,10 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 				if err != nil {
 					return
 				}
+				// Service auth tokens cannot access this endpoint so will be user tokens only if the request has reached this point
+				logAuth := log.Auth(log.USER, entityData.UserID)
+				logData := log.Data{"filePath": requestedFilePath}
+				log.Info(ctx, "Successfully created file event for download", log.Classification(log.ProtectiveMonitoring), logAuth, logData)
 			} else {
 				log.Info(req.Context(), "authorisation failed: request has no permission", log.Classification(log.ProtectiveMonitoring), log.Auth(log.USER, entityData.UserID), logData)
 				handleError(ctx, "the request was not authorised - check token and user's permissions", w, files.ErrNotAuthorised)
