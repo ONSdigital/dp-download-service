@@ -17,7 +17,7 @@ services:
       HEALTHCHECK_CRITICAL_TIMEOUT: '5s'
 
   localstack:
-    image: localstack/localstack:2.2.0
+    image: localstack/localstack:4.14
     ports:
       - "4566:4583"
     environment:

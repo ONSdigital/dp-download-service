@@ -28,7 +28,7 @@ services:
       - ./:/service
 
   localstack:
-    image: localstack/localstack
+    image: localstack/localstack:4.14
     ports:
       - '4566-4583:4566-4583'
     environment:
