@@ -7,13 +7,11 @@ import (
 	"context"
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
-	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	"github.com/ONSdigital/dp-download-service/downloads"
 	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
 	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dprequest "github.com/ONSdigital/dp-net/v3/request"
 	"sync"
 )
 
@@ -576,84 +574,6 @@ func (mock *FilterClientMock) GetOutputCalls() []struct {
 	mock.lockGetOutput.RLock()
 	calls = mock.calls.GetOutput
 	mock.lockGetOutput.RUnlock()
-	return calls
-}
-
-// Ensure, that IdentityClientMock does implement downloads.IdentityClient.
-// If this is not the case, regenerate this file with moq.
-var _ downloads.IdentityClient = &IdentityClientMock{}
-
-// IdentityClientMock is a mock implementation of downloads.IdentityClient.
-//
-//	func TestSomethingThatUsesIdentityClient(t *testing.T) {
-//
-//		// make and configure a mocked downloads.IdentityClient
-//		mockedIdentityClient := &IdentityClientMock{
-//			CheckTokenIdentityFunc: func(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error) {
-//				panic("mock out the CheckTokenIdentity method")
-//			},
-//		}
-//
-//		// use mockedIdentityClient in code that requires downloads.IdentityClient
-//		// and then make assertions.
-//
-//	}
-type IdentityClientMock struct {
-	// CheckTokenIdentityFunc mocks the CheckTokenIdentity method.
-	CheckTokenIdentityFunc func(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error)
-
-	// calls tracks calls to the methods.
-	calls struct {
-		// CheckTokenIdentity holds details about calls to the CheckTokenIdentity method.
-		CheckTokenIdentity []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Token is the token argument value.
-			Token string
-			// TokenType is the tokenType argument value.
-			TokenType identity.TokenType
-		}
-	}
-	lockCheckTokenIdentity sync.RWMutex
-}
-
-// CheckTokenIdentity calls CheckTokenIdentityFunc.
-func (mock *IdentityClientMock) CheckTokenIdentity(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error) {
-	if mock.CheckTokenIdentityFunc == nil {
-		panic("IdentityClientMock.CheckTokenIdentityFunc: method is nil but IdentityClient.CheckTokenIdentity was just called")
-	}
-	callInfo := struct {
-		Ctx       context.Context
-		Token     string
-		TokenType identity.TokenType
-	}{
-		Ctx:       ctx,
-		Token:     token,
-		TokenType: tokenType,
-	}
-	mock.lockCheckTokenIdentity.Lock()
-	mock.calls.CheckTokenIdentity = append(mock.calls.CheckTokenIdentity, callInfo)
-	mock.lockCheckTokenIdentity.Unlock()
-	return mock.CheckTokenIdentityFunc(ctx, token, tokenType)
-}
-
-// CheckTokenIdentityCalls gets all the calls that were made to CheckTokenIdentity.
-// Check the length with:
-//
-//	len(mockedIdentityClient.CheckTokenIdentityCalls())
-func (mock *IdentityClientMock) CheckTokenIdentityCalls() []struct {
-	Ctx       context.Context
-	Token     string
-	TokenType identity.TokenType
-} {
-	var calls []struct {
-		Ctx       context.Context
-		Token     string
-		TokenType identity.TokenType
-	}
-	mock.lockCheckTokenIdentity.RLock()
-	calls = mock.calls.CheckTokenIdentity
-	mock.lockCheckTokenIdentity.RUnlock()
 	return calls
 }
 

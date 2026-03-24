@@ -26,29 +26,24 @@ type Config struct {
 	GracefulShutdownTimeout    time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"  json:"-"`
 	HealthCheckInterval        time.Duration `envconfig:"HEALTHCHECK_INTERVAL"`
 	HealthCheckCriticalTimeout time.Duration `envconfig:"HEALTHCHECK_CRITICAL_TIMEOUT"`
-	OTBatchTimeout             time.Duration `encconfig:"OTEL_BATCH_TIMEOUT"`
-	OTExporterOTLPEndpoint     string        `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT"`
-	OTServiceName              string        `envconfig:"OTEL_SERVICE_NAME"`
-	OtelEnabled                bool          `envconfig:"OTEL_ENABLED"`
 	ServiceAuthToken           string        `envconfig:"SERVICE_AUTH_TOKEN"         json:"-"`
 	SecretKey                  string        `envconfig:"SECRET_KEY"                 json:"-"`
-	ZebedeeURL                 string        `envconfig:"ZEBEDEE_URL"`
 	LocalObjectStore           string        `envconfig:"LOCAL_OBJECT_STORE"` // TODO remove replacing minio with localstack in component tests
 	MinioAccessKey             string        `envconfig:"MINIO_ACCESS_KEY"`   // TODO remove replacing minio with localstack in component tests
 	MinioSecretKey             string        `envconfig:"MINIO_SECRET_KEY"`   // TODO remove replacing minio with localstack in component tests
 	IsPublishing               bool          `envconfig:"IS_PUBLISHING"`
-	PublicBucketURL            ConfigUrl     `envconfig:"PUBLIC_BUCKET_URL"`
+	PublicBucketURL            URL           `envconfig:"PUBLIC_BUCKET_URL"`
 	MaxConcurrentHandlers      int           `envconfig:"MAX_CONCURRENT_HANDLERS"`
 	AuthorisationConfig        *authorisation.Config
 }
 
 var cfg *Config
 
-type ConfigUrl struct {
+type URL struct {
 	url.URL
 }
 
-func (c *ConfigUrl) Decode(value string) error {
+func (c *URL) Decode(value string) error {
 	parsedURL, err := url.Parse(value)
 	if err != nil {
 		log.Error(context.Background(), fmt.Sprintf("Bad public bucket url: %s", value), err)
@@ -79,17 +74,12 @@ func Get() (*Config, error) {
 		GracefulShutdownTimeout:    5 * time.Second,
 		HealthCheckInterval:        30 * time.Second,
 		HealthCheckCriticalTimeout: 90 * time.Second,
-		OTBatchTimeout:             5 * time.Second,
-		OTExporterOTLPEndpoint:     "localhost:4317",
-		OTServiceName:              "dp-download-service",
-		OtelEnabled:                false,
 		ServiceAuthToken:           "c60198e9-1864-4b68-ad0b-1e858e5b46a4",
-		ZebedeeURL:                 "http://localhost:8082",
 		LocalObjectStore:           "",
 		MinioAccessKey:             "",
 		MinioSecretKey:             "",
 		IsPublishing:               true,
-		PublicBucketURL:            ConfigUrl{},
+		PublicBucketURL:            URL{},
 		MaxConcurrentHandlers:      0, // unlimited
 		AuthorisationConfig:        authorisation.NewDefaultConfig(),
 	}

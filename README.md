@@ -9,7 +9,9 @@ The service uses the [Files API](https://github.com/ONSdigital/dp-files-api) to 
 is web or publishing mode and the users role to work out how it should respond to the request to download a file.
 
 If the download service is in publishing mode and the user is allowed to review a file then the file is viewable at any
-time as long as the file state is not CREATED (File is still being uploaded)
+time as long as the file state is not CREATED (File is still being uploaded).
+
+The endpoint /downloads/files is not available to access via service tokens due to restrictions on the files served via this endpoint.
 
 In web mode the services respond differently depending on the state of the file. The table below show the HTTP response
 for each state and why the Download Service responds in such a way.
@@ -24,8 +26,7 @@ for each state and why the Download Service responds in such a way.
 
 ## Installation
 
-Service is authenticated against zebedee, one can run [dp-auth-api-stub](https://github.com/ONSdigital/dp-auth-api-stub)
-to mimic service identity check in zebedee.
+Service is authenticated using v2 of the [authorisation library](https://github.com/ONSdigital/dp-authorisation)
 
 ### AWS credentials
 
@@ -56,12 +57,7 @@ The endpoint `/healthcheck` checks the health of the dataset api and returns one
 | GRACEFUL_SHUTDOWN_TIMEOUT    | 5s                                   | The graceful shutdown timeout in time duration string format                                     |
 | HEALTHCHECK_INTERVAL         | 30s                                  | The period of time between health checks                                                         |
 | HEALTHCHECK_CRITICAL_TIMEOUT | 90s                                  | The period of time after which failing checks will result in critical global check status        |
-| OTEL_BATCH_TIMEOUT           | 5s                                   | Interval between pushes to OT Collector                                                          |
-| OTEL_EXPORTER_OTLP_ENDPOINT  | http://localhost:4317                | URL for OpenTelemetry endpoint                                                                   |
-| OTEL_SERVICE_NAME            | "dp-download-service"                | Service name to report to telemetry tools                                                        |
-| OTEL_ENABLED                 | false                                | Feature flag to enable OpenTelemetry                                                             |
 | SERVICE_AUTH_TOKEN           | c60198e9-1864-4b68-ad0b-1e858e5b46a4 | The service auth token for the download service                                                  |
-| ZEBEDEE_URL                  | http://localhost:8082                | The URL for zebedee                                                                              |
 | AWS_REGION                   | -                                    | The AWS access key credential                                                                    |
 | AWS_ACCESS_KEY_ID            | -                                    | The AWS access key credential                                                                    |
 | AWS_SECRET_ACCESS_KEY        | -                                    | The AWS secret key credential                                                                    |
@@ -78,6 +74,6 @@ See [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ## License
 
-Copyright © 2022, Office for National Statistics (https://www.ons.gov.uk)
+Copyright © 2026, Office for National Statistics (https://www.ons.gov.uk)
 
 Released under MIT license, see [LICENSE](LICENSE.md) for details

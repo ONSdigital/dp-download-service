@@ -29,6 +29,8 @@ func handleError(ctx context.Context, event string, w http.ResponseWriter, err e
 		writeError(w, buildErrors(err, "FileNotRegistered"), http.StatusNotFound)
 	case files.ErrNotAuthorised:
 		writeError(w, buildErrors(err, "NotAuthorized"), http.StatusForbidden)
+	case files.ErrInvalidAuth:
+		writeError(w, buildErrors(err, "Unauthorised"), http.StatusUnauthorized)
 	default:
 		writeError(w, buildErrors(err, "InternalError"), http.StatusInternalServerError)
 	}

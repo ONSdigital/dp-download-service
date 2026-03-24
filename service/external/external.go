@@ -11,9 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
+	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/dataset"
 	"github.com/ONSdigital/dp-api-clients-go/v2/filter"
-	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
 	"github.com/ONSdigital/dp-api-clients-go/v2/image"
 	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
 
@@ -43,9 +44,12 @@ func (*External) FilterClient(filterAPIURL string) downloads.FilterClient {
 	return filter.New(filterAPIURL)
 }
 
-// IdentityClient reuses Zebedee URL
-func (*External) IdentityClient(zebedeeURL string) downloads.IdentityClient {
-	return identity.New(zebedeeURL)
+func (*External) AuthMiddleware(ctx context.Context, cfg *config.Config) (auth.Middleware, error) {
+	authMiddleware, err := auth.NewFeatureFlaggedMiddleware(ctx, cfg.AuthorisationConfig, nil)
+	if err != nil {
+		return nil, fmt.Errorf("could not create auth middleware: %w", err)
+	}
+	return authMiddleware, nil
 }
 
 func (*External) ImageClient(imageAPIURL string) downloads.ImageClient {
@@ -88,7 +92,7 @@ func (*External) HealthCheck(cfg *config.Config, buildTime, gitCommit, version s
 	return &hc, nil
 }
 
-func (*External) HttpServer(cfg *config.Config, r http.Handler) service.HTTPServer {
+func (*External) HTTPServer(cfg *config.Config, r http.Handler) service.HTTPServer {
 	s := dphttp.NewServer(cfg.BindAddr, r)
 	s.HandleOSSignals = false
 
