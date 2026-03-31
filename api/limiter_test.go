@@ -61,7 +61,7 @@ type HandlerConstructor func(requestNumber int, limit int, counter chan<- int) h
 // to exhaust the maximum allowed number of concurrent handlers.
 // It does that by waiting in each handler until all of the other handlers have started
 // to execute. The number of handlers it waits for is decided by the requestNumber parameter.
-func HeavyHandler(requestNumber int, limit int, counter chan<- int) http.Handler {
+func HeavyHandler(requestNumber, limit int, counter chan<- int) http.Handler {
 	var preLimiterWg sync.WaitGroup
 	preLimiterWg.Add(requestNumber)
 	preLimiter := func(h http.Handler) http.Handler {
@@ -91,8 +91,7 @@ func HeavyHandler(requestNumber int, limit int, counter chan<- int) http.Handler
 // While running, it observes the current actual handler concurrency and returns
 // its maximum encountered value, as well as the number of 200 OK (allowed)
 // and 429 Too Many Requests (denied) responses received.
-func ConcurrencyTest(t *testing.T, hc HandlerConstructor, requestNumber int, limit int) ConcurrencyTestResult {
-
+func ConcurrencyTest(t *testing.T, hc HandlerConstructor, requestNumber, limit int) ConcurrencyTestResult {
 	var oopsCount uint64
 
 	counter := make(chan int)

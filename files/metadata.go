@@ -23,7 +23,7 @@ func GetContentLength(m *filesAPIModels.StoredRegisteredMetaData) string {
 }
 
 func Unpublished(m *filesAPIModels.StoredRegisteredMetaData) bool {
-	return !(m.State == PUBLISHED || m.State == MOVED)
+	return m.State != PUBLISHED && m.State != MOVED
 }
 
 func UploadIncomplete(m *filesAPIModels.StoredRegisteredMetaData) bool {

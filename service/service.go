@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ONSdigital/dp-authorisation/v2/authorisation"
-	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
 	"github.com/ONSdigital/dp-authorisation/v2/permissions"
 	"github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/files"
@@ -56,7 +55,7 @@ type Dependencies interface {
 	S3Client(context.Context, *config.Config) (content.S3Client, error)
 	HealthCheck(*config.Config, string, string, string) (HealthChecker, error)
 	HTTPServer(*config.Config, http.Handler) HTTPServer
-	AuthMiddleware(context.Context, *config.Config) (auth.Middleware, error)
+	AuthMiddleware(context.Context, *config.Config) (authorisation.Middleware, error)
 }
 
 // HealthChecker abstracts healthcheck.HealthCheck so we can create a mock.
@@ -84,8 +83,6 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		shutdown:      cfg.GracefulShutdownTimeout,
 	}
 
-	var err error
-
 	// Set up S3 client.
 	s3, err := deps.S3Client(ctx, cfg)
 	if err != nil {
@@ -97,10 +94,10 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 	// Create auth middleware if publishing is enabled.
 	if cfg.IsPublishing {
 		if cfg.AuthorisationConfig != nil && cfg.AuthorisationConfig.Enabled {
-			authMiddleware, err := deps.AuthMiddleware(ctx, cfg)
-			if err != nil {
-				log.Error(ctx, "could not create authorisation middleware", err)
-				return nil, err
+			authMiddleware, authErr := deps.AuthMiddleware(ctx, cfg)
+			if authErr != nil {
+				log.Error(ctx, "could not create authorisation middleware", authErr)
+				return nil, authErr
 			}
 			svc.authMiddleware = authMiddleware
 
@@ -120,7 +117,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		return nil, err
 	}
 	svc.healthCheck = hc
-	if err = svc.registerCheckers(ctx); err != nil {
+	if err := svc.registerCheckers(ctx); err != nil {
 		return nil, err
 	}
 

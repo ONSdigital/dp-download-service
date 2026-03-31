@@ -57,7 +57,7 @@ func (d FailingReadCloser) Close() error {
 }
 
 func TestHandlingForbiddenErrorFetchingMetadata(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", http.NoBody)
 	rec := &ErrorWriter{header: make(http.Header)}
 
 	fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
@@ -79,7 +79,7 @@ func TestHandlingForbiddenErrorFetchingMetadata(t *testing.T) {
 }
 
 func TestHandlingNotAuthorisedErrorFetchingMetadata(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", http.NoBody)
 	rec := &ErrorWriter{header: make(http.Header)}
 
 	fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
@@ -101,7 +101,7 @@ func TestHandlingNotAuthorisedErrorFetchingMetadata(t *testing.T) {
 }
 
 func TestHandlingGetAuthEntityFails(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", http.NoBody)
 	rec := &ErrorWriter{header: make(http.Header)}
 	req.Header.Add(dprequest.AuthHeaderKey, "invalid.user-token")
 
@@ -130,7 +130,7 @@ func TestHandlingGetAuthEntityFails(t *testing.T) {
 }
 
 func TestHandlingCheckUserPermissionsSuccess(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", http.NoBody)
 	req.Header.Add(dprequest.AuthHeaderKey, "valid.user-token")
 
 	rec := httptest.NewRecorder()
@@ -168,7 +168,7 @@ func TestHandlingCheckUserPermissionsSuccess(t *testing.T) {
 }
 
 func TestHandlingCheckUserPermissionsFails(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", http.NoBody)
 	rec := &ErrorWriter{header: make(http.Header)}
 	req.Header.Add(dprequest.AuthHeaderKey, "valid.user-token")
 
@@ -197,11 +197,10 @@ func TestHandlingCheckUserPermissionsFails(t *testing.T) {
 	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
 	h.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusForbidden, rec.status)
-
 }
 
 func TestHandlingUnexpectedErrorFetchingMetadata(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", http.NoBody)
 	rec := &ErrorWriter{header: make(http.Header)}
 
 	fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
@@ -222,7 +221,7 @@ func TestHandlingUnexpectedErrorFetchingMetadata(t *testing.T) {
 }
 
 func TestHandlingErrorGettingFileContent(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", http.NoBody)
 	rec := &ErrorWriter{header: make(http.Header)}
 
 	fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
@@ -244,7 +243,7 @@ func TestHandlingErrorGettingFileContent(t *testing.T) {
 }
 
 func TestHandlingErrorGettingFileNotAvailable(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/files/data/unavailablefile.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/unavailablefile.csv", http.NoBody)
 	rec := &ErrorWriter{header: make(http.Header)}
 
 	fetchMetadata := func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error) {
@@ -266,7 +265,7 @@ func TestHandlingErrorGettingFileNotAvailable(t *testing.T) {
 }
 
 func TestHandleFileNotPublished(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", http.NoBody)
 	rec := &ErrorWriter{header: make(http.Header)}
 
 	tests := []struct {
@@ -300,7 +299,7 @@ func TestHandleFileNotPublished(t *testing.T) {
 }
 
 func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", http.NoBody)
 	req.Header.Add(dprequest.AuthHeaderKey, testAuthorizationHeader)
 
 	permissionsChecker := &authMock.PermissionsCheckerMock{
@@ -391,7 +390,7 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 }
 
 func TestContentTypeHeader(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", http.NoBody)
 	rec := httptest.NewRecorder()
 
 	expectedType := "text/csv"
@@ -443,7 +442,7 @@ func TestRedirectLocation(t *testing.T) {
 	}
 	for _, test := range tests {
 		publicUrl, _ := url.Parse(test.publicUrlStr)
-		configUrl := config.URL{*publicUrl}
+		configUrl := config.URL{URL: *publicUrl}
 		concatenatedUrl := api.RedirectLocation(&config.Config{PublicBucketURL: configUrl}, test.filepath)
 		assert.Equal(t, expectedUrl, concatenatedUrl, fmt.Sprintf("testing %s: expected %s, got %s", test.desc, expectedUrl, concatenatedUrl))
 	}

@@ -53,6 +53,8 @@ const (
 	TypeDatasetVersion FileType = iota
 	TypeFilterOutput
 	TypeImage
+	StatePublished = "published"
+	StateCompleted = "completed"
 )
 
 // Model is a struct that contains all the required information to download a file.
@@ -186,11 +188,11 @@ func (d Downloader) getImageDownload(ctx context.Context, p Parameters, variant 
 	privatePath := fmt.Sprintf("images/%s/%s", p.ImageID, p.Variant)
 	downloads = Model{
 		// The variant will be considered published (available for public downloads), when it is in 'published' or 'completed' state.
-		IsPublished:     ("published" == imageVariant.State || "completed" == imageVariant.State),
+		IsPublished:     (StatePublished == imageVariant.State || StateCompleted == imageVariant.State),
 		PrivateS3Path:   privatePath,
 		PrivateFilename: p.Filename,
 	}
-	if imageVariant.State == "completed" {
+	if imageVariant.State == StateCompleted {
 		downloads.Public = imageVariant.Href
 	}
 
@@ -199,10 +201,10 @@ func (d Downloader) getImageDownload(ctx context.Context, p Parameters, variant 
 
 // IsPublicLinkAvailable return true if public URI for the requested extension is available and the object is published
 func (m Model) IsPublicLinkAvailable() bool {
-	return len(m.Public) > 0 && m.IsPublished
+	return m.Public != "" && m.IsPublished
 }
 
-func parseURL(urlString string) (path string, filename string, err error) {
+func parseURL(urlString string) (path, filename string, err error) {
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
 		return

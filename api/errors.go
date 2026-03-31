@@ -9,18 +9,15 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-//nolint:golint,unused
 type jsonError struct {
 	Code        string `json:"code"`
 	Description string `json:"description"`
 }
 
-//nolint:golint,unused
 type jsonErrors struct {
 	Error []jsonError `json:"errors"`
 }
 
-//nolint:golint,unused
 func handleError(ctx context.Context, event string, w http.ResponseWriter, err error) {
 	log.Error(ctx, event, err)
 

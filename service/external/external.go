@@ -59,7 +59,7 @@ func (*External) ImageClient(imageAPIURL string) downloads.ImageClient {
 // S3Client obtains a new S3 client, or a local storage client if a non-empty LocalObjectStore is provided
 func (*External) S3Client(ctx context.Context, cfg *config.Config) (content.S3Client, error) {
 	if cfg.LocalObjectStore != "" {
-		awsConfig, err := awsConfig.LoadDefaultConfig(ctx,
+		awsCfg, err := awsConfig.LoadDefaultConfig(ctx,
 			awsConfig.WithRegion(cfg.AwsRegion),
 			awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.MinioAccessKey, cfg.MinioSecretKey, "")),
 		)
@@ -67,20 +67,20 @@ func (*External) S3Client(ctx context.Context, cfg *config.Config) (content.S3Cl
 			return nil, fmt.Errorf("could not create aws config: %w", err)
 		}
 
-		s3client := s3client.NewClientWithConfig(cfg.BucketName, awsConfig, func(o *s3.Options) {
+		client := s3client.NewClientWithConfig(cfg.BucketName, awsCfg, func(o *s3.Options) {
 			o.BaseEndpoint = aws.String(cfg.LocalObjectStore)
 			o.UsePathStyle = true
 		})
 
-		return s3client, nil
+		return client, nil
 	}
 
-	s3client, err := s3client.NewClient(ctx, cfg.AwsRegion, cfg.BucketName)
+	client, err := s3client.NewClient(ctx, cfg.AwsRegion, cfg.BucketName)
 	if err != nil {
 		return nil, fmt.Errorf("could not create s3 client: %w", err)
 	}
 
-	return s3client, nil
+	return client, nil
 }
 
 func (*External) HealthCheck(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {

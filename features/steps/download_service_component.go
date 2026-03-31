@@ -5,7 +5,7 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"net/http"
-	"os"
+	"net/url"
 	"time"
 
 	componenttest "github.com/ONSdigital/dp-component-test"
@@ -45,16 +45,18 @@ func NewDownloadServiceComponent(fake_auth_url string) *DownloadServiceComponent
 		errChan:      make(chan error),
 	}
 
-	os.Setenv("DATABASE_NAME", "testing")
-
 	log.Namespace = "dp-download-service"
 
-	os.Setenv("ZEBEDEE_URL", fake_auth_url)
-	os.Setenv("PUBLIC_BUCKET_URL", "http://public-bucket.com/")
-	os.Setenv("IS_PUBLISHING", "false")
+	cfg, err := config.Get()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to get config: %s", err.Error()))
+	}
 
-	d.cfg, _ = config.Get()
+	cfg.AuthorisationConfig.ZebedeeURL = fake_auth_url
+	cfg.PublicBucketURL = config.URL{URL: url.URL{Scheme: "http", Host: "public-bucket.com"}}
+	cfg.IsPublishing = false
 
+	d.cfg = cfg
 	d.deps = &External{Server: d.DpHttpServer}
 
 	return d
@@ -76,7 +78,7 @@ func (d *DownloadServiceComponent) Reset() {
 	ctx := context.Background()
 
 	// clear out test bucket
-	awsConfig, err := awsConfig.LoadDefaultConfig(ctx,
+	awsCfg, err := awsConfig.LoadDefaultConfig(ctx,
 		awsConfig.WithRegion(cfg.AwsRegion),
 		awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
 	)
@@ -84,7 +86,7 @@ func (d *DownloadServiceComponent) Reset() {
 		panic(fmt.Sprintf("Failed to create aws config: %s", err.Error()))
 	}
 
-	s3client := s3.NewFromConfig(awsConfig, func(o *s3.Options) {
+	s3client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
 		o.BaseEndpoint = aws.String(localStackHost)
 		o.UsePathStyle = true
 	})
@@ -114,7 +116,8 @@ func (d *DownloadServiceComponent) Reset() {
 
 func (d *DownloadServiceComponent) Close() error {
 	if d.svc != nil {
-		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 		return d.svc.Close(ctx)
 	}
 

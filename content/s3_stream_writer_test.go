@@ -1,6 +1,7 @@
 package content
 
 import (
+	"context"
 	"errors"
 	"io"
 	"strings"
@@ -13,7 +14,7 @@ import (
 
 var (
 	testS3Path = "wibble/1234567890.csv"
-	testErr    = errors.New("bork")
+	errExample = errors.New("bork")
 )
 
 type StubWriter struct {
@@ -28,6 +29,7 @@ func (w *StubWriter) Write(p []byte) (n int, err error) {
 func TestStreamWriter_WriteContent(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+	ctx := context.Background()
 
 	Convey("should return expected error if s3 client Get returns an error", t, func() {
 		w := writerNeverInvoked(ctrl)
@@ -37,7 +39,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 			S3Client: s3Cli,
 		}
 
-		err := s.StreamAndWrite(nil, testS3Path, w)
+		err := s.StreamAndWrite(ctx, testS3Path, w)
 
 		So(errors.Is(err, expectedErr), ShouldBeTrue)
 	})
@@ -51,7 +53,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 			S3Client: s3Cli,
 		}
 
-		err := s.StreamAndWrite(nil, testS3Path, w)
+		err := s.StreamAndWrite(ctx, testS3Path, w)
 
 		So(errors.Is(err, expectedErr), ShouldBeTrue)
 	})
@@ -65,7 +67,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 			S3Client: s3Cli,
 		}
 
-		err := s.StreamAndWrite(nil, testS3Path, w)
+		err := s.StreamAndWrite(ctx, testS3Path, w)
 
 		So(errors.Is(err, expectedErr), ShouldBeTrue)
 	})
@@ -79,7 +81,7 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 			S3Client: s3Cli,
 		}
 
-		err := s.StreamAndWrite(nil, testS3Path, writer)
+		err := s.StreamAndWrite(ctx, testS3Path, writer)
 
 		So(err, ShouldBeNil)
 		So(writer.data, ShouldResemble, []byte("1, 2, 3, 4"))
@@ -94,18 +96,17 @@ func TestStreamWriter_WriteContent(t *testing.T) {
 			S3Client: s3Cli,
 		}
 
-		err := s.StreamAndWrite(nil, testS3Path, writer)
+		err := s.StreamAndWrite(ctx, testS3Path, writer)
 
 		So(err, ShouldBeNil)
 		So(writer.data, ShouldResemble, []byte("1, 2, 3, 4"))
 	})
-
 }
 
 func s3ClientGetReturnsError(ctrl *gomock.Controller, key string) (*mocks.MockS3Client, error) {
 	cli := mocks.NewMockS3Client(ctrl)
-	cli.EXPECT().Get(gomock.Any(), key).Times(1).Return(nil, nil, testErr)
-	return cli, testErr
+	cli.EXPECT().Get(gomock.Any(), key).Times(1).Return(nil, nil, errExample)
+	return cli, errExample
 }
 
 func s3ClientGetReturnsReader(ctrl *gomock.Controller, key string, r S3ReadCloser) *mocks.MockS3Client {
@@ -116,9 +117,9 @@ func s3ClientGetReturnsReader(ctrl *gomock.Controller, key string, r S3ReadClose
 
 func s3ReadCloserErroringOnRead(ctrl *gomock.Controller) (*mocks.MockS3ReadCloser, error) {
 	r := mocks.NewMockS3ReadCloser(ctrl)
-	r.EXPECT().Read(gomock.Any()).MinTimes(1).Return(0, testErr)
+	r.EXPECT().Read(gomock.Any()).MinTimes(1).Return(0, errExample)
 	r.EXPECT().Close().Times(1)
-	return r, testErr
+	return r, errExample
 }
 
 func writerNeverInvoked(ctrl *gomock.Controller) *mocks.MockWriter {
@@ -129,6 +130,6 @@ func writerNeverInvoked(ctrl *gomock.Controller) *mocks.MockWriter {
 
 func writerReturningErrorOnWrite(ctrl *gomock.Controller) (*mocks.MockWriter, error) {
 	w := mocks.NewMockWriter(ctrl)
-	w.EXPECT().Write(gomock.Any()).Times(1).Return(0, testErr)
-	return w, testErr
+	w.EXPECT().Write(gomock.Any()).Times(1).Return(0, errExample)
+	return w, errExample
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"net/http"
 	"testing"
 
 	"github.com/ONSdigital/dp-download-service/content/mocks"
@@ -23,33 +22,6 @@ func (s *RetrieverTestSuite) SetupTest() {
 
 func TestRetrieverTestSuite(t *testing.T) {
 	suite.Run(t, new(RetrieverTestSuite))
-}
-
-type fakeHttpClient struct {
-	HTTPClient
-	statusCode int
-	body       string
-	err        error
-}
-
-func newFakeFilesApiHttpClient(statusCode int, body string) HTTPClient {
-	return &fakeHttpClient{
-		statusCode: statusCode,
-		body:       body,
-	}
-}
-
-func newFakeFilesApiErroringHttpClient(err error) HTTPClient {
-	return &fakeHttpClient{
-		err: err,
-	}
-}
-
-func (f fakeHttpClient) Do(ctx context.Context, req *http.Request) (resp *http.Response, err error) {
-	return &http.Response{
-		StatusCode: f.statusCode,
-		Body:       io.NopCloser(bytes.NewBuffer([]byte(f.body))),
-	}, f.err
 }
 
 func (s *RetrieverTestSuite) TestDownloadFile() {

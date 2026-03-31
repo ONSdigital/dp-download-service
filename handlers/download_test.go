@@ -3,8 +3,8 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -38,7 +38,7 @@ const (
 )
 
 var (
-	testErr          = errors.New("borked")
+	errExample       = errors.New("borked")
 	testCsvContent   = []byte("1,2,3,4")
 	testImageContent = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
 )
@@ -105,7 +105,7 @@ func TestGetDownloadParameters(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	Convey("Given a request with UserAccess and collectionID context values", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/generic_request", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/generic_request", http.NoBody)
 		req = req.WithContext(context.WithValue(req.Context(), dphandlers.UserAccess.Context(), testUserToken))
 		req = req.WithContext(context.WithValue(req.Context(), dphandlers.CollectionID.Context(), testCollectionID))
 
@@ -121,7 +121,7 @@ func TestGetDownloadParameters(t *testing.T) {
 	})
 
 	Convey("Given a request without any context value", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/generic_request", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/generic_request", http.NoBody)
 
 		Convey("then GetDownloadParameters does not extract values from the context", func() {
 			params := GetDownloadParameters(req, testServiceToken, testDownloadServiceToken)
@@ -141,7 +141,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	Convey("Given a public link to the download exists on the filter api then return a status 301 to the download", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/filter-outputs/abcdefg.csv", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/filter-outputs/abcdefg.csv", http.NoBody)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
@@ -163,7 +163,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 	})
 
 	Convey("Given a public link to the download exists on the dataset api then return a status 301 to the download", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", http.NoBody)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
@@ -185,7 +185,7 @@ func TestDownloadDoReturnsRedirect(t *testing.T) {
 	})
 
 	Convey("Given a public link to the image download exists on the image api then return a status 301 to the download", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", http.NoBody)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
@@ -215,7 +215,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	Convey("Given a private link to the dataset download exists and the dataset is published then the file content is written to the response body", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", http.NoBody)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
@@ -238,7 +238,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 	})
 
 	Convey("Given a private link to the dataset download exists and the dataset is associated and user is authenticated then the file is streamed in the response body", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", http.NoBody)
 		req = req.WithContext(context.WithValue(req.Context(), request.CallerIdentityKey, "me"))
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
@@ -256,8 +256,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 		httpClient := &dphttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-
-				readCloser := ioutil.NopCloser(strings.NewReader(`{"identifier": "me"}`))
+				readCloser := io.NopCloser(strings.NewReader(`{"identifier": "me"}`))
 
 				return &http.Response{
 					StatusCode: http.StatusOK,
@@ -283,7 +282,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 	})
 
 	Convey("Given a private link to the image download exists and the image is published then the file content is written to the response body", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", http.NoBody)
 		req = req.WithContext(context.WithValue(req.Context(), dphandlers.UserAccess.Context(), testUserToken))
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
@@ -306,7 +305,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 	})
 
 	Convey("Given a private link to the image download exists and the image is not published and user is authenticated then the file is streamed in the response body", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", http.NoBody)
 		req = req.WithContext(context.WithValue(req.Context(), dphandlers.UserAccess.Context(), testUserToken))
 		req = req.WithContext(context.WithValue(req.Context(), request.CallerIdentityKey, "me"))
 		w := httptest.NewRecorder()
@@ -325,8 +324,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 		httpClient := &dphttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-
-				readCloser := ioutil.NopCloser(strings.NewReader(`{"identifier": "me"}`))
+				readCloser := io.NopCloser(strings.NewReader(`{"identifier": "me"}`))
 
 				return &http.Response{
 					StatusCode: http.StatusOK,
@@ -348,9 +346,7 @@ func TestDownloadDoReturnsOK(t *testing.T) {
 
 		So(w.Code, ShouldEqual, http.StatusOK)
 		So(w.Body.Bytes(), ShouldResemble, testImageContent)
-
 	})
-
 }
 
 func TestDownloadDoFailureScenarios(t *testing.T) {
@@ -361,7 +357,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	Convey("Should return HTTP status not found if the dataset downloader returns a dataset version not found error", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", http.NoBody)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
@@ -384,7 +380,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 	})
 
 	Convey("Should return HTTP status not found if the image downloader returns an image not found error", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", http.NoBody)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
@@ -407,13 +403,13 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 	})
 
 	Convey("Should return HTTP status internal server error if the dataset downloader return an error", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", http.NoBody)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
-		dl := downloaderReturningError(mockCtrl, params, downloads.TypeDatasetVersion, testErr)
+		dl := downloaderReturningError(mockCtrl, params, downloads.TypeDatasetVersion, errExample)
 		s3C := s3ContentNeverInvoked(mockCtrl)
 
 		d := Download{
@@ -429,13 +425,13 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 	})
 
 	Convey("Should return HTTP status internal server error if the image downloader return an error", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", http.NoBody)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
 		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png"}
 
-		dl := downloaderReturningError(mockCtrl, params, downloads.TypeImage, testErr)
+		dl := downloaderReturningError(mockCtrl, params, downloads.TypeImage, errExample)
 		s3C := s3ContentNeverInvoked(mockCtrl)
 
 		d := Download{
@@ -451,14 +447,14 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 	})
 
 	Convey("Should return HTTP status internal server error if s3 content for dataset returns an unexpected error", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", http.NoBody)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
 		params := downloads.Parameters{DatasetID: "12345", Edition: "6789", Version: "1"}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeDatasetVersion, publishedDatasetDownloadPrivateURL)
-		s3C := s3ContentReturnsAnError(mockCtrl, testErr)
+		s3C := s3ContentReturnsAnError(mockCtrl, errExample)
 
 		d := Download{
 			Downloader: dl,
@@ -473,14 +469,14 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 	})
 
 	Convey("Should return HTTP status internal server error if s3 content for image returns an unexpected error", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", http.NoBody)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
 		params := downloads.Parameters{ImageID: "54321", Variant: "1280x720", Filename: "myImage.png"}
 
 		dl := downloaderReturnsResult(mockCtrl, params, downloads.TypeImage, publishedImageDownloadPrivateURL)
-		s3C := s3ContentReturnsAnError(mockCtrl, testErr)
+		s3C := s3ContentReturnsAnError(mockCtrl, errExample)
 
 		d := Download{
 			Downloader: dl,
@@ -495,7 +491,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 	})
 
 	Convey("Should return HTTP status not found if dataset downloads has no public or private links", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/downloads/datasets/12345/editions/6789/versions/1.csv", http.NoBody)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
@@ -517,7 +513,7 @@ func TestDownloadDoFailureScenarios(t *testing.T) {
 	})
 
 	Convey("Should return HTTP status not found if image downloads has no public or private links", t, func() {
-		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", nil)
+		req := httptest.NewRequest("GET", "http://localhost:28000/images/54321/1280x720/myImage.png", http.NoBody)
 		w := httptest.NewRecorder()
 		r := mux.NewRouter()
 
@@ -566,7 +562,10 @@ func s3ContentWriterSuccessfullyWritesToResponse(c *gomock.Controller, w io.Writ
 		StreamAndWrite(gomock.Any(), gomock.Eq(expectedS3Path), gomock.Eq(w)).
 		Return(nil).
 		Do(func(ctx context.Context, expectedS3Path string, w io.Writer) {
-			w.Write(expectedBody)
+			_, err := w.Write(expectedBody)
+			if err != nil {
+				panic(fmt.Sprintf("failed to write expected body to response writer: %v", err))
+			}
 		})
 	return s3C
 }

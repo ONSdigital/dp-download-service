@@ -45,8 +45,7 @@ func (e *External) FilterClient(s string) downloads.FilterClient {
 	c := gomock.NewController(t)
 	m := mocks.NewMockFilterClient(c)
 	m.EXPECT().Checker(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, check *healthcheck.CheckState) error {
-		check.Update("OK", "MsgHealthy", 0)
-		return nil
+		return check.Update("OK", "MsgHealthy", 0)
 	})
 	return m
 }
@@ -56,8 +55,7 @@ func (e *External) ImageClient(s string) downloads.ImageClient {
 	c := gomock.NewController(t)
 	m := mocks.NewMockImageClient(c)
 	m.EXPECT().Checker(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, check *healthcheck.CheckState) error {
-		check.Update("OK", "MsgHealthy", 0)
-		return nil
+		return check.Update("OK", "MsgHealthy", 0)
 	})
 	return m
 }
@@ -69,8 +67,7 @@ func (e *External) FilesClient(s string) downloads.FilesClient {
 
 	m.EXPECT().Checker(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, check *healthcheck.CheckState) error {
-			check.Update("OK", "MsgHealthy", 0)
-			return nil
+			return check.Update("OK", "MsgHealthy", 0)
 		})
 
 	m.EXPECT().GetFile(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
@@ -105,7 +102,7 @@ func (e *External) FilesClient(s string) downloads.FilesClient {
 }
 
 func (e *External) S3Client(ctx context.Context, cfg *config.Config) (content.S3Client, error) {
-	awsConfig, err := awsConfig.LoadDefaultConfig(ctx,
+	awsCfg, err := awsConfig.LoadDefaultConfig(ctx,
 		awsConfig.WithRegion(cfg.AwsRegion),
 		awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
 	)
@@ -113,15 +110,15 @@ func (e *External) S3Client(ctx context.Context, cfg *config.Config) (content.S3
 		return nil, fmt.Errorf("could not create aws config: %w", err)
 	}
 
-	s3client := s3client.NewClientWithConfig(cfg.BucketName, awsConfig, func(o *s3.Options) {
+	client := s3client.NewClientWithConfig(cfg.BucketName, awsCfg, func(o *s3.Options) {
 		o.BaseEndpoint = aws.String(localStackHost)
 		o.UsePathStyle = true
 	})
 
-	return s3client, nil
+	return client, nil
 }
 
-func (e *External) HealthCheck(c *config.Config, s string, s2 string, s3 string) (service.HealthChecker, error) {
+func (e *External) HealthCheck(c *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
 	hc := healthcheck.New(healthcheck.VersionInfo{}, time.Second, time.Second)
 	return &hc, nil
 }
@@ -131,15 +128,14 @@ func (e *External) DatasetClient(datasetAPIURL string) downloads.DatasetClient {
 	c := gomock.NewController(t)
 	m := mocks.NewMockDatasetClient(c)
 	m.EXPECT().Checker(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, check *healthcheck.CheckState) error {
-		check.Update("OK", "MsgHealthy", 0)
-		return nil
+		return check.Update("OK", "MsgHealthy", 0)
 	})
 	return m
 }
 
 func (e *External) HTTPServer(cfg *config.Config, r http.Handler) service.HTTPServer {
-	e.Server.Server.Addr = cfg.BindAddr
-	e.Server.Server.Handler = r
+	e.Server.Addr = cfg.BindAddr
+	e.Server.Handler = r
 
 	return e.Server
 }

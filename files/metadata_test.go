@@ -24,6 +24,6 @@ func TestUnpublished(t *testing.T) {
 			State: file.State,
 		}
 
-		assert.Equal(t, file.ExpectedUnpublished, !(m.State == files.PUBLISHED || m.State == files.MOVED))
+		assert.Equal(t, file.ExpectedUnpublished, m.State != files.PUBLISHED && m.State != files.MOVED)
 	}
 }

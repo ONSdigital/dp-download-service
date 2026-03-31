@@ -122,7 +122,7 @@ func (d Download) do(w http.ResponseWriter, req *http.Request, fileType download
 		return
 	}
 
-	if len(fileDownloads.PrivateS3Path) > 0 {
+	if fileDownloads.PrivateS3Path != "" {
 		s3Path := fileDownloads.PrivateS3Path
 		filename := fileDownloads.PrivateFilename
 
@@ -171,43 +171,42 @@ func GetDownloadParameters(req *http.Request, serviceAuthToken, downloadServiceT
 func downloadParametersToLogData(p downloads.Parameters) log.Data {
 	logData := log.Data{}
 
-	if len(p.CollectionID) > 0 {
+	if p.CollectionID != "" {
 		logData["collection_id"] = p.CollectionID
 	}
-	if len(p.FilterOutputID) > 0 {
+	if p.FilterOutputID != "" {
 		logData["filter_output_id"] = p.FilterOutputID
 	}
-	if len(p.DatasetID) > 0 {
+	if p.DatasetID != "" {
 		logData["dataset_id"] = p.DatasetID
 	}
-	if len(p.Edition) > 0 {
+	if p.Edition != "" {
 		logData["edition"] = p.Edition
 	}
-	if len(p.Version) > 0 {
+	if p.Version != "" {
 		logData["version"] = p.Version
 	}
-	if len(p.ImageID) > 0 {
+	if p.ImageID != "" {
 		logData["imageID"] = p.ImageID
 	}
-	if len(p.Variant) > 0 {
+	if p.Variant != "" {
 		logData["variant"] = p.Variant
 	}
-	if len(p.Filename) > 0 {
+	if p.Filename != "" {
 		logData["filename"] = p.Filename
 	}
 
 	return logData
 }
 
-func (d Download) authenticate(r *http.Request, logData map[string]interface{}) (bool, map[string]interface{}) {
-	var authorised bool
-
+func (d Download) authenticate(r *http.Request, logData map[string]interface{}) (authorised bool, updatedLogData log.Data) {
 	if d.IsPublishing {
 		authorised = request.IsCallerPresent(r.Context())
 	}
 
-	logData["authenticated"] = authorised
-	return authorised, logData
+	updatedLogData = logData
+	updatedLogData["authenticated"] = authorised
+	return authorised, updatedLogData
 }
 
 func getUserAccessTokenFromContext(ctx context.Context) string {

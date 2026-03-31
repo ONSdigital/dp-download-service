@@ -35,10 +35,7 @@ func TestNew(t *testing.T) {
 	}
 
 	Convey("Setting up dependencies", t, func() {
-
 		// Set up happy path clients and dependencies.
-		//
-
 		authConfig := authorisation.Config{
 			Enabled:                        true,
 			PermissionsAPIURL:              "http://localhost:1112",
@@ -131,8 +128,6 @@ func TestNew(t *testing.T) {
 		})
 
 		// Ensure New fails when any of the client setups fail
-		//
-
 		Convey("When S3 setup fails", func() {
 			mockedDependencies.S3ClientFunc = func(ctx context.Context, cfg *config.Config) (content.S3Client, error) {
 				return nil, errors.New("s3 failure")
@@ -146,7 +141,7 @@ func TestNew(t *testing.T) {
 			})
 		})
 
-		Convey("When healthcheck setup fail", func() {
+		Convey("When healthcheck setup fails", func() {
 			mockedDependencies.HealthCheckFunc = func(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
 				return nil, errors.New("healthcheck failure")
 			}
@@ -160,8 +155,6 @@ func TestNew(t *testing.T) {
 		})
 
 		// Ensure New fails if any of the healthcheck AddChecks fail
-		//
-
 		failIfNameMatches := func(name, match string) error {
 			if name == match {
 				return errors.New(name)
@@ -233,6 +226,5 @@ func TestNew(t *testing.T) {
 				So(err.Error(), ShouldContainSubstring, "registering checkers for healthcheck")
 			})
 		})
-
 	})
 }

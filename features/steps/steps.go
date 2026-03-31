@@ -124,8 +124,8 @@ func (c *DownloadServiceComponent) ensureViewerKeys() error {
 	if err != nil {
 		return fmt.Errorf("generate viewer RSA key: %w", err)
 	}
-	if err := priv.Validate(); err != nil {
-		return fmt.Errorf("validate viewer RSA key: %w", err)
+	if validationErr := priv.Validate(); validationErr != nil {
+		return fmt.Errorf("validate viewer RSA key: %w", validationErr)
 	}
 
 	// Create kid
@@ -148,8 +148,7 @@ func (c *DownloadServiceComponent) ensureViewerKeys() error {
 }
 
 func (c *DownloadServiceComponent) iAmAnAdminUserAccessingTheFileThroughABrowser() error {
-	c.ApiFeature.ISetTheHeaderTo("Cookie", "access_token="+authorisationtest.AdminJWTToken+";")
-	return nil
+	return c.ApiFeature.ISetTheHeaderTo("Cookie", "access_token="+authorisationtest.AdminJWTToken+";")
 }
 
 func (d *DownloadServiceComponent) theResponseBodyShouldContain(expected string) error {
@@ -232,7 +231,10 @@ func getPermissionsBundle() *permissionsAPISDK.Bundle {
 func (d *DownloadServiceComponent) theHeadersShouldBe(expectedHeaders *godog.Table) error {
 	headers, _ := assistdog.NewDefault().ParseMap(expectedHeaders)
 	for key, value := range headers {
-		d.ApiFeature.TheResponseHeaderShouldBe(key, value)
+		err := d.ApiFeature.TheResponseHeaderShouldBe(key, value)
+		if err != nil {
+			return err
+		}
 	}
 
 	return d.ApiFeature.StepError()
@@ -257,7 +259,10 @@ func (d *DownloadServiceComponent) theFileMetadata(filepath string, metadata *go
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests[r.URL.Path] = r.Header.Get(dprequest.AuthHeaderKey)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(metadata.Content))
+		_, err := w.Write([]byte(metadata.Content))
+		if err != nil {
+			log.Error(context.Background(), "failed to write response", err)
+		}
 	}))
 	d.cfg.FilesAPIURL = server.URL
 
@@ -268,10 +273,11 @@ func (d *DownloadServiceComponent) theFileStoredInS3WithContent(filepath string,
 	c := bytes.NewBuffer([]byte(content.Content))
 
 	// store
-	d.theS3FileWithContent(filepath, &godog.DocString{
+	err := d.theS3FileWithContent(filepath, &godog.DocString{
 		MediaType: "",
 		Content:   c.String(),
 	})
+	assert.NoError(d.ApiFeature, err)
 
 	return d.ApiFeature.StepError()
 }
@@ -280,18 +286,18 @@ func (d *DownloadServiceComponent) theS3FileWithContent(filepath string, content
 	cfg, _ := config.Get()
 	ctx := context.Background()
 
-	awsConfig, err := awsConfig.LoadDefaultConfig(ctx,
+	awsCfg, err := awsConfig.LoadDefaultConfig(ctx,
 		awsConfig.WithRegion(cfg.AwsRegion),
 		awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
 	)
 	assert.NoError(d.ApiFeature, err)
 
-	s3client := s3client.NewClientWithConfig(cfg.BucketName, awsConfig, func(o *s3.Options) {
+	client := s3client.NewClientWithConfig(cfg.BucketName, awsCfg, func(o *s3.Options) {
 		o.BaseEndpoint = aws.String(localStackHost)
 		o.UsePathStyle = true
 	})
 
-	_, err = s3client.Upload(ctx, &s3.PutObjectInput{
+	_, err = client.Upload(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(cfg.BucketName),
 		Key:    aws.String(filepath),
 		Body:   strings.NewReader(content.Content),
@@ -302,7 +308,8 @@ func (d *DownloadServiceComponent) theS3FileWithContent(filepath string, content
 }
 
 func (d *DownloadServiceComponent) iShouldBeRedirectedTo(url string) error {
-	d.ApiFeature.TheHTTPStatusCodeShouldBe("301")
+	err := d.ApiFeature.TheHTTPStatusCodeShouldBe("301")
+	assert.NoError(d.ApiFeature, err)
 
 	assert.Equal(d.ApiFeature, url, d.ApiFeature.HTTPResponse.Header.Get("Location"))
 

@@ -68,7 +68,6 @@ func TestGetAccessTokenFromRequest(t *testing.T) {
 }
 
 func TestGetAuthEntityData(t *testing.T) {
-
 	Convey("Testing getAuthEntityData invalid JWT token error", t, func() {
 		authorisationMock := &authMock.MiddlewareMock{
 			ParseFunc: func(token string) (*permissionsAPISDK.EntityData, error) {
@@ -96,13 +95,11 @@ func TestGetAuthEntityData(t *testing.T) {
 }
 
 func TestCheckUserPermissions(t *testing.T) {
-
 	permissionAttrs := map[string]string{
 		"dataset_edition": "test-dataset/edition1",
 	}
 
 	Convey("Testing user does not have permissions for a specific dataset/edition", t, func() {
-
 		permissionsChecker := &authMock.PermissionsCheckerMock{
 			HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
 				return false, nil
@@ -116,7 +113,6 @@ func TestCheckUserPermissions(t *testing.T) {
 	})
 
 	Convey("Testing user has permissions for a specific dataset/edition", t, func() {
-
 		permissionsChecker := &authMock.PermissionsCheckerMock{
 			HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
 				return true, nil

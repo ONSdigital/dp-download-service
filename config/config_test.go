@@ -47,13 +47,13 @@ func setConfigEnv(configEnv map[string]string) {
 }
 
 func TestSpec(t *testing.T) {
-
 	Convey("Given an environment with no environment variables set", t, func() {
 		originalConfigEnv := getConfigEnv()
 		defer setConfigEnv(originalConfigEnv)
 
 		for k := range originalConfigEnv {
-			os.Unsetenv(k)
+			err := os.Unsetenv(k)
+			So(err, ShouldBeNil)
 		}
 
 		os.Setenv("PUBLIC_BUCKET_URL", "http://test")
@@ -61,7 +61,6 @@ func TestSpec(t *testing.T) {
 		config, err := Get()
 
 		Convey("when the config variables are retrieved", func() {
-
 			Convey("there should be no error returned", func() {
 				So(err, ShouldBeNil)
 			})
@@ -98,7 +97,8 @@ func TestBadPublicBucketUrl(t *testing.T) {
 		defer setConfigEnv(originalConfigEnv)
 
 		for k := range originalConfigEnv {
-			os.Unsetenv(k)
+			err := os.Unsetenv(k)
+			So(err, ShouldBeNil)
 		}
 
 		os.Setenv("PUBLIC_BUCKET_URL", "://test")

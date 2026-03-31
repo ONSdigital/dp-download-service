@@ -38,7 +38,6 @@ func (e *testError) Unwrap() error {
 }
 
 func TestCallbackHappy(t *testing.T) {
-
 	Convey("Given an error chain with wrapped logData", t, func() {
 		err1 := &testError{
 			err: errors.New("original error"),

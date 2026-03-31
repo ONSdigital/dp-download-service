@@ -44,8 +44,8 @@ func (t *ComponentTest) InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	ctx.After(func(ctx context.Context, sc *godog.Scenario, err error) (context.Context, error) {
-		err = component.Close()
+	ctx.After(func(ctx context.Context, sc *godog.Scenario, _ error) (context.Context, error) {
+		err := component.Close()
 		if err != nil {
 			log.Error(ctx, "error closing service", err)
 		}

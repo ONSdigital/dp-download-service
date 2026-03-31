@@ -59,9 +59,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 
 			permissionAttrs := setPermissionsAttributes(metadata)
 
-			logData = log.Data{
-				"entity_data": entityData,
-			}
+			logData["entity_data"] = entityData
 
 			if checkUserPermission(ctx, logData, "static-files:read", permissionAttrs, permissionsChecker, entityData) {
 				// Passing identifier as both user and email parameters as the identity client only provides a single identifier
@@ -71,10 +69,10 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 				}
 				// Service auth tokens cannot access this endpoint so will be user tokens only if the request has reached this point
 				logAuth := log.Auth(log.USER, entityData.UserID)
-				logData := log.Data{"filePath": requestedFilePath}
+				logData["filePath"] = requestedFilePath
 				log.Info(ctx, "Successfully created file event for download", log.Classification(log.ProtectiveMonitoring), logAuth, logData)
 			} else {
-				log.Info(req.Context(), "authorisation failed: request has no permission", log.Classification(log.ProtectiveMonitoring), log.Auth(log.USER, entityData.UserID), logData)
+				log.Info(ctx, "authorisation failed: request has no permission", log.Classification(log.ProtectiveMonitoring), log.Auth(log.USER, entityData.UserID), logData)
 				handleError(ctx, "the request was not authorised - check token and user's permissions", w, files.ErrNotAuthorised)
 				return
 			}
@@ -84,7 +82,7 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 			return
 		}
 
-		streamFile(req.Context(), w, metadata, requestedFilePath, downloadFileFromBucket)
+		streamFile(ctx, w, metadata, requestedFilePath, downloadFileFromBucket)
 	}
 }
 
@@ -155,9 +153,9 @@ func handleMetadataError(ctx context.Context, w http.ResponseWriter, err error) 
 	}
 }
 
-func parseRequest(req *http.Request) (context.Context, string) {
-	ctx := req.Context()
-	filePath := mux.Vars(req)["path"]
+func parseRequest(req *http.Request) (ctx context.Context, filePath string) {
+	ctx = req.Context()
+	filePath = mux.Vars(req)["path"]
 
 	authHeaderValue := req.Header.Get(dprequest.AuthHeaderKey)
 	if authHeaderValue != "" {
