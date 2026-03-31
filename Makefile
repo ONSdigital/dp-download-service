@@ -40,7 +40,7 @@ test:
 
 .PHONY: lint
 lint:
-	golangci-lint run ./... --timeout 5m --tests=false --exclude-dirs=features
+	golangci-lint run ./...
 
 docker-test-component:
 	docker-compose -f docker-compose.yml down
