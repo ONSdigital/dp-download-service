@@ -42,7 +42,7 @@ test:
 lint:
 	golangci-lint run ./...
 
-docker-test-component:
+test-component:
 	docker-compose -f docker-compose.yml down
 	docker-compose -f docker-compose.yml up --abort-on-container-exit
 	docker-compose -f docker-compose.yml down
