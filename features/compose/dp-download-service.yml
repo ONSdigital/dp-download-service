@@ -3,7 +3,7 @@ version: "3.3"
 services:
   download-service:
     build:
-      context: ./
+      context: ../../../dp-download-service
       dockerfile: Dockerfile.test
     command: ["go", "test", "-component", "-coverpkg=./..."]
     ports:
@@ -24,9 +24,8 @@ services:
       - SERVICES=s3
       - DEBUG=0
       - AWS_DEFAULT_REGION=eu-west-2
-      - EDGE_PORT=4566
     volumes:
-      - ./aws:/etc/localstack/init/ready.d/
+      - ../../aws:/etc/localstack/init/ready.d/
       - "${TMPDIR:-/tmp}/localstack:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
             

@@ -42,13 +42,6 @@ test:
 lint:
 	golangci-lint run ./...
 
+.PHONY: test-component
 test-component:
-	docker-compose -f docker-compose.yml down
-	docker-compose -f docker-compose.yml up --abort-on-container-exit
-	docker-compose -f docker-compose.yml down
-
-docker-local:
-	docker-compose -f docker-compose-local.yml down
-	docker-compose -f docker-compose-local.yml up -d
-	docker-compose -f docker-compose-local.yml exec download-service bash
-
+	cd features/compose; docker-compose up --abort-on-container-exit
