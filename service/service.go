@@ -135,13 +135,19 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		IsPublishing: cfg.IsPublishing,
 	}
 
-	downloadHandler := api.CreateV1DownloadHandler(
+	downloadHandlerWithAuth := api.CreateDownloadHandler(
 		files.FetchMetadata(svc.filesClient),
 		files.DownloadFile(ctx, svc.s3Client),
 		files.CreateFileEvent(svc.filesClient),
 		svc.authMiddleware,
 		cfg,
 		svc.permissionsChecker,
+	)
+
+	downloadHandler := api.CreateDownloadHandlerNoAuth(
+		files.FetchMetadata(svc.filesClient),
+		files.DownloadFile(ctx, svc.s3Client),
+		cfg,
 	)
 
 	// The 'Do' functions eventually get to the S3 bucket, which is all of them except the V1 downloader
@@ -160,6 +166,8 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		router.Path("/downloads/filter-outputs/{filterOutputID}.txt").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoFilterOutput("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
 		router.Path("/downloads/filter-outputs/{filterOutputID}.csv-metadata.json").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoFilterOutput("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
 		router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(svc.authMiddleware.Require("static-files:read", d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken))).Methods(http.MethodGet)
+		router.Path("/downloads-new/{path:.*}").HandlerFunc(downloadHandlerWithAuth).Methods(http.MethodGet)
+		router.Path("/downloads/files/{path:.*}").HandlerFunc(downloadHandlerWithAuth).Methods(http.MethodGet)
 	} else {
 		router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv").HandlerFunc(d.DoDatasetVersion("csv", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
 		router.Path("/downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv-metadata.json").HandlerFunc(d.DoDatasetVersion("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
@@ -172,11 +180,9 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		router.Path("/downloads/filter-outputs/{filterOutputID}.txt").HandlerFunc(d.DoFilterOutput("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
 		router.Path("/downloads/filter-outputs/{filterOutputID}.csv-metadata.json").HandlerFunc(d.DoFilterOutput("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
 		router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
+		router.Path("/downloads-new/{path:.*}").HandlerFunc(downloadHandler).Methods(http.MethodGet)
+		router.Path("/downloads/files/{path:.*}").HandlerFunc(downloadHandler).Methods(http.MethodGet)
 	}
-
-	// Auth is handled within the handler function for these endpoints
-	router.Path("/downloads-new/{path:.*}").HandlerFunc(downloadHandler).Methods(http.MethodGet)
-	router.Path("/downloads/files/{path:.*}").HandlerFunc(downloadHandler).Methods(http.MethodGet)
 
 	router.HandleFunc("/health", hc.Handler)
 	svc.router = router

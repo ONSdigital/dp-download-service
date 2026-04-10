@@ -21,8 +21,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// CreateV1DownloadHandler handles generic download file requests.
-func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, authMiddleware auth.Middleware, cfg *config.Config, permissionsChecker auth.PermissionsChecker) http.HandlerFunc {
+// CreateDownloadHandler handles generic download file requests in the publishing environment.
+func CreateDownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, authMiddleware auth.Middleware, cfg *config.Config, permissionsChecker auth.PermissionsChecker) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if cfg.IsPublishing {
 			w.Header().Set("Cache-Control", "no-cache")
@@ -77,6 +77,28 @@ func CreateV1DownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFr
 				return
 			}
 		}
+
+		if handleUnsupportedMetadataStates(ctx, *metadata, cfg, requestedFilePath, w) {
+			return
+		}
+
+		streamFile(ctx, w, metadata, requestedFilePath, downloadFileFromBucket)
+	}
+}
+
+// CreateDownloadHandlerNoAuth handles file requests in the web environment, the handleUnsupportedMetadataStates ensures no unpublished files are returned.
+func CreateDownloadHandlerNoAuth(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, cfg *config.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx, requestedFilePath := parseRequest(req)
+		log.Info(ctx, fmt.Sprintf("Handling request for %s", requestedFilePath))
+
+		metadata, err := fetchMetadata(ctx, requestedFilePath, filesAPISDK.Headers{})
+		if err != nil {
+			handleMetadataError(ctx, w, err)
+			return
+		}
+
+		log.Info(ctx, fmt.Sprintf("Found metadata for file %s", requestedFilePath), log.Data{"metadata": metadata})
 
 		if handleUnsupportedMetadataStates(ctx, *metadata, cfg, requestedFilePath, w) {
 			return

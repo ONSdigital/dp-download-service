@@ -71,7 +71,7 @@ func TestHandlingForbiddenErrorFetchingMetadata(t *testing.T) {
 
 	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
+	h := api.CreateDownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusForbidden, rec.status)
@@ -93,7 +93,7 @@ func TestHandlingNotAuthorisedErrorFetchingMetadata(t *testing.T) {
 
 	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
+	h := api.CreateDownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusUnauthorized, rec.status)
@@ -122,7 +122,7 @@ func TestHandlingGetAuthEntityFails(t *testing.T) {
 
 	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, nil)
+	h := api.CreateDownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, nil)
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusUnauthorized, rec.status)
@@ -161,9 +161,9 @@ func TestHandlingCheckUserPermissionsSuccess(t *testing.T) {
 	}
 	downloadFile := func(path string) (io.ReadCloser, error) { return io.NopCloser(strings.NewReader("testing")), nil }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
+	h := api.CreateDownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
 	h.ServeHTTP(rec, req)
-	assert.Equalf(t, http.StatusOK, rec.Code, "CreateV1DownloadHandler(%v)", "Test UPLOADED")
+	assert.Equalf(t, http.StatusOK, rec.Code, "CreateDownloadHandler(%v)", "Test UPLOADED")
 	assert.True(t, createFileEventCalled, "createFileEvent should have been called")
 }
 
@@ -194,7 +194,7 @@ func TestHandlingCheckUserPermissionsFails(t *testing.T) {
 	}
 	downloadFile := func(path string) (io.ReadCloser, error) { return io.NopCloser(strings.NewReader("testing")), nil }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
+	h := api.CreateDownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
 	h.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusForbidden, rec.status)
 }
@@ -214,7 +214,7 @@ func TestHandlingUnexpectedErrorFetchingMetadata(t *testing.T) {
 
 	downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
+	h := api.CreateDownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.status)
@@ -235,7 +235,7 @@ func TestHandlingErrorGettingFileContent(t *testing.T) {
 
 	downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
+	h := api.CreateDownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.status)
@@ -257,14 +257,14 @@ func TestHandlingErrorGettingFileNotAvailable(t *testing.T) {
 
 	downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
+	h := api.CreateDownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusNotFound, rec.status)
 	assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
 }
 
-func TestHandleFileNotPublished(t *testing.T) {
+func TestHandleFileNotPublishedWeb(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/files/data/file.csv", http.NoBody)
 	rec := &ErrorWriter{header: make(http.Header)}
 
@@ -282,18 +282,12 @@ func TestHandleFileNotPublished(t *testing.T) {
 				return &filesAPIModels.StoredRegisteredMetaData{State: tt.state}, nil
 			}
 
-			createFileEvent := func(ctx context.Context, event filesAPIModels.FileEvent, headers filesAPISDK.Headers) (*filesAPIModels.FileEvent, error) {
-				t.Fatal("createFileEvent should not have been called")
-				return nil, nil
-			}
-
 			downloadFile := func(path string) (io.ReadCloser, error) { return nil, nil }
 
-			h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
+			h := api.CreateDownloadHandlerNoAuth(fetchMetadata, downloadFile, &config.Config{})
 			h.ServeHTTP(rec, req)
 
-			assert.Equalf(t, tt.expectedStatus, rec.status, "CreateV1DownloadHandler(%v)", tt.name)
-			assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
+			assert.Equalf(t, tt.expectedStatus, rec.status, "CreateDownloadHandler(%v)", tt.name)
 		})
 	}
 }
@@ -329,10 +323,10 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 
 		downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
 
-		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
+		h := api.CreateDownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
 		h.ServeHTTP(rec, req)
 
-		assert.Equalf(t, http.StatusNotFound, rec.status, "CreateV1DownloadHandler(%v)", "Test CREATED")
+		assert.Equalf(t, http.StatusNotFound, rec.status, "CreateDownloadHandler(%v)", "Test CREATED")
 		assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
 		assert.True(t, createFileEventCalled, "createFileEvent should have been called")
 	})
@@ -355,10 +349,10 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 
 		downloadFile := func(path string) (io.ReadCloser, error) { return io.NopCloser(strings.NewReader("testing")), nil }
 
-		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
+		h := api.CreateDownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
 		h.ServeHTTP(rec, req)
 
-		assert.Equalf(t, http.StatusOK, rec.Code, "CreateV1DownloadHandler(%v)", "Test UPLOADED")
+		assert.Equalf(t, http.StatusOK, rec.Code, "CreateDownloadHandler(%v)", "Test UPLOADED")
 		assert.True(t, createFileEventCalled, "createFileEvent should have been called")
 	})
 
@@ -380,10 +374,10 @@ func TestHandleFileNotPublishedInPublishingMode(t *testing.T) {
 
 		downloadFile := func(path string) (io.ReadCloser, error) { return nil, errors.New("error downloading file") }
 
-		h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
+		h := api.CreateDownloadHandler(fetchMetadata, downloadFile, createFileEvent, authorisationMock, &config.Config{IsPublishing: true}, permissionsChecker)
 		h.ServeHTTP(rec, req)
 
-		assert.Equalf(t, http.StatusInternalServerError, rec.status, "CreateV1DownloadHandler(%v)", "Test UPLOADED but download fails")
+		assert.Equalf(t, http.StatusInternalServerError, rec.status, "CreateDownloadHandler(%v)", "Test UPLOADED but download fails")
 		assert.Equal(t, rec.Header().Get("Cache-Control"), "no-cache")
 		assert.True(t, createFileEventCalled, "createFileEvent should have been called")
 	})
@@ -406,7 +400,7 @@ func TestContentTypeHeader(t *testing.T) {
 
 	downloadFile := func(path string) (io.ReadCloser, error) { return FailingReadCloser{}, nil }
 
-	h := api.CreateV1DownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
+	h := api.CreateDownloadHandler(fetchMetadata, downloadFile, createFileEvent, nil, &config.Config{}, nil)
 	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, expectedType, rec.Header().Get("Content-Type"))
