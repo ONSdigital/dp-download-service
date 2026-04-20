@@ -26,7 +26,6 @@ var ErrRequest = errors.New("an error occurred making a request to files api")
 
 type FileDownloader func(path string) (io.ReadCloser, error)
 type MetadataFetcher func(ctx context.Context, path string, headers filesAPISDK.Headers) (*filesAPIModels.StoredRegisteredMetaData, error)
-
 type ContextKey string
 
 func FetchMetadata(filesClient downloads.FilesClient) MetadataFetcher {

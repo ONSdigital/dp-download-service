@@ -5,7 +5,7 @@ package service_test
 
 import (
 	"context"
-	auth "github.com/ONSdigital/dp-authorisation/v2/authorisation"
+	"github.com/ONSdigital/dp-authorisation/v2/authorisation"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/content"
 	"github.com/ONSdigital/dp-download-service/downloads"
@@ -25,7 +25,7 @@ var _ service.Dependencies = &DependenciesMock{}
 //
 //		// make and configure a mocked service.Dependencies
 //		mockedDependencies := &DependenciesMock{
-//			AuthMiddlewareFunc: func(contextMoqParam context.Context, configMoqParam *config.Config) (auth.Middleware, error) {
+//			AuthMiddlewareFunc: func(contextMoqParam context.Context, configMoqParam *config.Config) (authorisation.Middleware, error) {
 //				panic("mock out the AuthMiddleware method")
 //			},
 //			DatasetClientFunc: func(s string) downloads.DatasetClient {
@@ -57,7 +57,7 @@ var _ service.Dependencies = &DependenciesMock{}
 //	}
 type DependenciesMock struct {
 	// AuthMiddlewareFunc mocks the AuthMiddleware method.
-	AuthMiddlewareFunc func(contextMoqParam context.Context, configMoqParam *config.Config) (auth.Middleware, error)
+	AuthMiddlewareFunc func(contextMoqParam context.Context, configMoqParam *config.Config) (authorisation.Middleware, error)
 
 	// DatasetClientFunc mocks the DatasetClient method.
 	DatasetClientFunc func(s string) downloads.DatasetClient
@@ -146,7 +146,7 @@ type DependenciesMock struct {
 }
 
 // AuthMiddleware calls AuthMiddlewareFunc.
-func (mock *DependenciesMock) AuthMiddleware(contextMoqParam context.Context, configMoqParam *config.Config) (auth.Middleware, error) {
+func (mock *DependenciesMock) AuthMiddleware(contextMoqParam context.Context, configMoqParam *config.Config) (authorisation.Middleware, error) {
 	if mock.AuthMiddlewareFunc == nil {
 		panic("DependenciesMock.AuthMiddlewareFunc: method is nil but Dependencies.AuthMiddleware was just called")
 	}

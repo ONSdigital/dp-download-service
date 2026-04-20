@@ -21,8 +21,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// CreateDownloadHandler handles generic download file requests in the publishing environment.
-func CreateDownloadHandler(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, authMiddleware auth.Middleware, cfg *config.Config, permissionsChecker auth.PermissionsChecker) http.HandlerFunc {
+// CreateDownloadHandlerWithAuth handles generic download file requests in the publishing environment.
+func CreateDownloadHandlerWithAuth(fetchMetadata files.MetadataFetcher, downloadFileFromBucket files.FileDownloader, createFileEvent files.FileEventCreator, authMiddleware auth.Middleware, cfg *config.Config, permissionsChecker auth.PermissionsChecker) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if cfg.IsPublishing {
 			w.Header().Set("Cache-Control", "no-cache")
@@ -100,7 +100,7 @@ func CreateDownloadHandlerNoAuth(fetchMetadata files.MetadataFetcher, downloadFi
 
 		log.Info(ctx, fmt.Sprintf("Found metadata for file %s", requestedFilePath), log.Data{"metadata": metadata})
 
-		if handleUnsupportedMetadataStates(ctx, *metadata, cfg, requestedFilePath, w) {
+		if handleUnsupportedMetadataStatesWeb(ctx, *metadata, cfg, requestedFilePath, w) {
 			return
 		}
 
@@ -203,6 +203,22 @@ func handleUnsupportedMetadataStates(ctx context.Context, m filesAPIModels.Store
 
 	if files.Unpublished(&m) && isWebMode(cfg) {
 		log.Info(ctx, "File is not published yet")
+		setStatusNotFound(w)
+		return true
+	}
+
+	return false
+}
+
+func handleUnsupportedMetadataStatesWeb(ctx context.Context, m filesAPIModels.StoredRegisteredMetaData, cfg *config.Config, filePath string, w http.ResponseWriter) bool {
+	if files.Moved(&m) {
+		log.Info(ctx, "File moved, redirecting")
+		setStatusMovedPermanently(RedirectLocation(cfg, filePath), w)
+		return true
+	}
+
+	if files.UploadIncomplete(&m) {
+		log.Info(ctx, "File has not finished uploading")
 		setStatusNotFound(w)
 		return true
 	}
