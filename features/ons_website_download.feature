@@ -94,10 +94,10 @@ Feature: ONS Public Website Download files
     And the response header "Cache-Control" should be "no-cache"
 
   Scenario: ONS previewer requests data-file that has been uploaded but not yet published
-    Given the file "data/unpublished.csv" has the metadata:
+    Given the file "data/unpublished_web.csv" has the metadata:
         """
         {
-          "path": "data/unpublished.csv",
+          "path": "data/unpublished_web.csv",
           "is_publishable": true,
           "collection_id": "1234-asdfg-54321-qwerty",
           "title": "The number of people",
@@ -108,7 +108,7 @@ Feature: ONS Public Website Download files
           "state": "UPLOADED"
         }
         """
-    And the file "data/unpublished.csv" is in S3 with content:
+    And the file "data/unpublished_web.csv" is in S3 with content:
         """
         mark,1
         russ,2
@@ -117,7 +117,7 @@ Feature: ONS Public Website Download files
         brian,4
         jon,5
         """
-    When I GET "/downloads-new/data/unpublished.csv"
+    When I GET "/downloads-new/data/unpublished_web.csv"
     Then the HTTP status code should be "404"
     And the response header "Cache-Control" should be "no-cache"
 
