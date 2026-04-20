@@ -135,7 +135,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		IsPublishing: cfg.IsPublishing,
 	}
 
-	downloadHandlerWithAuth := api.CreateDownloadHandler(
+	downloadHandlerWithAuth := api.CreateDownloadHandlerWithAuth(
 		files.FetchMetadata(svc.filesClient),
 		files.DownloadFile(ctx, svc.s3Client),
 		files.CreateFileEvent(svc.filesClient),
@@ -144,7 +144,7 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		svc.permissionsChecker,
 	)
 
-	downloadHandler := api.CreateDownloadHandlerNoAuth(
+	downloadHandlerNoAuth := api.CreateDownloadHandlerNoAuth(
 		files.FetchMetadata(svc.filesClient),
 		files.DownloadFile(ctx, svc.s3Client),
 		cfg,
@@ -180,8 +180,8 @@ func New(ctx context.Context, buildTime, gitCommit, version string, cfg *config.
 		router.Path("/downloads/filter-outputs/{filterOutputID}.txt").HandlerFunc(d.DoFilterOutput("txt", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
 		router.Path("/downloads/filter-outputs/{filterOutputID}.csv-metadata.json").HandlerFunc(d.DoFilterOutput("csvw", cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
 		router.Path("/images/{imageID}/{variant}/{filename}").HandlerFunc(d.DoImage(cfg.ServiceAuthToken, cfg.DownloadServiceToken)).Methods(http.MethodGet)
-		router.Path("/downloads-new/{path:.*}").HandlerFunc(downloadHandler).Methods(http.MethodGet)
-		router.Path("/downloads/files/{path:.*}").HandlerFunc(downloadHandler).Methods(http.MethodGet)
+		router.Path("/downloads-new/{path:.*}").HandlerFunc(downloadHandlerNoAuth).Methods(http.MethodGet)
+		router.Path("/downloads/files/{path:.*}").HandlerFunc(downloadHandlerNoAuth).Methods(http.MethodGet)
 	}
 
 	router.HandleFunc("/health", hc.Handler)

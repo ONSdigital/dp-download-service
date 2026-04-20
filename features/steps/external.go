@@ -77,6 +77,8 @@ func (e *External) FilesClient(s string) downloads.FilesClient {
 				return &filesAPIModels.StoredRegisteredMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/unpublished.csv":
 				return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29, ContentItem: &filesAPIModels.StoredContentItem{DatasetID: "cpih01", Edition: "feb-2026"}}, nil
+			case "data/unpublished_web.csv":
+				return nil, fmt.Errorf("file not registered")
 			case "data/weird&chars#published.csv":
 				return &filesAPIModels.StoredRegisteredMetaData{State: "PUBLISHED", Path: path, Type: "text/csv", SizeInBytes: 29}, nil
 			case "data/weird&chars#unpublished.csv":
@@ -97,7 +99,6 @@ func (e *External) FilesClient(s string) downloads.FilesClient {
 			e.CreatedFileEvents = append(e.CreatedFileEvents, event)
 			return &event, nil
 		})
-
 	return m
 }
 
