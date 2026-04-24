@@ -9,6 +9,7 @@ info:
 
 tags:
   - name: "Public"
+  - name: "Download file"
 schemes:
   - "http"
 host: localhost:23600
@@ -57,7 +58,7 @@ parameters:
     required: true
     type: string
   file_path:
-    name: filepath
+    name: path
     in: path
     required: true
     description: filepath of required file
@@ -69,10 +70,10 @@ securityDefinitions:
     type: apiKey
 
 paths:
-  /downloads-new/{filepath}:
+  /downloads-new/{path}:
     get:
       tags:
-        - Download file
+        - "Download file"
       summary: "Download a file"
       description: "Request a download for a file."
       parameters:
@@ -85,13 +86,38 @@ paths:
           $ref: '#/responses/StreamedResponse'
         301:
           $ref: '#/responses/RequestRedirect'
-        400:
-          $ref: '#/responses/InvalidRequestError'
+        401:
+          $ref: '#/responses/UnauthorisedError'
+        403:
+          $ref: '#/responses/ForbiddenError'
         404:
           $ref: '#/responses/NotFoundError'
         500:
           $ref: '#/responses/InternalError'
 
+  /downloads/files/{path}:
+    get:
+      tags:
+        - "Download file"
+      summary: "Download a file by path"
+      description: "Request a download for a file path. In publishing mode, authorisation and permissions checks are applied before download."
+      parameters:
+        - $ref: '#/parameters/file_path'
+      produces:
+        - "*/*"
+      responses:
+        200:
+          $ref: '#/responses/StreamedResponse'
+        301:
+          $ref: '#/responses/RequestRedirect'
+        401:
+          $ref: '#/responses/UnauthorisedError'
+        403:
+          $ref: '#/responses/ForbiddenError'
+        404:
+          $ref: '#/responses/NotFoundError'
+        500:
+          $ref: '#/responses/InternalError'
   /downloads/datasets/{datasetID}/editions/{edition}/versions/{version}.csv:
     get:
       deprecated: true
@@ -110,8 +136,10 @@ paths:
           $ref: '#/responses/StreamedResponse'
         301:
           $ref: '#/responses/RequestRedirect'
-        400:
-          $ref: '#/responses/InvalidRequestError'
+        401:
+          $ref: '#/responses/UnauthorisedError'
+        403:
+          $ref: '#/responses/ForbiddenError'
         404:
           $ref: '#/responses/NotFoundError'
         500:
@@ -134,8 +162,10 @@ paths:
           $ref: '#/responses/StreamedResponse'
         301:
           $ref: '#/responses/RequestRedirect'
-        400:
-          $ref: '#/responses/InvalidRequestError'
+        401:
+          $ref: '#/responses/UnauthorisedError'
+        403:
+          $ref: '#/responses/ForbiddenError'
         404:
           $ref: '#/responses/NotFoundError'
         500:
@@ -158,8 +188,10 @@ paths:
           $ref: '#/responses/StreamedResponse'
         301:
           $ref: '#/responses/RequestRedirect'
-        400:
-          $ref: '#/responses/InvalidRequestError'
+        401:
+          $ref: '#/responses/UnauthorisedError'
+        403:
+          $ref: '#/responses/ForbiddenError'
         404:
           $ref: '#/responses/NotFoundError'
         500:
@@ -180,8 +212,10 @@ paths:
           $ref: '#/responses/StreamedResponse'
         301:
           $ref: '#/responses/RequestRedirect'
-        400:
-          $ref: '#/responses/InvalidRequestError'
+        401:
+          $ref: '#/responses/UnauthorisedError'
+        403:
+          $ref: '#/responses/ForbiddenError'
         404:
           $ref: '#/responses/NotFoundError'
         500:
@@ -202,8 +236,10 @@ paths:
           $ref: '#/responses/StreamedResponse'
         301:
           $ref: '#/responses/RequestRedirect'
-        400:
-          $ref: '#/responses/InvalidRequestError'
+        401:
+          $ref: '#/responses/UnauthorisedError'
+        403:
+          $ref: '#/responses/ForbiddenError'
         404:
           $ref: '#/responses/NotFoundError'
         500:
@@ -226,16 +262,20 @@ paths:
           $ref: '#/responses/StreamedResponse'
         301:
           $ref: '#/responses/RequestRedirect'
-        400:
-          $ref: '#/responses/InvalidRequestError'
+        401:
+          $ref: '#/responses/UnauthorisedError'
+        403:
+          $ref: '#/responses/ForbiddenError'
         404:
           $ref: '#/responses/NotFoundError'
         500:
           $ref: '#/responses/InternalError'
 
 responses:
-  InvalidRequestError:
-    description: "Failed to process the request due to invalid request."
+  UnauthorisedError:
+    description: "The request could not be authenticated."
+  ForbiddenError:
+    description: "The request was authenticated but does not have permission to access this file."
   InternalError:
     description: "Failed to process the request due to an internal error."
   NotFoundError:
@@ -246,3 +286,4 @@ responses:
     description: "A streamed response containing the requested download file"
     schema:
       type: file
+
