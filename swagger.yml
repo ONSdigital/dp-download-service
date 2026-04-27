@@ -1,3 +1,4 @@
+#swagger: "2.0"
 swagger: "2.0"
 info:
   description: "A service used to download files from private or public s3 buckets."
@@ -9,7 +10,9 @@ info:
 
 tags:
   - name: "Public"
+    description: "Legacy public download endpoints."
   - name: "Download file"
+    description: "Generic file download endpoints."
 schemes:
   - "http"
 host: localhost:23600
@@ -61,13 +64,18 @@ parameters:
     name: path
     in: path
     required: true
+    type: string
     description: filepath of required file
+
 securityDefinitions:
   FlorenceAPIKey:
     name: X-Florence-Token
     description: "API key used to allow florence users to be able to access a full download for an unpublished version."
     in: header
     type: apiKey
+
+security:
+  - FlorenceAPIKey: []
 
 paths:
   /downloads-new/{path}:
@@ -285,5 +293,5 @@ responses:
   StreamedResponse:
     description: "A streamed response containing the requested download file"
     schema:
-      type: file
-
+      type: string
+      format: binary

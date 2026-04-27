@@ -45,3 +45,7 @@ lint:
 .PHONY: test-component
 test-component:
 	cd features/compose; docker-compose up --abort-on-container-exit
+
+.PHONY: lint-api-spec
+lint-api-spec:
+	redocly lint swagger.yml
