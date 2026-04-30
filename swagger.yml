@@ -86,7 +86,6 @@ paths:
       description: "Request a download for a file."
       parameters:
         - $ref: '#/parameters/file_path'
-          required: true
       produces:
         - "*/*"
       responses:
