@@ -75,7 +75,6 @@ func TestHandleUnsupportedMetadataStatesWebFilePublished(t *testing.T) {
 		State: files.PUBLISHED,
 	}
 	published := handleUnsupportedMetadataStatesWeb(context.Background(), m, &config.Config{}, "file/path", w)
-	// assert.Equal(t, w.Header().Get("Cache-Control"), "no-cache")
 	assert.Equal(t, published, false)
 	assert.Equal(t, w.Code, 200)
 }
@@ -86,7 +85,6 @@ func TestHandleUnsupportedMetadataStatesWebFileUploaded(t *testing.T) {
 		State: files.UPLOADED,
 	}
 	uploaded := handleUnsupportedMetadataStatesWeb(context.Background(), m, &config.Config{}, "file/path", w)
-	// assert.Equal(t, w.Header().Get("Cache-Control"), "no-cache")
 	assert.Equal(t, uploaded, false)
 	assert.Equal(t, w.Code, 200)
 }
