@@ -9,7 +9,6 @@ import (
 	reflect "reflect"
 
 	dataset "github.com/ONSdigital/dp-api-clients-go/v2/dataset"
-	files "github.com/ONSdigital/dp-api-clients-go/v2/files"
 	filter "github.com/ONSdigital/dp-api-clients-go/v2/filter"
 	image "github.com/ONSdigital/dp-api-clients-go/v2/image"
 	files "github.com/ONSdigital/dp-files-api/files"
@@ -255,56 +254,4 @@ func (m *MockImageClient) GetDownloadVariant(arg0 context.Context, arg1, arg2, a
 func (mr *MockImageClientMockRecorder) GetDownloadVariant(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDownloadVariant", reflect.TypeOf((*MockImageClient)(nil).GetDownloadVariant), arg0, arg1, arg2, arg3, arg4, arg5)
-}
-
-// MockFilesClient is a mock of FilesClient interface.
-type MockFilesClient struct {
-	ctrl     *gomock.Controller
-	recorder *MockFilesClientMockRecorder
-}
-
-// MockFilesClientMockRecorder is the mock recorder for MockFilesClient.
-type MockFilesClientMockRecorder struct {
-	mock *MockFilesClient
-}
-
-// NewMockFilesClient creates a new mock instance.
-func NewMockFilesClient(ctrl *gomock.Controller) *MockFilesClient {
-	mock := &MockFilesClient{ctrl: ctrl}
-	mock.recorder = &MockFilesClientMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockFilesClient) EXPECT() *MockFilesClientMockRecorder {
-	return m.recorder
-}
-
-// Checker mocks base method.
-func (m *MockFilesClient) Checker(arg0 context.Context, arg1 *healthcheck.CheckState) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Checker", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Checker indicates an expected call of Checker.
-func (mr *MockFilesClientMockRecorder) Checker(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Checker", reflect.TypeOf((*MockFilesClient)(nil).Checker), arg0, arg1)
-}
-
-// GetFile mocks base method.
-func (m *MockFilesClient) GetFile(arg0 context.Context, arg1, arg2 string) (files.FileMetaData, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFile", arg0, arg1, arg2)
-	ret0, _ := ret[0].(files.FileMetaData)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetFile indicates an expected call of GetFile.
-func (mr *MockFilesClientMockRecorder) GetFile(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFile", reflect.TypeOf((*MockFilesClient)(nil).GetFile), arg0, arg1, arg2)
 }

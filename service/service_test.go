@@ -109,9 +109,6 @@ func TestNew(t *testing.T) {
 			HTTPServerFunc: func(configMoqParam *config.Config, handler http.Handler) service.HTTPServer {
 				return mockedHttpServer
 			},
-			FilesClientFunc: func(configMoqParam *config.Config) downloads.FilesClient {
-				return mockedFilesClient
-			},
 		}
 
 		Convey("When all is well", func() {

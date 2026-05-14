@@ -60,16 +60,6 @@ func (e *External) ImageClient(s string) downloads.ImageClient {
 	return m
 }
 
-func (e *External) FilesClient(cfg *config.Config) downloads.FilesClient {
-	t := &testing.T{}
-	c := gomock.NewController(t)
-	m := mocks.NewMockFilesClient(c)
-	m.EXPECT().Checker(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, check *healthcheck.CheckState) error {
-		return check.Update("OK", "MsgHealthy", 0)
-	})
-	return m
-}
-
 func (e *External) FilesClient(s string) downloads.FilesClient {
 	t := &testing.T{}
 	c := gomock.NewController(t)
