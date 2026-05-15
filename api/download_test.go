@@ -13,7 +13,6 @@ import (
 
 	authMock "github.com/ONSdigital/dp-authorisation/v2/authorisation/mock"
 
-	// "github.com/ONSdigital/dp-download-service/api"
 	"github.com/ONSdigital/dp-download-service/config"
 	"github.com/ONSdigital/dp-download-service/files"
 	filesAPIModels "github.com/ONSdigital/dp-files-api/files"
