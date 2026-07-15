@@ -93,7 +93,7 @@ func (*External) HealthCheck(cfg *config.Config, buildTime, gitCommit, version s
 }
 
 func (*External) HTTPServer(cfg *config.Config, r http.Handler) service.HTTPServer {
-	s := dphttp.NewServer(cfg.BindAddr, r)
+	s := dphttp.NewServerWithTimeout(cfg.BindAddr, r, cfg.RequestTimeout, cfg.WriteTimeout, cfg.TimeoutMessage)
 	s.HandleOSSignals = false
 
 	return s
