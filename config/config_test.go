@@ -37,6 +37,10 @@ func getConfigEnv() map[string]string {
 		"MONGODB_IS_SSL":               os.Getenv("MONGODB_IS_SSL"),
 		"PUBLIC_BUCKET_URL":            os.Getenv("PUBLIC_BUCKET_URL"),
 		"MAX_CONCURRENT_HANDLERS":      os.Getenv("MAX_CONCURRENT_HANDLERS"),
+		"READ_TIMEOUT":                 os.Getenv("READ_TIMEOUT"),
+		"WRITE_TIMEOUT":                os.Getenv("WRITE_TIMEOUT"),
+		"IDLE_TIMEOUT":                 os.Getenv("IDLE_TIMEOUT"),
+		"READ_HEADER_TIMEOUT":          os.Getenv("READ_HEADER_TIMEOUT"),
 	}
 }
 
@@ -83,6 +87,10 @@ func TestSpec(t *testing.T) {
 				So(config.MinioSecretKey, ShouldEqual, "")
 				So(config.IsPublishing, ShouldBeTrue)
 				So(config.MaxConcurrentHandlers, ShouldEqual, 0)
+				So(config.ReadTimeout, ShouldEqual, 5*time.Second)
+				So(config.WriteTimeout, ShouldEqual, 10*time.Second)
+				So(config.IdleTimeout, ShouldEqual, 0)
+				So(config.ReadHeaderTimeout, ShouldEqual, 0)
 
 				expectedUrl, _ := url.Parse("http://test")
 				So(config.PublicBucketURL, ShouldResemble, URL{*expectedUrl})

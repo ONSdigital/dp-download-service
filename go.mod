@@ -8,7 +8,7 @@ require (
 	github.com/ONSdigital/dp-component-test v1.4.4-alpha
 	github.com/ONSdigital/dp-files-api v1.22.0
 	github.com/ONSdigital/dp-healthcheck v1.6.4
-	github.com/ONSdigital/dp-net/v3 v3.12.0
+	github.com/ONSdigital/dp-net/v3 v3.13.0
 	github.com/ONSdigital/dp-permissions-api v1.10.1
 	github.com/ONSdigital/dp-s3/v3 v3.3.0
 	github.com/ONSdigital/log.go/v2 v2.5.2
