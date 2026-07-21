@@ -96,8 +96,8 @@ func (*External) HTTPServer(cfg *config.Config, r http.Handler) service.HTTPServ
 	timeoutConfig := dphttp.TimeoutConfig{
 		ReadTimeout:       cfg.ReadTimeout,
 		WriteTimeout:      cfg.WriteTimeout,
-		IdleTimeout:       0,
-		ReadHeaderTimeout: 0,
+		IdleTimeout:       cfg.IdleTimeout,
+		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
 	}
 
 	s := dphttp.NewServerWithCustomTimeouts(cfg.BindAddr, r, timeoutConfig)
