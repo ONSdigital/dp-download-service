@@ -57,11 +57,11 @@ func CreateDownloadHandlerWithAuth(fetchMetadata files.MetadataFetcher, download
 				return
 			}
 
-			permissionAttrs := setPermissionsAttributes(metadata)
-
 			logData["entity_data"] = entityData
 
-			if checkUserPermission(ctx, logData, "static-files:read", permissionAttrs, permissionsChecker, entityData) {
+			authorised := checkPermissionsAttributes(ctx, logData, "static-files:read", metadata, permissionsChecker, entityData)
+
+			if authorised {
 				// Passing identifier as both user and email parameters as the identity client only provides a single identifier
 				err = recordFileEvent(ctx, *entityData, accessToken, requestedFilePath, metadata, w, createFileEvent)
 				if err != nil {
@@ -108,17 +108,32 @@ func CreateDownloadHandlerNoAuth(fetchMetadata files.MetadataFetcher, downloadFi
 	}
 }
 
-func setPermissionsAttributes(metadata *filesAPIModels.StoredRegisteredMetaData) map[string]string {
-	var permissionAttrs map[string]string
-	if metadata.ContentItem != nil {
-		if metadata.ContentItem.DatasetID != "" && metadata.ContentItem.Edition != "" {
-			permissionAttrs = map[string]string{
-				"dataset_edition": metadata.ContentItem.DatasetID + "/" + metadata.ContentItem.Edition,
-			}
+func checkPermissionsAttributes(ctx context.Context, logData log.Data, permission string, metadata *filesAPIModels.StoredRegisteredMetaData, permissionsChecker auth.PermissionsChecker, entityData *permissionsAPISDK.EntityData) bool {
+	if metadata == nil || metadata.ContentItem == nil {
+		return true
+	}
+
+	datasetIds := append(metadata.ContentItem.PreviousSeriesId, metadata.ContentItem.DatasetID)
+	editionIds := append(metadata.ContentItem.PreviousEditionId, metadata.ContentItem.Edition)
+
+	if len(datasetIds) == 0 || len(editionIds) == 0 {
+		return true
+	}
+
+	idCombinations := make([][2]string, 0, len(datasetIds)*len(editionIds))
+	for _, datasetId := range datasetIds {
+		for _, editionId := range editionIds {
+			idCombinations = append(idCombinations, [2]string{datasetId, editionId})
+		}
+	}
+	for _, combination := range idCombinations {
+		permissionAttrs := map[string]string{"dataset_edition": combination[0] + "/" + combination[1]}
+		if checkUserPermission(ctx, logData, permission, permissionAttrs, permissionsChecker, entityData) {
+			return true
 		}
 	}
 
-	return permissionAttrs
+	return false
 }
 
 func recordFileEvent(ctx context.Context, entityData permissionsAPISDK.EntityData, accessToken, requestedFilePath string, metadata *filesAPIModels.StoredRegisteredMetaData, w http.ResponseWriter, createFileEvent files.FileEventCreator) error {

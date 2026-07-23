@@ -19,6 +19,7 @@ import (
 	filesAPISDK "github.com/ONSdigital/dp-files-api/sdk"
 	dprequest "github.com/ONSdigital/dp-net/v3/request"
 	permissionsAPISDK "github.com/ONSdigital/dp-permissions-api/sdk"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -472,4 +473,183 @@ func TestRedirectLocation(t *testing.T) {
 		concatenatedUrl := RedirectLocation(&config.Config{PublicBucketURL: configUrl}, test.filepath)
 		assert.Equal(t, expectedUrl, concatenatedUrl, fmt.Sprintf("testing %s: expected %s, got %s", test.desc, expectedUrl, concatenatedUrl))
 	}
+}
+
+func TestCheckPermissionsAttributesPreviousSeriesAndEditionIDs(t *testing.T) {
+	t.Run("With only previous series ID", func(t *testing.T) {
+		permissionCheckCalls := 0
+		permissionsChecker := &authMock.PermissionsCheckerMock{
+			HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
+				permissionCheckCalls++
+				return false, nil
+			},
+		}
+
+		metadata := &filesAPIModels.StoredRegisteredMetaData{
+			ContentItem: &filesAPIModels.StoredContentItem{
+				PreviousSeriesId: []string{"series-1"},
+				DatasetID:        "dataset-1",
+				PreviousEditionId: []string{},
+				Edition:          "2024",
+			},
+		}
+
+		entityData := &permissionsAPISDK.EntityData{UserID: "user-1"}
+		result := checkPermissionsAttributes(context.Background(), log.Data{}, "static-files:read", metadata, permissionsChecker, entityData)
+
+		assert.False(t, result)
+		assert.Equal(t, 2, permissionCheckCalls)
+	})
+
+	t.Run("With only previous edition ID", func(t *testing.T) {
+		permissionCheckCalls := 0
+		permissionsChecker := &authMock.PermissionsCheckerMock{
+			HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
+				permissionCheckCalls++
+				return false, nil
+			},
+		}
+
+		metadata := &filesAPIModels.StoredRegisteredMetaData{
+			ContentItem: &filesAPIModels.StoredContentItem{
+				PreviousSeriesId: []string{},
+				DatasetID:        "dataset-1",
+				PreviousEditionId: []string{"edition-1"},
+				Edition:          "2024",
+			},
+		}
+
+		entityData := &permissionsAPISDK.EntityData{UserID: "user-1"}
+		result := checkPermissionsAttributes(context.Background(), log.Data{}, "static-files:read", metadata, permissionsChecker, entityData)
+
+		assert.False(t, result)
+		assert.Equal(t, 2, permissionCheckCalls)
+	})
+
+	t.Run("With both previous series and edition IDs", func(t *testing.T) {
+		permissionCheckCalls := 0
+		permissionsChecker := &authMock.PermissionsCheckerMock{
+			HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
+				permissionCheckCalls++
+				return false, nil
+			},
+		}
+
+		metadata := &filesAPIModels.StoredRegisteredMetaData{
+			ContentItem: &filesAPIModels.StoredContentItem{
+				PreviousSeriesId: []string{"series-1", "series-2"},
+				DatasetID:        "dataset-1",
+				PreviousEditionId: []string{"edition-1"},
+				Edition:          "2024",
+			},
+		}
+
+		entityData := &permissionsAPISDK.EntityData{UserID: "user-1"}
+		result := checkPermissionsAttributes(context.Background(), log.Data{}, "static-files:read", metadata, permissionsChecker, entityData)
+
+		assert.False(t, result)
+		assert.Equal(t, 6, permissionCheckCalls)
+	})
+}
+
+func TestCheckPermissionsAttributesPreviousIDsGrantAccess(t *testing.T) {
+	t.Run("Access granted on first previous series ID", func(t *testing.T) {
+		permissionCheckCalls := 0
+		permissionsChecker := &authMock.PermissionsCheckerMock{
+			HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
+				permissionCheckCalls++
+				return permissionCheckCalls == 1, nil
+			},
+		}
+
+		metadata := &filesAPIModels.StoredRegisteredMetaData{
+			ContentItem: &filesAPIModels.StoredContentItem{
+				PreviousSeriesId: []string{"series-1"},
+				DatasetID:        "dataset-1",
+				PreviousEditionId: []string{},
+				Edition:          "2024",
+			},
+		}
+
+		entityData := &permissionsAPISDK.EntityData{UserID: "user-1"}
+		result := checkPermissionsAttributes(context.Background(), log.Data{}, "static-files:read", metadata, permissionsChecker, entityData)
+
+		assert.True(t, result)
+		assert.Equal(t, 1, permissionCheckCalls)
+	})
+
+	t.Run("Access granted on second previous series ID", func(t *testing.T) {
+		permissionCheckCalls := 0
+		permissionsChecker := &authMock.PermissionsCheckerMock{
+			HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
+				permissionCheckCalls++
+				return permissionCheckCalls == 2, nil
+			},
+		}
+
+		metadata := &filesAPIModels.StoredRegisteredMetaData{
+			ContentItem: &filesAPIModels.StoredContentItem{
+				PreviousSeriesId: []string{"series-1", "series-2"},
+				DatasetID:        "dataset-1",
+				PreviousEditionId: []string{},
+				Edition:          "2024",
+			},
+		}
+
+		entityData := &permissionsAPISDK.EntityData{UserID: "user-1"}
+		result := checkPermissionsAttributes(context.Background(), log.Data{}, "static-files:read", metadata, permissionsChecker, entityData)
+
+		assert.True(t, result)
+		assert.Equal(t, 2, permissionCheckCalls)
+	})
+
+	t.Run("Access granted on previous edition ID", func(t *testing.T) {
+		permissionCheckCalls := 0
+		permissionsChecker := &authMock.PermissionsCheckerMock{
+			HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
+				permissionCheckCalls++
+				return permissionCheckCalls == 2, nil
+			},
+		}
+
+		metadata := &filesAPIModels.StoredRegisteredMetaData{
+			ContentItem: &filesAPIModels.StoredContentItem{
+				PreviousSeriesId: []string{"series-1"},
+				DatasetID:        "dataset-1",
+				PreviousEditionId: []string{"edition-1"},
+				Edition:          "2024",
+			},
+		}
+
+		entityData := &permissionsAPISDK.EntityData{UserID: "user-1"}
+		result := checkPermissionsAttributes(context.Background(), log.Data{}, "static-files:read", metadata, permissionsChecker, entityData)
+
+		assert.True(t, result)
+		assert.Equal(t, 2, permissionCheckCalls)
+	})
+
+	t.Run("Access granted on current dataset/edition with previous IDs present", func(t *testing.T) {
+		permissionCheckCalls := 0
+		permissionsChecker := &authMock.PermissionsCheckerMock{
+			HasPermissionFunc: func(ctx context.Context, entityData permissionsAPISDK.EntityData, permission string, attributes map[string]string) (bool, error) {
+				permissionCheckCalls++
+				return permissionCheckCalls == 4, nil
+			},
+		}
+
+		metadata := &filesAPIModels.StoredRegisteredMetaData{
+			ContentItem: &filesAPIModels.StoredContentItem{
+				PreviousSeriesId: []string{"series-1"},
+				DatasetID:        "dataset-1",
+				PreviousEditionId: []string{"edition-1"},
+				Edition:          "2024",
+			},
+		}
+
+		entityData := &permissionsAPISDK.EntityData{UserID: "user-1"}
+		result := checkPermissionsAttributes(context.Background(), log.Data{}, "static-files:read", metadata, permissionsChecker, entityData)
+
+		assert.True(t, result)
+		assert.Equal(t, 4, permissionCheckCalls)
+	})
 }

@@ -89,6 +89,12 @@ func (e *External) FilesClient(s string) downloads.FilesClient {
 				return nil, fmt.Errorf("file not registered")
 			case "data/return401.csv":
 				return nil, fmt.Errorf("API error: status code 401")
+			case "data/unpublished-previous-series.csv":
+				return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29, ContentItem: &filesAPIModels.StoredContentItem{DatasetID: "different-dataset", PreviousSeriesId: []string{"cpih01"}, Edition: "feb-2026"}}, nil
+			case "data/unpublished-previous-edition.csv":
+				return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29, ContentItem: &filesAPIModels.StoredContentItem{DatasetID: "cpih01", PreviousEditionId: []string{"feb-2026"}, Edition: "different-edition"}}, nil
+			case "data/unpublished-previous-series-edition.csv":
+				return &filesAPIModels.StoredRegisteredMetaData{State: "UPLOADED", Path: path, Type: "text/csv", SizeInBytes: 29, ContentItem: &filesAPIModels.StoredContentItem{DatasetID: "different-dataset", PreviousSeriesId: []string{"cpih01"}, PreviousEditionId: []string{"feb-2026"}, Edition: "different-edition"}}, nil
 			default:
 				return nil, fmt.Errorf("unknown mock path")
 			}

@@ -278,7 +278,112 @@ Feature: Download preview feature - publishing
         When I GET "/downloads-new/data/return401.csv"
         Then the HTTP status code should be "401"
         And the response header "Cache-Control" should be "no-cache"
-    
-    
-  
-  
+
+    Scenario: An authorised viewer user requests a file using previous series ID for permission checks
+      Given the file "data/unpublished-previous-series.csv" has the metadata:
+        """
+        {
+          "path": "data/unpublished-previous-series.csv",
+          "is_publishable": true,
+          "collection_id": "1234-asdfg-54321-qwerty",
+          "title": "The number of people",
+          "size_in_bytes": 29,
+          "type": "text/csv",
+          "licence": "OGL v3",
+          "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+          "state": "UPLOADED",
+          "content_item": {
+            "dataset_id": "different-dataset",
+            "previous_series_id": ["cpih01"],
+            "edition": "feb-2026"
+          }
+        }
+        """
+      And I am a viewer user with permission
+      And the file "data/unpublished-previous-series.csv" is in S3 with content:
+        """
+        mark,1
+        russ,2
+        dan,3
+        saul,3.5
+        brian,4
+        jon,5
+        """
+      When I GET "/downloads/files/data/unpublished-previous-series.csv"
+      Then the HTTP status code should be "200"
+      And the response header "Cache-Control" should be "no-cache"
+      And the response header "Content-Disposition" should be "attachment; filename=unpublished-previous-series.csv"
+      And a file event with action "READ" and resource "data/unpublished-previous-series.csv" should be created by user "viewer1@ons.gov.uk"
+
+    Scenario: An authorised viewer user requests a file using previous edition ID for permission checks
+      Given the file "data/unpublished-previous-edition.csv" has the metadata:
+        """
+        {
+          "path": "data/unpublished-previous-edition.csv",
+          "is_publishable": true,
+          "collection_id": "1234-asdfg-54321-qwerty",
+          "title": "The number of people",
+          "size_in_bytes": 29,
+          "type": "text/csv",
+          "licence": "OGL v3",
+          "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+          "state": "UPLOADED",
+          "content_item": {
+            "dataset_id": "cpih01",
+            "edition": "different-edition",
+            "previous_edition_id": ["feb-2026"]
+          }
+        }
+        """
+      And I am a viewer user with permission
+      And the file "data/unpublished-previous-edition.csv" is in S3 with content:
+        """
+        mark,1
+        russ,2
+        dan,3
+        saul,3.5
+        brian,4
+        jon,5
+        """
+      When I GET "/downloads/files/data/unpublished-previous-edition.csv"
+      Then the HTTP status code should be "200"
+      And the response header "Cache-Control" should be "no-cache"
+      And the response header "Content-Disposition" should be "attachment; filename=unpublished-previous-edition.csv"
+      And a file event with action "READ" and resource "data/unpublished-previous-edition.csv" should be created by user "viewer1@ons.gov.uk"
+
+    Scenario: An authorised viewer user requests a file using previous series and previous edition IDs for permission checks
+      Given the file "data/unpublished-previous-series-edition.csv" has the metadata:
+        """
+        {
+          "path": "data/unpublished-previous-series-edition.csv",
+          "is_publishable": true,
+          "collection_id": "1234-asdfg-54321-qwerty",
+          "title": "The number of people",
+          "size_in_bytes": 29,
+          "type": "text/csv",
+          "licence": "OGL v3",
+          "licence_url": "http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+          "state": "UPLOADED",
+          "content_item": {
+            "dataset_id": "different-dataset",
+            "previous_series_id": ["cpih01"],
+            "edition": "different-edition",
+            "previous_edition_id": ["feb-2026"]
+          }
+        }
+        """
+      And I am a viewer user with permission
+      And the file "data/unpublished-previous-series-edition.csv" is in S3 with content:
+        """
+        mark,1
+        russ,2
+        dan,3
+        saul,3.5
+        brian,4
+        jon,5
+        """
+      When I GET "/downloads/files/data/unpublished-previous-series-edition.csv"
+      Then the HTTP status code should be "200"
+      And the response header "Cache-Control" should be "no-cache"
+      And the response header "Content-Disposition" should be "attachment; filename=unpublished-previous-series-edition.csv"
+      And a file event with action "READ" and resource "data/unpublished-previous-series-edition.csv" should be created by user "viewer1@ons.gov.uk"
