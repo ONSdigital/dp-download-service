@@ -26,8 +26,10 @@ type Config struct {
 	GracefulShutdownTimeout    time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"  json:"-"`
 	HealthCheckInterval        time.Duration `envconfig:"HEALTHCHECK_INTERVAL"`
 	HealthCheckCriticalTimeout time.Duration `envconfig:"HEALTHCHECK_CRITICAL_TIMEOUT"`
-	RequestTimeout             time.Duration `envconfig:"REQUEST_TIMEOUT"`
+	ReadTimeout                time.Duration `envconfig:"READ_TIMEOUT"`
 	WriteTimeout               time.Duration `envconfig:"WRITE_TIMEOUT"`
+	IdleTimeout                time.Duration `envconfig:"IDLE_TIMEOUT"`
+	ReadHeaderTimeout          time.Duration `envconfig:"READ_HEADER_TIMEOUT"`
 	TimeoutMessage             string        `envconfig:"TIMEOUT_MESSAGE"`
 	ServiceAuthToken           string        `envconfig:"SERVICE_AUTH_TOKEN"         json:"-"`
 	SecretKey                  string        `envconfig:"SECRET_KEY"                 json:"-"`
@@ -77,8 +79,10 @@ func Get() (*Config, error) {
 		GracefulShutdownTimeout:    5 * time.Second,
 		HealthCheckInterval:        30 * time.Second,
 		HealthCheckCriticalTimeout: 90 * time.Second,
-		RequestTimeout:             5 * time.Second,
+		ReadTimeout:                5 * time.Second,
 		WriteTimeout:               10 * time.Second,
+		IdleTimeout:                0,
+		ReadHeaderTimeout:          0,
 		TimeoutMessage:             "The request timed out",
 		ServiceAuthToken:           "c60198e9-1864-4b68-ad0b-1e858e5b46a4",
 		LocalObjectStore:           "",

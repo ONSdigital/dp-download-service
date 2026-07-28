@@ -43,8 +43,8 @@ github.com/ONSdigital/dp-mongodb/v3 v3.13.0 h1:nTb47hKUj4wI3+1Q9KxqYRr6iDfh6/xlu
 github.com/ONSdigital/dp-mongodb/v3 v3.13.0/go.mod h1:/68EwFrtOgChAMMfaUTm3kTHe2zvB3MZtizrvz1vVxw=
 github.com/ONSdigital/dp-net/v2 v2.22.0 h1:LY9C5x1+sfK9QyjNpB2G3TPvAtSuOFR9FRcXsR9twqs=
 github.com/ONSdigital/dp-net/v2 v2.22.0/go.mod h1:F6yL3jjuVwBLVMFIKgHF3zhMRbmZysAxBiu+aIAi3Z0=
-github.com/ONSdigital/dp-net/v3 v3.12.0 h1:RmMNjDi+WaUlNbfGZy3r1ob5B2+QYYgYtKPDM6tBWaA=
-github.com/ONSdigital/dp-net/v3 v3.12.0/go.mod h1:6CWNGULkexaBdw5/H4i080ufb5r4tuu/pMqWdUK9O78=
+github.com/ONSdigital/dp-net/v3 v3.13.0 h1:1fwK9G+f32k+NdJnzRT7EG0C9R7qcrHQs4Lah0hCczk=
+github.com/ONSdigital/dp-net/v3 v3.13.0/go.mod h1:6CWNGULkexaBdw5/H4i080ufb5r4tuu/pMqWdUK9O78=
 github.com/ONSdigital/dp-permissions-api v1.10.1 h1:dOyPtS94CpBgS0Y1oZJy84UcKZOHkmDK+Zdg5OClEXs=
 github.com/ONSdigital/dp-permissions-api v1.10.1/go.mod h1:436ej+daY+8+hNCReDvCIsI0iNRWKU/UZsxC09CRMNA=
 github.com/ONSdigital/dp-s3/v3 v3.3.0 h1:l5QrJ4lFHMfhHmk0Cox+0xSNQ6RhkCHJ6ikqq5XNLi4=
