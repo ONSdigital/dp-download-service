@@ -487,10 +487,10 @@ func TestCheckPermissionsAttributesPreviousSeriesAndEditionIDs(t *testing.T) {
 
 		metadata := &filesAPIModels.StoredRegisteredMetaData{
 			ContentItem: &filesAPIModels.StoredContentItem{
-				PreviousSeriesId: []string{"series-1"},
-				DatasetID:        "dataset-1",
+				PreviousSeriesId:  []string{"series-1"},
+				DatasetID:         "dataset-1",
 				PreviousEditionId: []string{},
-				Edition:          "2024",
+				Edition:           "2024",
 			},
 		}
 
@@ -498,7 +498,7 @@ func TestCheckPermissionsAttributesPreviousSeriesAndEditionIDs(t *testing.T) {
 		result := checkPermissionsAttributes(context.Background(), log.Data{}, "static-files:read", metadata, permissionsChecker, entityData)
 
 		assert.False(t, result)
-		assert.Equal(t, 2, permissionCheckCalls)
+		assert.Equal(t, 3, permissionCheckCalls)
 	})
 
 	t.Run("With only previous edition ID", func(t *testing.T) {
@@ -512,10 +512,10 @@ func TestCheckPermissionsAttributesPreviousSeriesAndEditionIDs(t *testing.T) {
 
 		metadata := &filesAPIModels.StoredRegisteredMetaData{
 			ContentItem: &filesAPIModels.StoredContentItem{
-				PreviousSeriesId: []string{},
-				DatasetID:        "dataset-1",
+				PreviousSeriesId:  []string{},
+				DatasetID:         "dataset-1",
 				PreviousEditionId: []string{"edition-1"},
-				Edition:          "2024",
+				Edition:           "2024",
 			},
 		}
 
@@ -523,7 +523,7 @@ func TestCheckPermissionsAttributesPreviousSeriesAndEditionIDs(t *testing.T) {
 		result := checkPermissionsAttributes(context.Background(), log.Data{}, "static-files:read", metadata, permissionsChecker, entityData)
 
 		assert.False(t, result)
-		assert.Equal(t, 2, permissionCheckCalls)
+		assert.Equal(t, 3, permissionCheckCalls)
 	})
 
 	t.Run("With both previous series and edition IDs", func(t *testing.T) {
@@ -537,10 +537,10 @@ func TestCheckPermissionsAttributesPreviousSeriesAndEditionIDs(t *testing.T) {
 
 		metadata := &filesAPIModels.StoredRegisteredMetaData{
 			ContentItem: &filesAPIModels.StoredContentItem{
-				PreviousSeriesId: []string{"series-1", "series-2"},
-				DatasetID:        "dataset-1",
+				PreviousSeriesId:  []string{"series-1", "series-2"},
+				DatasetID:         "dataset-1",
 				PreviousEditionId: []string{"edition-1"},
-				Edition:          "2024",
+				Edition:           "2024",
 			},
 		}
 
@@ -548,7 +548,7 @@ func TestCheckPermissionsAttributesPreviousSeriesAndEditionIDs(t *testing.T) {
 		result := checkPermissionsAttributes(context.Background(), log.Data{}, "static-files:read", metadata, permissionsChecker, entityData)
 
 		assert.False(t, result)
-		assert.Equal(t, 6, permissionCheckCalls)
+		assert.Equal(t, 7, permissionCheckCalls)
 	})
 }
 
@@ -564,10 +564,10 @@ func TestCheckPermissionsAttributesPreviousIDsGrantAccess(t *testing.T) {
 
 		metadata := &filesAPIModels.StoredRegisteredMetaData{
 			ContentItem: &filesAPIModels.StoredContentItem{
-				PreviousSeriesId: []string{"series-1"},
-				DatasetID:        "dataset-1",
+				PreviousSeriesId:  []string{"series-1"},
+				DatasetID:         "dataset-1",
 				PreviousEditionId: []string{},
-				Edition:          "2024",
+				Edition:           "2024",
 			},
 		}
 
@@ -589,10 +589,10 @@ func TestCheckPermissionsAttributesPreviousIDsGrantAccess(t *testing.T) {
 
 		metadata := &filesAPIModels.StoredRegisteredMetaData{
 			ContentItem: &filesAPIModels.StoredContentItem{
-				PreviousSeriesId: []string{"series-1", "series-2"},
-				DatasetID:        "dataset-1",
+				PreviousSeriesId:  []string{"series-1", "series-2"},
+				DatasetID:         "dataset-1",
 				PreviousEditionId: []string{},
-				Edition:          "2024",
+				Edition:           "2024",
 			},
 		}
 
@@ -614,10 +614,10 @@ func TestCheckPermissionsAttributesPreviousIDsGrantAccess(t *testing.T) {
 
 		metadata := &filesAPIModels.StoredRegisteredMetaData{
 			ContentItem: &filesAPIModels.StoredContentItem{
-				PreviousSeriesId: []string{"series-1"},
-				DatasetID:        "dataset-1",
+				PreviousSeriesId:  []string{"series-1"},
+				DatasetID:         "dataset-1",
 				PreviousEditionId: []string{"edition-1"},
-				Edition:          "2024",
+				Edition:           "2024",
 			},
 		}
 
@@ -639,10 +639,10 @@ func TestCheckPermissionsAttributesPreviousIDsGrantAccess(t *testing.T) {
 
 		metadata := &filesAPIModels.StoredRegisteredMetaData{
 			ContentItem: &filesAPIModels.StoredContentItem{
-				PreviousSeriesId: []string{"series-1"},
-				DatasetID:        "dataset-1",
+				PreviousSeriesId:  []string{"series-1"},
+				DatasetID:         "dataset-1",
 				PreviousEditionId: []string{"edition-1"},
-				Edition:          "2024",
+				Edition:           "2024",
 			},
 		}
 

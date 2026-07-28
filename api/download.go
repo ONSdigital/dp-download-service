@@ -110,30 +110,23 @@ func CreateDownloadHandlerNoAuth(fetchMetadata files.MetadataFetcher, downloadFi
 
 func checkPermissionsAttributes(ctx context.Context, logData log.Data, permission string, metadata *filesAPIModels.StoredRegisteredMetaData, permissionsChecker auth.PermissionsChecker, entityData *permissionsAPISDK.EntityData) bool {
 	if metadata == nil || metadata.ContentItem == nil {
-		return true
+		return checkUserPermission(ctx, logData, permission, nil, permissionsChecker, entityData)
 	}
 
-	datasetIds := append(metadata.ContentItem.PreviousSeriesId, metadata.ContentItem.DatasetID)
-	editionIds := append(metadata.ContentItem.PreviousEditionId, metadata.ContentItem.Edition)
+	allSeriesIDs := append([]string{metadata.ContentItem.DatasetID}, metadata.ContentItem.PreviousSeriesId...)
+	allEditionIDs := append([]string{metadata.ContentItem.Edition}, metadata.ContentItem.PreviousEditionId...)
 
-	if len(datasetIds) == 0 || len(editionIds) == 0 {
-		return true
-	}
-
-	idCombinations := make([][2]string, 0, len(datasetIds)*len(editionIds))
-	for _, datasetId := range datasetIds {
-		for _, editionId := range editionIds {
-			idCombinations = append(idCombinations, [2]string{datasetId, editionId})
-		}
-	}
-	for _, combination := range idCombinations {
-		permissionAttrs := map[string]string{"dataset_edition": combination[0] + "/" + combination[1]}
-		if checkUserPermission(ctx, logData, permission, permissionAttrs, permissionsChecker, entityData) {
-			return true
+	for _, datasetID := range allSeriesIDs {
+		for _, edition := range allEditionIDs {
+			if datasetID != "" && edition != "" {
+				if checkUserPermission(ctx, logData, permission, map[string]string{"dataset_edition": datasetID + "/" + edition}, permissionsChecker, entityData) {
+					return true
+				}
+			}
 		}
 	}
 
-	return false
+	return checkUserPermission(ctx, logData, permission, nil, permissionsChecker, entityData)
 }
 
 func recordFileEvent(ctx context.Context, entityData permissionsAPISDK.EntityData, accessToken, requestedFilePath string, metadata *filesAPIModels.StoredRegisteredMetaData, w http.ResponseWriter, createFileEvent files.FileEventCreator) error {
